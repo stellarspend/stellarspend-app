@@ -2,13 +2,13 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, X, Trash2 } from "lucide-react";
+import { Bell, CheckCheck, X, Trash2 } from "lucide-react";
 import { useNotifications } from "@/context/NotificationContext";
 import { formatDistanceToNow } from "date-fns";
 
 export const NotificationsCenter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { notifications, markAsRead, clearAll } = useNotifications();
+  const { notifications, markAsRead, markAllAsRead, clearAll } = useNotifications();
   const unreadCount = notifications.filter((n) => !n.read).length;
   const dropdownRef = useRef<HTMLDivElement>(null);
   const firstNotificationRef = useRef<HTMLDivElement>(null);
@@ -75,6 +75,17 @@ export const NotificationsCenter: React.FC = () => {
                   Notifications
                 </h3>
                 <div className="flex items-center gap-1">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllAsRead}
+                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#e8b84b] transition-colors hover:bg-[#e8b84b]/10 hover:text-[#f0c85a] focus:outline-none focus:ring-2 focus:ring-[#e8b84b]/30"
+                      title="Mark all as read"
+                      aria-label={`Mark all ${unreadCount} unread notifications as read`}
+                    >
+                      <CheckCheck className="h-3.5 w-3.5" />
+                      Read all
+                    </button>
+                  )}
                   {notifications.length > 0 && (
                     <button
                       onClick={clearAll}
