@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { type FormEvent, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card'
@@ -23,11 +23,57 @@ interface ContributionWidgetProps {
   goal: Goal
   onContribute: (goalId: string, amount: number) => void
   availableBalance: number
+  contributionHistory?: ContributionHistoryEntry[]
+}
+
+export interface ContributionHistoryEntry {
+  id?: string
+  date: string | Date
+  amount: number
+  runningTotal?: number
 }
 
 const QUICK_AMOUNTS = [10, 25, 50, 100]
+const MAX_VISIBLE_CONTRIBUTIONS = 5
 
-export function ContributionWidget({ goal, onContribute, availableBalance }: ContributionWidgetProps) {
+function formatCurrency(amount: number) {
+  return `$${amount.toFixed(2)}`
+}
+
+function formatContributionDate(date: string | Date) {
+  return new Date(date).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+function getVisibleContributions(contributionHistory?: ContributionHistoryEntry[]) {
+  if (!contributionHistory?.length) {
+    return []
+  }
+
+  let runningTotal = 0
+  return [...contributionHistory]
+    .sort(
+      (first, second) => new Date(first.date).getTime() - new Date(second.date).getTime()
+    )
+    .map((entry) => {
+      runningTotal = Number((runningTotal + entry.amount).toFixed(2))
+      return {
+        ...entry,
+        runningTotal: entry.runningTotal ?? runningTotal,
+      }
+    })
+    .slice(-MAX_VISIBLE_CONTRIBUTIONS)
+    .reverse()
+}
+
+export function ContributionWidget({
+  goal,
+  onContribute,
+  availableBalance,
+  contributionHistory,
+}: ContributionWidgetProps) {
   const [open, setOpen] = useState(false)
   const [customAmount, setCustomAmount] = useState('')
   const [isAnimating, setIsAnimating] = useState(false)
@@ -35,6 +81,7 @@ export function ContributionWidget({ goal, onContribute, availableBalance }: Con
 
   const progress = (goal.currentAmount / goal.targetAmount) * 100
   const remainingAmount = goal.targetAmount - goal.currentAmount
+  const visibleContributions = getVisibleContributions(contributionHistory)
 
   const handleQuickContribution = (amount: number) => {
     if (amount > availableBalance) {
@@ -55,7 +102,7 @@ export function ContributionWidget({ goal, onContribute, availableBalance }: Con
     setTimeout(() => setIsAnimating(false), 500)
   }
 
-  const handleCustomContribution = (e: React.FormEvent) => {
+  const handleCustomContribution = (e: FormEvent) => {
     e.preventDefault()
     const amount = parseFloat(customAmount)
 
@@ -162,6 +209,43 @@ export function ContributionWidget({ goal, onContribute, availableBalance }: Con
         <p className="text-xs text-muted-foreground">
           Deadline: {new Date(goal.deadline).toLocaleDateString()}
         </p>
+
+        <div className="space-y-2 rounded-md border border-gray-200 p-3 dark:border-gray-700">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-medium">Contribution History</p>
+            <Button type="button" variant="outline" size="sm" className="h-8 px-2 text-xs">
+              View all
+            </Button>
+          </div>
+
+          {visibleContributions.length > 0 ? (
+            <div className="space-y-1">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-3 text-[11px] uppercase text-muted-foreground">
+                <span>Date</span>
+                <span className="text-right">Amount</span>
+                <span className="text-right">Total</span>
+              </div>
+              {visibleContributions.map((entry, index) => (
+                <div
+                  key={entry.id ?? `${new Date(entry.date).toISOString()}-${index}`}
+                  className="grid grid-cols-[1fr_auto_auto] gap-3 text-xs"
+                >
+                  <span className="truncate text-muted-foreground">
+                    {formatContributionDate(entry.date)}
+                  </span>
+                  <span className="text-right font-medium">
+                    {formatCurrency(entry.amount)}
+                  </span>
+                  <span className="text-right font-semibold">
+                    {formatCurrency(entry.runningTotal ?? 0)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No contributions yet.</p>
+          )}
+        </div>
       </CardContent>
     </Card>
   )

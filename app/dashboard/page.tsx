@@ -5,7 +5,10 @@ import BalancesWidget from "@/components/dashboard/BalancesWidget";
 import QuickActions from "@/components/dashboard/QuickActions";
 import RecentTransactions from "@/components/dashboard/RecentTransactions";
 import GoalForm from "@/components/savings/GoalForm";
-import { ContributionWidget } from "@/components/savings/ContributionWidget";
+import {
+  ContributionWidget,
+  type ContributionHistoryEntry,
+} from "@/components/savings/ContributionWidget";
 
 interface Goal {
   id: string
@@ -36,6 +39,9 @@ export default function DashboardPage() {
       createdAt: new Date(),
     },
   ]);
+  const [contributionHistory, setContributionHistory] = useState<
+    Record<string, ContributionHistoryEntry[]>
+  >({});
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const availableBalance = 500; // Mock balance
 
@@ -53,11 +59,32 @@ export default function DashboardPage() {
   };
 
   const handleContribute = (goalId: string, amount: number) => {
+    const currentGoal = goals.find(goal => goal.id === goalId);
+    if (!currentGoal) return;
+
+    const nextTotal = Number((currentGoal.currentAmount + amount).toFixed(2));
+
     setGoals(prev => prev.map(goal =>
       goal.id === goalId
-        ? { ...goal, currentAmount: goal.currentAmount + amount }
+        ? { ...goal, currentAmount: nextTotal }
         : goal
     ));
+    setContributionHistory(prev => {
+      const previousHistory = prev[goalId] ?? [];
+
+      return {
+        ...prev,
+        [goalId]: [
+          ...previousHistory,
+          {
+            id: `${goalId}-${Date.now()}`,
+            date: new Date(),
+            amount,
+            runningTotal: nextTotal,
+          },
+        ],
+      };
+    });
   };
 
   return (
@@ -107,6 +134,7 @@ export default function DashboardPage() {
                 goal={goal}
                 onContribute={handleContribute}
                 availableBalance={availableBalance}
+                contributionHistory={contributionHistory[goal.id]}
               />
             ))}
           </div>
