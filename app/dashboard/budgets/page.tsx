@@ -19,6 +19,23 @@ interface BudgetFormData {
   endDate: string;
 }
 
+const CATEGORY_COLORS = [
+    "bg-blue-500",
+    "bg-emerald-500",
+    "bg-amber-500",
+    "bg-violet-500",
+    "bg-rose-500",
+    "bg-cyan-500",
+];
+
+function formatCategory(category: string) {
+    return category
+        .split(/[-_\s]+/)
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+}
+
 export default function BudgetsPage() {
     const [budgets, setBudgets] = useState<Budget[]>([]);
     const [loading, setLoading] = useState(true);
@@ -99,6 +116,23 @@ export default function BudgetsPage() {
         }
     };
 
+    const totalBudget = budgets.reduce((sum, budget) => sum + budget.amount, 0);
+    const categoryBreakdown = Object.values(
+        budgets.reduce<Record<string, { category: string; total: number; count: number }>>(
+            (acc, budget) => {
+                const category = budget.category || "uncategorized";
+                if (!acc[category]) {
+                    acc[category] = { category, total: 0, count: 0 };
+                }
+
+                acc[category].total += budget.amount;
+                acc[category].count += 1;
+                return acc;
+            },
+            {},
+        ),
+    ).sort((a, b) => b.total - a.total);
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -148,6 +182,94 @@ export default function BudgetsPage() {
           />
         </div>
       )}
+
+      <section className="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-md dark:border-gray-700 dark:bg-gray-800">
+        <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Category Breakdown
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Spending allocation across your current budgets.
+            </p>
+          </div>
+          <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Total: {totalBudget.toFixed(2)}
+          </div>
+        </div>
+
+        {categoryBreakdown.length > 0 ? (
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+            <div className="space-y-4">
+              {categoryBreakdown.map((item, index) => {
+                const percentage =
+                  totalBudget > 0 ? Math.round((item.total / totalBudget) * 100) : 0;
+                const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+
+                return (
+                  <div key={item.category} className="space-y-2">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className={`h-3 w-3 flex-none rounded-full ${color}`} />
+                        <span className="truncate font-medium text-gray-900 dark:text-white">
+                          {formatCategory(item.category)}
+                        </span>
+                      </div>
+                      <div className="flex flex-none items-center gap-3 text-gray-600 dark:text-gray-400">
+                        <span>{item.total.toFixed(2)}</span>
+                        <span className="w-10 text-right font-semibold text-gray-900 dark:text-white">
+                          {percentage}%
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      className="h-3 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700"
+                      aria-label={`${formatCategory(item.category)} ${percentage}%`}
+                    >
+                      <div
+                        className={`h-full rounded-full ${color} transition-all`}
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-900/40">
+              <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
+                Summary
+              </h3>
+              <dl className="space-y-3">
+                {categoryBreakdown.slice(0, 4).map((item, index) => {
+                  const percentage =
+                    totalBudget > 0 ? Math.round((item.total / totalBudget) * 100) : 0;
+
+                  return (
+                    <div key={item.category} className="flex items-center justify-between gap-3">
+                      <dt className="flex min-w-0 items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span
+                          className={`h-2.5 w-2.5 flex-none rounded-full ${
+                            CATEGORY_COLORS[index % CATEGORY_COLORS.length]
+                          }`}
+                        />
+                        <span className="truncate">{formatCategory(item.category)}</span>
+                      </dt>
+                      <dd className="text-sm font-semibold text-gray-900 dark:text-white">
+                        {percentage}%
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+            Create a budget to see spending by category.
+          </div>
+        )}
+      </section>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {budgets.map((budget) => (
