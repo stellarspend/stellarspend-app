@@ -44,7 +44,13 @@ export default function WalletSwitcher({
   const [editName, setEditName] = useState("");
   const [newWalletName, setNewWalletName] = useState("");
   const [newWalletAddress, setNewWalletAddress] = useState("");
+  const [activeWalletIndex, setActiveWalletIndex] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const walletOptionRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const listboxId = "wallet-switcher-listbox";
+  const selectedWalletIndex = wallets.findIndex((wallet) => wallet.id === selectedWallet?.id);
+  const initialWalletIndex = selectedWalletIndex >= 0 ? selectedWalletIndex : 0;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -65,15 +71,91 @@ export default function WalletSwitcher({
         setIsOpen(false);
         setIsAdding(false);
         setEditingId(null);
+        triggerRef.current?.focus();
       }
     };
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
   }, []);
 
+  useEffect(() => {
+    if (isOpen && !isAdding && !editingId) {
+      walletOptionRefs.current[activeWalletIndex]?.focus();
+    }
+  }, [activeWalletIndex, editingId, isAdding, isOpen]);
+
+  const closeDropdown = () => {
+    setIsOpen(false);
+    setIsAdding(false);
+    setEditingId(null);
+  };
+
+  const openDropdown = (activeIndex = initialWalletIndex) => {
+    setActiveWalletIndex(activeIndex);
+    setIsOpen(true);
+  };
+
+  const toggleDropdown = () => {
+    if (isOpen) {
+      closeDropdown();
+      return;
+    }
+
+    openDropdown();
+  };
+
+  const handleTriggerKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggleDropdown();
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      openDropdown(0);
+    }
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeDropdown();
+    }
+  };
+
+  const handleWalletKeyDown = (
+    e: React.KeyboardEvent<HTMLDivElement>,
+    index: number,
+    id: string,
+  ) => {
+    if (e.target !== e.currentTarget) {
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveWalletIndex((index + 1) % wallets.length);
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveWalletIndex((index - 1 + wallets.length) % wallets.length);
+    }
+
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleSelect(id);
+      triggerRef.current?.focus();
+    }
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeDropdown();
+      triggerRef.current?.focus();
+    }
+  };
+
   const handleSelect = (id: string) => {
     selectWallet(id);
-    setIsOpen(false);
+    closeDropdown();
   };
 
   const handleRemove = (e: React.MouseEvent, id: string) => {
@@ -138,8 +220,14 @@ export default function WalletSwitcher({
   if (variant === "minimal") {
     return (
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        ref={triggerRef}
+        onClick={toggleDropdown}
+        onKeyDown={handleTriggerKeyDown}
         className={`flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all ${className}`}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls={listboxId}
+        aria-label="Select wallet"
       >
         <Wallet className="w-4 h-4 text-[#e8b84b]" />
         <span className="text-sm text-white font-medium">
@@ -154,13 +242,19 @@ export default function WalletSwitcher({
     <div ref={dropdownRef} className={`relative ${className}`}>
       {/* Trigger Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        ref={triggerRef}
+        onClick={toggleDropdown}
+        onKeyDown={handleTriggerKeyDown}
         disabled={isLoading}
         className={`flex items-center gap-3 w-full text-left transition-all ${
           variant === "compact"
             ? "px-3 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10"
             : "p-4 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.06] hover:border-white/20"
         }`}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls={listboxId}
+        aria-label="Select wallet"
       >
         <div className={`rounded-xl bg-[#e8b84b]/10 flex items-center justify-center ${variant === "compact" ? "w-8 h-8" : "w-12 h-12"}`}>
           <Wallet className={`text-[#e8b84b] ${variant === "compact" ? "w-4 h-4" : "w-6 h-6"}`} />
@@ -221,12 +315,25 @@ export default function WalletSwitcher({
               </div>
 
               {/* Wallet List */}
-              <div className="max-h-80 overflow-y-auto">
-                {wallets.map((wallet) => (
+              <div
+                id={listboxId}
+                role="listbox"
+                aria-label="Linked wallets"
+                className="max-h-80 overflow-y-auto"
+              >
+                {wallets.map((wallet, index) => (
                   <div
                     key={wallet.id}
+                    ref={(node) => {
+                      walletOptionRefs.current[index] = node;
+                    }}
                     onClick={() => handleSelect(wallet.id)}
-                    className={`px-4 py-3 flex items-center gap-3 cursor-pointer transition-colors hover:bg-white/[0.03] ${
+                    onFocus={() => setActiveWalletIndex(index)}
+                    onKeyDown={(e) => handleWalletKeyDown(e, index, wallet.id)}
+                    role="option"
+                    aria-selected={selectedWallet?.id === wallet.id}
+                    tabIndex={activeWalletIndex === index ? 0 : -1}
+                    className={`group px-4 py-3 flex items-center gap-3 cursor-pointer transition-colors hover:bg-white/[0.03] focus:bg-white/[0.05] focus:outline-none focus:ring-2 focus:ring-[#e8b84b]/40 ${
                       selectedWallet?.id === wallet.id ? "bg-[#e8b84b]/5" : ""
                     }`}
                   >
