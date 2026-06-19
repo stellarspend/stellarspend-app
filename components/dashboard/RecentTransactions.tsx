@@ -4,11 +4,11 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  RefreshCw,
-  ChevronRight,
   AlertCircle,
+  ArrowDownLeft,
+  ArrowDownUp,
+  ArrowUpRight,
+  ChevronRight,
 } from "lucide-react";
 import { fetchTransactions, type Transaction } from "@/lib/api/client";
 
@@ -68,7 +68,7 @@ function TxRow({ tx, index }: { tx: Transaction; index: number }) {
             </p>
           </>
         ) : (
-          <span className="text-xs text-[#7a8aaa]">—</span>
+          <span className="text-xs text-[#7a8aaa]">--</span>
         )}
       </div>
 
@@ -91,6 +91,36 @@ function SkeletonRow() {
       <div className="space-y-1 text-right">
         <div className="h-3 w-16 rounded bg-white/10" />
         <div className="h-2 w-10 rounded bg-white/10" />
+      </div>
+    </div>
+  );
+}
+
+function EmptyTransactionsState() {
+  return (
+    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.025] px-5 py-10 text-center">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#e8b84b]/20 bg-[#e8b84b]/10 text-[#e8b84b]">
+        <ArrowDownUp className="h-5 w-5" />
+      </div>
+      <p className="text-sm font-semibold text-white">
+        No transactions yet. Send or receive funds to get started.
+      </p>
+      <p className="mx-auto mt-2 max-w-sm text-xs leading-5 text-[#7a8aaa]">
+        Your latest Stellar activity will appear here once your wallet has completed transfers.
+      </p>
+      <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <Link
+          href="/dashboard#quick-action-send"
+          className="inline-flex min-w-32 items-center justify-center rounded-xl bg-[#e8b84b] px-4 py-2.5 text-xs font-black uppercase tracking-widest text-[#1a0f00] transition-all hover:-translate-y-0.5 hover:bg-[#f0c85a] focus:outline-none focus:ring-2 focus:ring-[#e8b84b]/40"
+        >
+          Send funds
+        </Link>
+        <Link
+          href="/dashboard#quick-action-receive"
+          className="inline-flex min-w-32 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white transition-all hover:-translate-y-0.5 hover:bg-white/[0.08] focus:outline-none focus:ring-2 focus:ring-white/20"
+        >
+          Receive funds
+        </Link>
       </div>
     </div>
   );
@@ -132,10 +162,7 @@ export default function RecentTransactions() {
         {loading ? (
           [0, 1, 2].map((i) => <SkeletonRow key={i} />)
         ) : txs.length === 0 ? (
-          <div className="text-center py-10">
-            <RefreshCw className="w-8 h-8 text-[#7a8aaa] mx-auto mb-3" />
-            <p className="text-[#7a8aaa] text-sm">No transactions yet.</p>
-          </div>
+          <EmptyTransactionsState />
         ) : (
           txs.map((tx, i) => <TxRow key={tx.id} tx={tx} index={i} />)
         )}
