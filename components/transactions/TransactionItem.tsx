@@ -7,6 +7,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Transaction } from "@/lib/api/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -17,13 +18,28 @@ export default function TransactionItem({
   transaction,
   onOpenDrawer,
 }: TransactionItemProps) {
+  const { toast } = useToast();
   const operation = transaction.operations[0];
   const userAccount = "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";
   const isIncoming = operation?.to === userAccount;
+  const amount = operation?.amount
+    ? `${operation.amount} ${operation.asset_code ?? "XLM"}`
+    : "Network operation";
+
+  const handleOpenDrawer = () => {
+    onOpenDrawer(transaction);
+    toast({
+      title: transaction.successful
+        ? "Transaction completed"
+        : "Transaction failed",
+      description: `${transaction.memo || operation?.type || "Transaction"} • ${amount}`,
+      variant: transaction.successful ? "default" : "destructive",
+    });
+  };
 
   return (
     <tr
-      onClick={() => onOpenDrawer(transaction)}
+      onClick={handleOpenDrawer}
       className="hover:bg-white/3 cursor-pointer transition-all group relative border-l-2 border-transparent hover:border-l-[#e8b84b]"
     >
       {/* Operation Type */}

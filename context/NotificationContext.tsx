@@ -39,6 +39,7 @@ export const NotificationContext = createContext<NotificationContextType | undef
 
 const STORAGE_KEY = "stellarspend_notifications";
 const PREFS_KEY = "stellarspend_notification_preferences";
+const TOAST_AUTO_DISMISS_MS = 4000;
 
 function loadNotifications(): Notification[] {
   if (typeof window === "undefined") {
@@ -130,7 +131,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
         setTimeout(() => {
           removeToast(newNotification.id);
-        }, 5000);
+        }, TOAST_AUTO_DISMISS_MS);
       }
     },
     [preferences, removeToast],
