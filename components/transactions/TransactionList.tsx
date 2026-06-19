@@ -8,7 +8,7 @@ import {
   PaginatedResponse,
 } from "@/lib/api/client";
 import TransactionItem from "./TransactionItem";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Download } from "lucide-react";
 
 interface TransactionListProps {
   filters: FilterParams;
@@ -26,6 +26,76 @@ export default function TransactionList({
   const [total, setTotal] = useState(0);
   const observerTarget = useRef<HTMLDivElement>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const formatCsvCell = (value: string | number | boolean | undefined) =>
+    `"${String(value ?? "").replace(/"/g, '""')}"`;
+
+  const getTransactionDirection = (transaction: Transaction) => {
+    const userAccount =
+      "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";
+    const operation = transaction.operations[0];
+
+    if (operation?.to === userAccount) {
+      return "in";
+    }
+
+    if (operation?.from === userAccount) {
+      return "out";
+    }
+
+    return "network";
+  };
+
+  const buildTransactionCsv = (items: Transaction[]) => {
+    const rows = [
+      ["date", "description", "amount", "type", "status"],
+      ...items.map((transaction) => {
+        const operation = transaction.operations[0];
+        const direction = getTransactionDirection(transaction);
+        const signedAmount = operation?.amount
+          ? `${direction === "in" ? "+" : direction === "out" ? "-" : ""}${
+              operation.amount
+            } ${operation.asset_code ?? ""}`.trim()
+          : "";
+
+        return [
+          new Date(transaction.created_at).toISOString(),
+          transaction.memo || operation?.type || transaction.hash,
+          signedAmount,
+          direction,
+          transaction.successful ? "successful" : "failed",
+        ];
+      }),
+    ];
+
+    return rows
+      .map((row) => row.map((cell) => formatCsvCell(cell)).join(","))
+      .join("\n");
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      setIsExporting(true);
+      const response = await fetchTransactions(filters, 1, Math.max(total, 1));
+      const csv = buildTransactionCsv(response.data);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const today = new Date().toISOString().slice(0, 10);
+
+      link.href = url;
+      link.download = `transactions-${today}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to export transactions:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -182,6 +252,18 @@ export default function TransactionList({
 
   return (
     <>
+      <div className="mb-4 flex justify-end">
+        <button
+          type="button"
+          onClick={handleExportCsv}
+          disabled={isExporting}
+          className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.18em] text-[#e8edf8] transition-all hover:border-[#e8b84b]/40 hover:bg-[#e8b84b]/10 hover:text-[#e8b84b] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Download className="h-4 w-4" />
+          {isExporting ? "Exporting" : "Export CSV"}
+        </button>
+      </div>
+
       <div className="bg-white/[0.01] backdrop-blur-sm rounded-3xl border border-white/5 shadow-2xl shadow-black/50">
         <div className="overflow-x-auto overflow-y-visible">
           <table className="w-full text-left border-collapse">
