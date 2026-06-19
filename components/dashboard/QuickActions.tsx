@@ -1,15 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Download, PieChart, Target, X } from "lucide-react";
-
-// Module-level constant — Math.random() runs once when the module loads,
-// never during a component render, so the react-hooks/purity rule is satisfied.
-const QR_CELLS: readonly boolean[] = Array.from(
-  { length: 16 },
-  () => Math.random() > 0.5,
-);
 
 // ─── Mini Send Modal ────────────────────────────────────────────────────────
 function SendModal({ onClose }: { onClose: () => void }) {
@@ -260,6 +253,7 @@ const ACTIONS = [
     bg: "bg-[#e8b84b]/10",
     border: "border-[#e8b84b]/20",
     hover: "hover:border-[#e8b84b]/50 hover:bg-[#e8b84b]/15",
+    shortcut: "S",
   },
   {
     id: "receive",
@@ -269,6 +263,7 @@ const ACTIONS = [
     bg: "bg-[#4ade80]/10",
     border: "border-[#4ade80]/20",
     hover: "hover:border-[#4ade80]/50 hover:bg-[#4ade80]/15",
+    shortcut: "R",
   },
   {
     id: "budget",
@@ -278,6 +273,7 @@ const ACTIONS = [
     bg: "bg-[#4aa9e8]/10",
     border: "border-[#4aa9e8]/20",
     hover: "hover:border-[#4aa9e8]/50 hover:bg-[#4aa9e8]/15",
+    shortcut: "B",
   },
   {
     id: "goal",
@@ -287,11 +283,54 @@ const ACTIONS = [
     bg: "bg-[#a78bfa]/10",
     border: "border-[#a78bfa]/20",
     hover: "hover:border-[#a78bfa]/50 hover:bg-[#a78bfa]/15",
+    shortcut: "G",
   },
 ] as const;
 
 export default function QuickActions() {
   const [openModal, setOpenModal] = useState<ModalId>(null);
+
+  useEffect(() => {
+    const isTypingTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) {
+        return false;
+      }
+
+      return (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
+        target.isContentEditable
+      );
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        openModal ||
+        event.defaultPrevented ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        isTypingTarget(event.target)
+      ) {
+        return;
+      }
+
+      const action = ACTIONS.find(
+        (item) => item.shortcut.toLowerCase() === event.key.toLowerCase(),
+      );
+
+      if (!action) {
+        return;
+      }
+
+      event.preventDefault();
+      setOpenModal(action.id as ModalId);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [openModal]);
 
   return (
     <>
@@ -325,6 +364,9 @@ export default function QuickActions() {
               </div>
               <span className="text-xs font-bold text-[#e8edf8] uppercase tracking-wider group-hover:text-white transition-colors">
                 {action.label}
+              </span>
+              <span className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#7a8aaa] group-hover:border-white/20 group-hover:text-[#e8edf8]">
+                {action.shortcut}
               </span>
             </motion.button>
           ))}
