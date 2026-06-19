@@ -1,5 +1,6 @@
 'use client';
 
+import React, { Component, ReactNode } from 'react';
 import Image from 'next/image';
 
 interface DashboardCardProps {
@@ -10,11 +11,71 @@ interface DashboardCardProps {
   trend?: 'up' | 'down' | 'neutral';
 }
 
+interface DashboardCardErrorBoundaryProps {
+  children: ReactNode;
+  resetKey: string;
+  title: string;
+}
+
+interface DashboardCardErrorBoundaryState {
+  hasError: boolean;
+}
+
+class DashboardCardErrorBoundary extends Component<
+  DashboardCardErrorBoundaryProps,
+  DashboardCardErrorBoundaryState
+> {
+  state: DashboardCardErrorBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('Dashboard card failed to render:', error);
+  }
+
+  componentDidUpdate(prevProps: DashboardCardErrorBoundaryProps) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false });
+    }
+  }
+
+  handleRetry = () => {
+    this.setState({ hasError: false });
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="relative p-6 rounded-2xl bg-red-500/5 border border-red-400/20 transition-all duration-300">
+          <p className="text-[#7a8aaa] text-sm mb-2">{this.props.title}</p>
+          <p className="text-white text-lg font-bold">
+            This card could not load
+          </p>
+          <p className="text-red-200/70 text-sm mt-2">
+            The rest of your dashboard is still available.
+          </p>
+          <button
+            type="button"
+            onClick={this.handleRetry}
+            className="mt-5 rounded-xl bg-red-400/15 px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-red-100 transition-colors hover:bg-red-400/25"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 /**
  * Dashboard card component with optimized icon images
  * Demonstrates proper Image usage for small icons and graphics
  */
-export default function DashboardCard({
+function DashboardCardContent({
   title,
   value,
   change,
@@ -53,5 +114,15 @@ export default function DashboardCard({
         {change}
       </p>
     </div>
+  );
+}
+
+export default function DashboardCard(props: DashboardCardProps) {
+  const resetKey = `${props.title}-${props.value}-${props.change}`;
+
+  return (
+    <DashboardCardErrorBoundary title={props.title} resetKey={resetKey}>
+      <DashboardCardContent {...props} />
+    </DashboardCardErrorBoundary>
   );
 }
