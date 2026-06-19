@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useOffline, QueuedAction } from './OfflineProvider';
-import { RefreshCw, Trash2, Clock, History, X, Send, Download, PieChart, Target } from 'lucide-react';
+import { useOffline } from './OfflineProvider';
+import { X, Send, Download, PieChart, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Module-level constant — Math.random() runs once when the module loads,
@@ -286,17 +286,29 @@ const ACTIONS = [
   },
 ] as const;
 
-export default function QuickActions() {
+export default function QueuedActions() {
   const [openModal, setOpenModal] = useState<ModalId>(null);
+  const { queuedActions } = useOffline();
+  const queuedActionCount = queuedActions.length;
 
   return (
     <>
       <div className="rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-sm p-6">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-1 h-5 rounded-full bg-[#e8b84b]" />
-          <h2 className="text-sm font-black text-white uppercase tracking-[0.15em]">
-            Quick Actions
-          </h2>
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-5 rounded-full bg-[#e8b84b]" />
+            <h2 className="text-sm font-black text-white uppercase tracking-[0.15em]">
+              Quick Actions
+            </h2>
+          </div>
+          {queuedActionCount > 0 && (
+            <span
+              aria-label={`${queuedActionCount} queued action${queuedActionCount === 1 ? "" : "s"}`}
+              className="inline-flex min-w-7 items-center justify-center rounded-full border border-[#e8b84b]/30 bg-[#e8b84b]/15 px-2 py-1 text-[10px] font-black text-[#e8b84b]"
+            >
+              {queuedActionCount}
+            </span>
+          )}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {ACTIONS.map((action, i) => (
