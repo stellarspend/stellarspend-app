@@ -43,6 +43,7 @@ export interface Budget {
   id: string;
   name: string;
   amount: number;
+  spentAmount?: number;
   category: string;
   asset: "XLM" | "USDC" | "EURC";
   startDate: string;
@@ -366,6 +367,7 @@ export const MOCK_BUDGETS: Budget[] = [
     id: "budget_1",
     name: "Monthly Groceries",
     amount: 500,
+    spentAmount: 320,
     category: "food",
     asset: "USDC",
     startDate: "2024-06-01",
@@ -377,6 +379,7 @@ export const MOCK_BUDGETS: Budget[] = [
     id: "budget_2",
     name: "Transportation",
     amount: 150,
+    spentAmount: 124,
     category: "transport",
     asset: "XLM",
     startDate: "2024-06-01",

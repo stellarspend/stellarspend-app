@@ -4,6 +4,7 @@ import React from "react";
 import { z } from "zod";
 import { useForm } from "@/hooks/useForm";
 import { useOffline } from "@/components/offline/OfflineProvider";
+import { Progress } from "@/components/ui/progress";
 import { Budget } from "@/lib/api/client";
 
 const budgetSchema = z
@@ -33,6 +34,23 @@ const budgetSchema = z
 
 type BudgetFormData = z.infer<typeof budgetSchema>;
 
+const parseFiniteAmount = (value: unknown): number | null => {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+
+    const parsed = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+const getInitialSpentAmount = (budget?: Budget | null): number | null => {
+    return parseFiniteAmount(budget?.spentAmount);
+};
+
+const clampProgressPercent = (value: number): number => {
+    return Math.min(100, Math.max(0, value));
+};
+
 interface BudgetFormProps {
     onSubmit: (data: BudgetFormData) => void;
     onCancel?: () => void;
@@ -53,6 +71,7 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
         handleSubmit,
         formState: { errors, isValid, isSubmitting },
         reset: _reset,
+        watch,
     } = useForm<BudgetFormData>({
         schema: budgetSchema,
         defaultValues: {
@@ -65,6 +84,23 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
         },
         mode: 'onChange',
     });
+
+    const watchedAmount = watch('amount');
+    const budgetLimit = parseFiniteAmount(watchedAmount) ?? 0;
+    const spentAmount = getInitialSpentAmount(initialData);
+    const hasSpendingData = spentAmount !== null;
+    const progressPercent = budgetLimit > 0 && hasSpendingData
+        ? clampProgressPercent((spentAmount / budgetLimit) * 100)
+        : 0;
+    const roundedProgressPercent = Math.round(progressPercent);
+    const progressColorClass = progressPercent > 90
+        ? '[&>div]:bg-red-500'
+        : progressPercent >= 75
+            ? '[&>div]:bg-yellow-500'
+            : '[&>div]:bg-green-500';
+    const formattedLimit = budgetLimit > 0 ? budgetLimit.toFixed(2) : '0.00';
+    const formattedSpent = hasSpendingData ? spentAmount.toFixed(2) : '0.00';
+    const selectedAsset = watch('asset');
 
     return (
         <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
@@ -109,6 +145,26 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                     {errors.amount && (
                         <p id="amount-error" className="text-xs text-red-500 mt-1" role="alert">{errors.amount.message}</p>
                     )}
+                </div>
+
+                <div className="space-y-2 border-y border-gray-200 py-3 dark:border-gray-700">
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Budget progress
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {roundedProgressPercent}% spent
+                        </span>
+                    </div>
+                    <Progress
+                        value={progressPercent}
+                        className={`h-3 bg-gray-200 dark:bg-gray-700 ${progressColorClass}`}
+                    />
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                        {hasSpendingData
+                            ? `${formattedSpent} ${selectedAsset} spent of ${formattedLimit} ${selectedAsset}`
+                            : `Spending data unavailable; showing 0.00 ${selectedAsset} spent of ${formattedLimit} ${selectedAsset}`}
+                    </p>
                 </div>
 
                 <div className="space-y-1">
