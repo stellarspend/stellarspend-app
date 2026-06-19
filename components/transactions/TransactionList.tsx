@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useCallback, useState } from "react";
+import React, { useEffect, useCallback, useState } from "react";
 import {
   fetchTransactions,
   Transaction,
@@ -8,12 +8,14 @@ import {
   PaginatedResponse,
 } from "@/lib/api/client";
 import TransactionItem from "./TransactionItem";
-import { ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface TransactionListProps {
   filters: FilterParams;
   onOpenDrawer: (tx: Transaction) => void;
 }
+
+const TRANSACTIONS_PER_PAGE = 10;
 
 export default function TransactionList({
   filters,
@@ -24,81 +26,45 @@ export default function TransactionList({
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
-  const observerTarget = useRef<HTMLDivElement>(null);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-
-  // Reset pagination when filters change
-  useEffect(() => {
-    setTransactions([]);
-    setPage(1);
-    setHasMore(true);
-    setLoading(true);
-  }, [filters]);
+  const totalPages = Math.max(1, Math.ceil(total / TRANSACTIONS_PER_PAGE));
 
   // Load transactions
   const loadTransactions = useCallback(
-    async (pageNum: number, isNewSearch: boolean = false) => {
+    async (pageNum: number) => {
       try {
-        if (!isNewSearch) {
-          setIsLoadingMore(true);
-        }
+        setLoading(true);
         const response: PaginatedResponse<Transaction> =
-          await fetchTransactions(filters, pageNum, 10);
+          await fetchTransactions(filters, pageNum, TRANSACTIONS_PER_PAGE);
 
-        if (isNewSearch) {
-          setTransactions(response.data);
-        } else {
-          setTransactions((prev) => [...prev, ...response.data]);
-        }
-
+        setTransactions(response.data);
         setTotal(response.total);
         setHasMore(response.hasMore);
-        setPage(pageNum);
+        setPage(response.page);
       } catch (error) {
         console.error("Failed to load transactions:", error);
       } finally {
         setLoading(false);
-        setIsLoadingMore(false);
       }
     },
     [filters],
   );
 
-  // Initial load
+  // Reset pagination when filters change so search/filter results start at page 1.
   useEffect(() => {
-    loadTransactions(1, true);
+    setTransactions([]);
+    setTotal(0);
+    setHasMore(true);
+    loadTransactions(1);
   }, [filters, loadTransactions]);
 
-  // Infinite scroll observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (
-          entries[0].isIntersecting &&
-          hasMore &&
-          !isLoadingMore &&
-          !loading
-        ) {
-          loadTransactions(page + 1);
-        }
-      },
-      { threshold: 0.1 },
-    );
-
-    const target = observerTarget.current;
-    if (target) {
-      observer.observe(target);
+  const handlePreviousPage = () => {
+    if (page > 1 && !loading) {
+      loadTransactions(page - 1);
     }
+  };
 
-    return () => {
-      if (target) {
-        observer.unobserve(target);
-      }
-    };
-  }, [hasMore, isLoadingMore, loading, page, loadTransactions]);
-
-  const handleLoadMore = () => {
-    if (hasMore && !isLoadingMore && !loading) {
+  const handleNextPage = () => {
+    if (hasMore && !loading) {
       loadTransactions(page + 1);
     }
   };
@@ -212,72 +178,34 @@ export default function TransactionList({
                   onOpenDrawer={onOpenDrawer}
                 />
               ))}
-
-              {/* Skeleton loaders for infinite scroll */}
-              {isLoadingMore &&
-                Array.from({ length: 3 }).map((_, i) => (
-                  <tr key={`skeleton-${i}`} className="animate-pulse">
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-white/[0.05]" />
-                        <div className="space-y-2">
-                          <div className="w-24 h-4 bg-white/[0.05] rounded" />
-                          <div className="w-20 h-3 bg-white/[0.03] rounded" />
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="space-y-2">
-                        <div className="w-32 h-4 bg-white/[0.05] rounded" />
-                        <div className="w-48 h-3 bg-white/[0.03] rounded" />
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="w-20 h-4 bg-white/[0.05] rounded" />
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="space-y-2">
-                        <div className="w-16 h-4 bg-white/[0.05] rounded" />
-                        <div className="w-16 h-3 bg-white/[0.03] rounded" />
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="w-10 h-10 bg-white/[0.05] rounded-xl ml-auto" />
-                    </td>
-                  </tr>
-                ))}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Infinite scroll trigger */}
-      <div ref={observerTarget} className="py-8" />
-
-      {/* Load more button or "all loaded" message */}
-      {hasMore && !isLoadingMore && (
-        <div className="text-center py-12 flex flex-col items-center">
+      <div className="flex flex-col gap-4 py-8 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-center text-[10px] font-bold uppercase tracking-[0.25em] text-[#7a8aaa] sm:text-left">
+          Page {page} of {totalPages}
+        </p>
+        <div className="flex justify-center gap-3">
           <button
-            onClick={handleLoadMore}
-            className="text-[#e8b84b] font-black text-xs uppercase tracking-[0.15em] hover:text-white transition-colors flex items-center gap-2 group"
+            onClick={handlePreviousPage}
+            disabled={page === 1 || loading}
+            className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-3 text-[10px] font-black uppercase tracking-[0.18em] text-[#e8edf8] transition-all hover:border-white/20 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Load more transactions
-            <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+            <ChevronLeft className="h-3 w-3" />
+            Previous
+          </button>
+          <button
+            onClick={handleNextPage}
+            disabled={!hasMore || loading}
+            className="flex items-center gap-2 rounded-2xl bg-[#e8b84b] px-5 py-3 text-[10px] font-black uppercase tracking-[0.18em] text-[#1a0f00] transition-all hover:bg-[#f0c85a] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Next
+            <ChevronRight className="h-3 w-3" />
           </button>
         </div>
-      )}
-
-      {!hasMore && transactions.length > 0 && (
-        <div className="text-center py-16 flex flex-col items-center">
-          <div className="w-1 h-12 bg-linear-to-b from-[#e8b84b]/20 to-transparent mb-6" />
-          <p className="text-[#7a8aaa] text-[10px] font-bold uppercase tracking-[0.3em]">
-            All transactions loaded
-          </p>
-          <p className="text-[#7a8aaa]/60 text-xs mt-2">
-            Total: {total} transaction{total !== 1 ? "s" : ""}
-          </p>
-        </div>
-      )}
+      </div>
     </>
   );
 }
