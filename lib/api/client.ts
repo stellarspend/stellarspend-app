@@ -449,11 +449,32 @@ export async function fetchTransactions(
   // Apply search
   if (filters?.search) {
     const query = filters.search.toLowerCase();
-    filtered = filtered.filter(
-      (tx) =>
+    filtered = filtered.filter((tx) => {
+      const createdDate = new Date(tx.created_at);
+      const dateMatches = [
+        tx.created_at,
+        createdDate.toLocaleDateString(),
+        createdDate.toISOString().slice(0, 10),
+      ].some((dateValue) => dateValue.toLowerCase().includes(query));
+
+      const operationMatches = tx.operations.some((operation) =>
+        [
+          operation.amount,
+          operation.asset_code,
+          operation.type,
+          operation.from,
+          operation.to,
+        ].some((value) => value?.toLowerCase().includes(query)),
+      );
+
+      return (
         tx.memo.toLowerCase().includes(query) ||
-        tx.hash.toLowerCase().includes(query),
-    );
+        tx.hash.toLowerCase().includes(query) ||
+        tx.ledger.toString().includes(query) ||
+        dateMatches ||
+        operationMatches
+      );
+    });
   }
 
   // Sort by date descending

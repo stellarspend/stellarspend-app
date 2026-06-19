@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useCallback, useState } from "react";
+import React, { useEffect, useRef, useCallback, useMemo, useState } from "react";
 import {
   fetchTransactions,
   Transaction,
@@ -8,7 +8,7 @@ import {
   PaginatedResponse,
 } from "@/lib/api/client";
 import TransactionItem from "./TransactionItem";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Search, X } from "lucide-react";
 
 interface TransactionListProps {
   filters: FilterParams;
@@ -26,6 +26,24 @@ export default function TransactionList({
   const [total, setTotal] = useState(0);
   const observerTarget = useRef<HTMLDivElement>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [searchTerm]);
+
+  const effectiveFilters = useMemo(
+    () => ({
+      ...filters,
+      search: debouncedSearchTerm || filters.search,
+    }),
+    [debouncedSearchTerm, filters],
+  );
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -33,7 +51,7 @@ export default function TransactionList({
     setPage(1);
     setHasMore(true);
     setLoading(true);
-  }, [filters]);
+  }, [filters, debouncedSearchTerm]);
 
   // Load transactions
   const loadTransactions = useCallback(
@@ -43,7 +61,7 @@ export default function TransactionList({
           setIsLoadingMore(true);
         }
         const response: PaginatedResponse<Transaction> =
-          await fetchTransactions(filters, pageNum, 10);
+          await fetchTransactions(effectiveFilters, pageNum, 10);
 
         if (isNewSearch) {
           setTransactions(response.data);
@@ -61,7 +79,7 @@ export default function TransactionList({
         setIsLoadingMore(false);
       }
     },
-    [filters],
+    [effectiveFilters],
   );
 
   // Initial load
@@ -103,11 +121,43 @@ export default function TransactionList({
     }
   };
 
+  const clearSearch = () => {
+    setSearchTerm("");
+    setDebouncedSearchTerm("");
+  };
+
   if (loading && transactions.length === 0) {
     return (
-      <div className="bg-white/[0.01] backdrop-blur-sm rounded-3xl border border-white/5 shadow-2xl shadow-black/50">
-        <div className="overflow-x-auto overflow-y-visible">
-          <table className="w-full text-left border-collapse">
+      <>
+        <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+          <label htmlFor="transaction-search" className="sr-only">
+            Search transactions
+          </label>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8aaa]" />
+            <input
+              id="transaction-search"
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search description, amount, or date..."
+              className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-3 pl-11 pr-10 text-sm text-white outline-none transition-all placeholder:text-[#7a8aaa]/60 focus:border-[#e8b84b]/50 focus:ring-2 focus:ring-[#e8b84b]/20"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-[#7a8aaa] transition-colors hover:bg-white/10 hover:text-white"
+                aria-label="Clear transaction search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="bg-white/[0.01] backdrop-blur-sm rounded-3xl border border-white/5 shadow-2xl shadow-black/50">
+          <div className="overflow-x-auto overflow-y-visible">
+            <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-white/5 bg-white/[0.02]">
                 <th className="px-8 py-5 text-[10px] font-black text-[#7a8aaa] uppercase tracking-[0.2em]">
@@ -160,28 +210,83 @@ export default function TransactionList({
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (transactions.length === 0) {
     return (
-      <div className="text-center py-16 flex flex-col items-center">
-        <div className="w-1 h-12 bg-linear-to-b from-[#e8b84b]/20 to-transparent mb-6" />
-        <p className="text-[#7a8aaa] text-[10px] font-bold uppercase tracking-[0.3em]">
-          No transactions found
-        </p>
-        <p className="text-[#7a8aaa]/60 text-xs mt-2">
-          Try adjusting your filters or search query
-        </p>
-      </div>
+      <>
+        <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+          <label htmlFor="transaction-search" className="sr-only">
+            Search transactions
+          </label>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8aaa]" />
+            <input
+              id="transaction-search"
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search description, amount, or date..."
+              className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-3 pl-11 pr-10 text-sm text-white outline-none transition-all placeholder:text-[#7a8aaa]/60 focus:border-[#e8b84b]/50 focus:ring-2 focus:ring-[#e8b84b]/20"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-[#7a8aaa] transition-colors hover:bg-white/10 hover:text-white"
+                aria-label="Clear transaction search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="text-center py-16 flex flex-col items-center">
+          <div className="w-1 h-12 bg-linear-to-b from-[#e8b84b]/20 to-transparent mb-6" />
+          <p className="text-[#7a8aaa] text-[10px] font-bold uppercase tracking-[0.3em]">
+            No results found
+          </p>
+          <p className="text-[#7a8aaa]/60 text-xs mt-2">
+            Try a different description, amount, or date
+          </p>
+        </div>
+      </>
     );
   }
 
   return (
     <>
+      <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+        <label htmlFor="transaction-search" className="sr-only">
+          Search transactions
+        </label>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8aaa]" />
+          <input
+            id="transaction-search"
+            type="search"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search description, amount, or date..."
+            className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-3 pl-11 pr-10 text-sm text-white outline-none transition-all placeholder:text-[#7a8aaa]/60 focus:border-[#e8b84b]/50 focus:ring-2 focus:ring-[#e8b84b]/20"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-[#7a8aaa] transition-colors hover:bg-white/10 hover:text-white"
+              aria-label="Clear transaction search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
       <div className="bg-white/[0.01] backdrop-blur-sm rounded-3xl border border-white/5 shadow-2xl shadow-black/50">
         <div className="overflow-x-auto overflow-y-visible">
           <table className="w-full text-left border-collapse">

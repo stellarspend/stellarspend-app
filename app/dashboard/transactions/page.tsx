@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import TransactionDrawer from "@/components/transactions/TransactionDrawer";
 import TransactionList from "@/components/transactions/TransactionList";
 import CustomSelect from "@/components/ui/CustomSelect";
-import { Search, Filter, RefreshCw } from "lucide-react";
+import { Filter, RefreshCw } from "lucide-react";
 import { Transaction, FilterParams } from "@/lib/api/client";
 
 export default function TransactionsPage() {
@@ -14,7 +14,6 @@ export default function TransactionsPage() {
 
   // Filter state
   const [filters, setFilters] = useState<FilterParams>({});
-  const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [selectedAsset, setSelectedAsset] = useState("all");
@@ -27,10 +26,6 @@ export default function TransactionsPage() {
 
   const applyFilters = () => {
     const newFilters: FilterParams = {};
-
-    if (searchTerm.trim()) {
-      newFilters.search = searchTerm.trim();
-    }
 
     if (dateFrom) {
       newFilters.dateFrom = dateFrom;
@@ -53,7 +48,6 @@ export default function TransactionsPage() {
   };
 
   const clearFilters = () => {
-    setSearchTerm("");
     setDateFrom("");
     setDateTo("");
     setSelectedAsset("all");
@@ -62,7 +56,6 @@ export default function TransactionsPage() {
   };
 
   const hasActiveFilters =
-    searchTerm ||
     dateFrom ||
     dateTo ||
     selectedAsset !== "all" ||
@@ -103,22 +96,7 @@ export default function TransactionsPage() {
 
         {/* Filters & Search */}
         <div className="relative z-50 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1 group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a8aaa] group-focus-within:text-[#e8b84b] transition-colors" />
-              <input
-                type="text"
-                placeholder="Search by hash, memo or address..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    applyFilters();
-                  }
-                }}
-                className="w-full pl-12 pr-4 py-3.5 bg-white/[0.02] border border-white/10 rounded-2xl focus:ring-2 focus:ring-[#e8b84b]/30 focus:border-[#e8b84b]/50 text-white placeholder-[#7a8aaa]/50 outline-none transition-all"
-              />
-            </div>
+          <div className="flex justify-end">
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-6 py-3.5 rounded-2xl font-bold transition-all uppercase tracking-widest text-[10px] ${
