@@ -25,16 +25,58 @@ interface ContributionWidgetProps {
   availableBalance: number
 }
 
+interface ContributionEntry {
+  id: string
+  date: string
+  amount: number
+  runningTotal: number
+}
+
 const QUICK_AMOUNTS = [10, 25, 50, 100]
+
+function formatContributionDate(date: string) {
+  return new Date(date).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
 
 export function ContributionWidget({ goal, onContribute, availableBalance }: ContributionWidgetProps) {
   const [open, setOpen] = useState(false)
   const [customAmount, setCustomAmount] = useState('')
   const [isAnimating, setIsAnimating] = useState(false)
+  const [contributionHistory, setContributionHistory] = useState<ContributionEntry[]>(() =>
+    goal.currentAmount > 0
+      ? [
+          {
+            id: `${goal.id}-initial`,
+            date: goal.createdAt.toISOString(),
+            amount: goal.currentAmount,
+            runningTotal: goal.currentAmount,
+          },
+        ]
+      : [],
+  )
   const { toast } = useToast()
 
   const progress = (goal.currentAmount / goal.targetAmount) * 100
   const remainingAmount = goal.targetAmount - goal.currentAmount
+  const recentContributions = contributionHistory.slice(0, 5)
+
+  const recordContribution = (amount: number) => {
+    const nextRunningTotal = goal.currentAmount + amount
+
+    setContributionHistory((previousHistory) => [
+      {
+        id: `${goal.id}-${Date.now()}`,
+        date: new Date().toISOString(),
+        amount,
+        runningTotal: nextRunningTotal,
+      },
+      ...previousHistory,
+    ])
+  }
 
   const handleQuickContribution = (amount: number) => {
     if (amount > availableBalance) {
@@ -47,6 +89,7 @@ export function ContributionWidget({ goal, onContribute, availableBalance }: Con
     }
 
     setIsAnimating(true)
+    recordContribution(amount)
     onContribute(goal.id, amount)
     toast({
       title: 'Contribution Added',
@@ -78,6 +121,7 @@ export function ContributionWidget({ goal, onContribute, availableBalance }: Con
     }
 
     setIsAnimating(true)
+    recordContribution(amount)
     onContribute(goal.id, amount)
     toast({
       title: 'Contribution Added',
@@ -120,6 +164,42 @@ export function ContributionWidget({ goal, onContribute, availableBalance }: Con
               </Button>
             ))}
           </div>
+        </div>
+
+        <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-medium">Contribution History</p>
+            <a
+              href={`/dashboard/savings?goal=${goal.id}`}
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              View all
+            </a>
+          </div>
+          {recentContributions.length > 0 ? (
+            <div className="space-y-2">
+              {recentContributions.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="flex items-center justify-between gap-3 text-xs"
+                >
+                  <div>
+                    <p className="font-medium">${entry.amount.toFixed(2)}</p>
+                    <p className="text-muted-foreground">
+                      {formatContributionDate(entry.date)}
+                    </p>
+                  </div>
+                  <p className="text-muted-foreground">
+                    Total ${entry.runningTotal.toFixed(2)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              No contributions yet.
+            </p>
+          )}
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
