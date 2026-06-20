@@ -265,7 +265,7 @@ export default function TransactionList({
           {hasSearchQuery ? (
             <>
               <p className="text-[#7a8aaa] text-[10px] font-bold uppercase tracking-[0.3em]">
-                No loaded transactions match your search
+                No results found
               </p>
               <p className="text-[#7a8aaa]/60 text-xs mt-2">
                 Try a different term or adjust your filters
@@ -363,7 +363,7 @@ export default function TransactionList({
         <div className="text-center py-16 flex flex-col items-center">
           <div className="w-1 h-12 bg-linear-to-b from-[#e8b84b]/20 to-transparent mb-6" />
           <p className="text-[#7a8aaa] text-[10px] font-bold uppercase tracking-[0.3em]">
-            No loaded transactions match your search
+            No results found
           </p>
           <p className="text-[#7a8aaa]/60 text-xs mt-2">
             Try a different term or load more transactions
