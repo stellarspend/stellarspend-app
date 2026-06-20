@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useForm } from "@/hooks/useForm";
 import { useOffline } from "@/components/offline/OfflineProvider";
 import { Budget } from "@/lib/api/client";
+import { Progress } from "@/components/ui/progress";
 
 const budgetSchema = z
   .object({
@@ -16,6 +17,9 @@ const budgetSchema = z
       .number()
       .positive("Amount must be positive")
       .min(0.01, "Minimum amount is 0.01"),
+    spent: z.coerce
+      .number()
+      .min(0, "Spent amount cannot be negative"),
     category: z.string().min(1, "Category is required"),
     asset: z.enum(["XLM", "USDC", "EURC"], {
       message: "Please select a valid asset",
@@ -53,18 +57,33 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
         handleSubmit,
         formState: { errors, isValid, isSubmitting },
         reset: _reset,
+        watch,
     } = useForm<BudgetFormData>({
         schema: budgetSchema,
         defaultValues: {
             name: initialData?.name || '',
             amount: initialData?.amount || 0,
+            spent: initialData?.spent || 0,
             category: initialData?.category || '',
             asset: initialData?.asset || 'XLM',
+            period: initialData?.period || 'monthly',
             startDate: initialData?.startDate || new Date().toISOString().split('T')[0],
             endDate: initialData?.endDate || defaultEndDate,
         },
         mode: 'onChange',
     });
+
+    const amount = Number(watch('amount')) || 0;
+    const spent = Number(watch('spent')) || 0;
+    const asset = watch('asset') || 'XLM';
+    const budgetProgress = amount > 0 ? Math.min((spent / amount) * 100, 100) : 0;
+    const progressColorClass =
+        budgetProgress >= 90
+            ? 'bg-red-500'
+            : budgetProgress >= 75
+                ? 'bg-yellow-500'
+                : 'bg-green-500';
+    const formattedProgress = Math.round(budgetProgress);
 
     return (
         <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
@@ -109,6 +128,42 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                     {errors.amount && (
                         <p id="amount-error" className="text-xs text-red-500 mt-1" role="alert">{errors.amount.message}</p>
                     )}
+                </div>
+
+                <div className="space-y-1">
+                    <label htmlFor="spent" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Amount Spent
+                    </label>
+                    <input
+                        id="spent"
+                        type="number"
+                        step="0.01"
+                        {...register('spent')}
+                        aria-invalid={errors.spent ? 'true' : 'false'}
+                        aria-describedby={errors.spent ? 'spent-error' : 'budget-progress-help'}
+                        className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.spent ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
+                            }`}
+                        placeholder="0.00"
+                    />
+                    {errors.spent && (
+                        <p id="spent-error" className="text-xs text-red-500 mt-1" role="alert">{errors.spent.message}</p>
+                    )}
+                </div>
+
+                <div className="space-y-2" id="budget-progress-help">
+                    <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
+                        <span>Budget used</span>
+                        <span className="font-medium">
+                            {formattedProgress}% ({spent.toFixed(2)} / {amount.toFixed(2)} {asset})
+                        </span>
+                    </div>
+                    <Progress
+                        value={budgetProgress}
+                        indicatorClassName={progressColorClass}
+                    />
+                    <p className="text-xs text-gray-500">
+                        Green below 75%, yellow from 75% to 90%, red above 90%.
+                    </p>
                 </div>
 
                 <div className="space-y-1">

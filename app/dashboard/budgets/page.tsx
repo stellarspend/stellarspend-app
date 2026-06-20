@@ -13,8 +13,10 @@ import BudgetForm from "@/components/budgets/BudgetForm";
 interface BudgetFormData {
   name: string;
   amount: number;
+  spent: number;
   category: string;
   asset: 'XLM' | 'USDC' | 'EURC';
+  period: 'daily' | 'monthly' | 'quarterly';
   startDate: string;
   endDate: string;
 }
