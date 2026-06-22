@@ -9,6 +9,7 @@ import {
   RefreshCw,
   ChevronRight,
   AlertCircle,
+  WalletCards,
 } from "lucide-react";
 import { fetchTransactions, type Transaction } from "@/lib/api/client";
 
@@ -132,9 +133,30 @@ export default function RecentTransactions() {
         {loading ? (
           [0, 1, 2].map((i) => <SkeletonRow key={i} />)
         ) : txs.length === 0 ? (
-          <div className="text-center py-10">
-            <RefreshCw className="w-8 h-8 text-[#7a8aaa] mx-auto mb-3" />
-            <p className="text-[#7a8aaa] text-sm">No transactions yet.</p>
+          <div className="flex flex-col items-center text-center py-10 px-4 rounded-2xl border border-dashed border-white/10 bg-white/[0.015]">
+            <div className="w-12 h-12 rounded-2xl border border-[#e8b84b]/20 bg-[#e8b84b]/10 flex items-center justify-center mb-4">
+              <WalletCards className="w-6 h-6 text-[#e8b84b]" />
+            </div>
+            <p className="text-white text-sm font-bold">
+              No transactions yet. Send or receive funds to get started.
+            </p>
+            <p className="text-[#7a8aaa] text-xs mt-2 max-w-xs">
+              Your latest Stellar activity will appear here once your wallet has activity.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 mt-5">
+              <Link
+                href="/dashboard/transactions?intent=send"
+                className="px-4 py-2 rounded-xl bg-[#e8b84b] text-[#080b18] text-xs font-black uppercase tracking-widest hover:bg-[#f0c85a] transition-colors"
+              >
+                Send funds
+              </Link>
+              <Link
+                href="/dashboard/transactions?intent=receive"
+                className="px-4 py-2 rounded-xl border border-white/10 text-[#e8edf8] text-xs font-black uppercase tracking-widest hover:border-[#e8b84b]/40 hover:text-[#e8b84b] transition-colors"
+              >
+                Receive funds
+              </Link>
+            </div>
           </div>
         ) : (
           txs.map((tx, i) => <TxRow key={tx.id} tx={tx} index={i} />)
