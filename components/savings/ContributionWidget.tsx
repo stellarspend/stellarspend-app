@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card'
@@ -31,10 +32,37 @@ export function ContributionWidget({ goal, onContribute, availableBalance }: Con
   const [open, setOpen] = useState(false)
   const [customAmount, setCustomAmount] = useState('')
   const [isAnimating, setIsAnimating] = useState(false)
+  const [hasCelebratedCompletion, setHasCelebratedCompletion] = useState(
+    goal.currentAmount >= goal.targetAmount
+  )
+  const [showCompletion, setShowCompletion] = useState(false)
+  const prefersReducedMotion = useReducedMotion()
   const { toast } = useToast()
 
-  const progress = (goal.currentAmount / goal.targetAmount) * 100
-  const remainingAmount = goal.targetAmount - goal.currentAmount
+  const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100)
+  const remainingAmount = Math.max(goal.targetAmount - goal.currentAmount, 0)
+
+  useEffect(() => {
+    setHasCelebratedCompletion(goal.currentAmount >= goal.targetAmount)
+    setShowCompletion(false)
+  }, [goal.id, goal.currentAmount, goal.targetAmount])
+
+  const celebrateIfCompleted = (amount: number) => {
+    const willComplete =
+      !hasCelebratedCompletion && goal.currentAmount < goal.targetAmount &&
+      goal.currentAmount + amount >= goal.targetAmount
+
+    if (!willComplete) return
+
+    setHasCelebratedCompletion(true)
+    setShowCompletion(true)
+    toast({
+      title: 'Goal Complete',
+      description: `"${goal.name}" reached 100%. Great work!`,
+    })
+
+    window.setTimeout(() => setShowCompletion(false), prefersReducedMotion ? 1800 : 2800)
+  }
 
   const handleQuickContribution = (amount: number) => {
     if (amount > availableBalance) {
@@ -48,6 +76,7 @@ export function ContributionWidget({ goal, onContribute, availableBalance }: Con
 
     setIsAnimating(true)
     onContribute(goal.id, amount)
+    celebrateIfCompleted(amount)
     toast({
       title: 'Contribution Added',
       description: `$${amount.toFixed(2)} contributed to "${goal.name}"`,
@@ -79,6 +108,7 @@ export function ContributionWidget({ goal, onContribute, availableBalance }: Con
 
     setIsAnimating(true)
     onContribute(goal.id, amount)
+    celebrateIfCompleted(amount)
     toast({
       title: 'Contribution Added',
       description: `$${amount.toFixed(2)} contributed to "${goal.name}"`,
@@ -104,6 +134,22 @@ export function ContributionWidget({ goal, onContribute, availableBalance }: Con
           </div>
           <Progress value={progress} className="h-2" />
         </div>
+
+        <AnimatePresence>
+          {showCompletion && (
+            <motion.div
+              role="status"
+              aria-live="polite"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 8, scale: 0.96 }}
+              animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.98 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.35, ease: 'easeOut' }}
+              className="rounded-lg border border-green-500/40 bg-green-500/10 px-4 py-3 text-sm font-medium text-green-700 dark:text-green-300"
+            >
+              Goal complete! {goal.name} reached 100%.
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="space-y-2">
           <p className="text-sm font-medium">Quick Contribution</p>
