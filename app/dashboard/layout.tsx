@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   Gauge,
+  BarChart3,
 } from "lucide-react";
 import { Starfield } from "@/components/ui/Starfield";
 import LanguageSelector from "@/components/settings/LanguageSelector";
@@ -17,6 +18,7 @@ import LanguageSelector from "@/components/settings/LanguageSelector";
 const NAV = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/transactions", label: "Transactions", icon: Receipt },
+  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 

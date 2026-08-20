@@ -17,7 +17,9 @@ import { SpendingTrendChart } from '@/components/analytics/spendingtrendchart';
 import { TimeRangeSelector } from '@/components/analytics/timerangeselector';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { getGranularity, SUPPORTED_ASSETS, TimeRange } from '@/lib/api/stellar/analyticsContract';
-import { useState } from 'react';
+import { buildAnalyticsFilename, exportToCsv } from '@/lib/api/stellar/exportAnalytics';
+import { Download } from 'lucide-react';
+import { useCallback, useState } from 'react';
 
 export default function AnalyticsPage() {
   const [range, setRange] = useState<TimeRange>('month');
@@ -25,6 +27,13 @@ export default function AnalyticsPage() {
 
   const { trend, categoryBreakdown, budgetVsActual, isLoading, error, refetch } =
     useAnalytics(range);
+
+  const handleExportCsv = useCallback(() => {
+    exportToCsv(
+      { trend, categoryBreakdown, budgetVsActual },
+      buildAnalyticsFilename(range),
+    );
+  }, [trend, categoryBreakdown, budgetVsActual, range]);
 
   return (
     <div className="space-y-8 p-6">
@@ -35,7 +44,19 @@ export default function AnalyticsPage() {
             Spending trends, category breakdown, and budget performance.
           </p>
         </div>
-        <TimeRangeSelector value={range} onChange={setRange} />
+        <div className="flex flex-wrap items-center gap-3">
+          <TimeRangeSelector value={range} onChange={setRange} />
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={isLoading}
+            aria-label="Export CSV"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" aria-hidden="true" />
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {error && (

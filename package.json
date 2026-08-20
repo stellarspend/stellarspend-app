@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
+    "test": "jest",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
     "test:e2e": "cypress run --headless"
