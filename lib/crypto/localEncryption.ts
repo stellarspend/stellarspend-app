@@ -13,6 +13,10 @@ const IV_LENGTH = 12;
 const KEY_LENGTH = 256;
 const ITERATIONS = 100000;
 
+// generateSalt() hex-encodes the 16 random bytes, so the salt occupies
+// SALT_LENGTH * 2 characters in the serialized blob.
+const SALT_HEX_LENGTH = SALT_LENGTH * 2;
+
 const STORAGE_KEYS = {
   ENCRYPTED_PREFIX: 'stellarspend_encrypted_',
   SALT_KEY: 'stellarspend_encryption_salt',
@@ -93,9 +97,10 @@ export async function encryptData(data: unknown, passphrase: string): Promise<st
 export async function decryptData<T>(encryptedData: string, passphrase: string): Promise<T> {
   const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
 
-  const salt = new TextDecoder().decode(combined.slice(0, SALT_LENGTH));
-  const iv = combined.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
-  const encrypted = combined.slice(SALT_LENGTH + IV_LENGTH);
+  // Layout written by encryptData: [salt hex string][iv][ciphertext]
+  const salt = new TextDecoder().decode(combined.slice(0, SALT_HEX_LENGTH));
+  const iv = combined.slice(SALT_HEX_LENGTH, SALT_HEX_LENGTH + IV_LENGTH);
+  const encrypted = combined.slice(SALT_HEX_LENGTH + IV_LENGTH);
 
   const key = await deriveKey(passphrase, salt);
 

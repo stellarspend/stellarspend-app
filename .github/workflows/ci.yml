@@ -9,67 +9,84 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Lint
         run: npm run lint
-      
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Test (unit)
+        run: npm test -- --runInBand
+
       - name: Build
         run: npm run build
 
   e2e:
     runs-on: ubuntu-latest
     needs: build
-    
+    # The expanded E2E suite is split across two runners to keep total run
+    # time reasonable on every PR.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Build application
         run: npm run build
-      
+
       - name: Start server
         run: npm start &
         env:
           PORT: 3000
-      
+
       - name: Wait for server
-        run: npx wait-on http://localhost:3000 --timeout 60000
-      
-      - name: Run Cypress tests
-        run: npm run test:e2e
-      
+        run: npx wait-on http://localhost:3000 --timeout 120000
+
+      - name: Run Cypress tests (shard 1)
+        if: matrix.shard == 1
+        run: npm run test:e2e -- --spec "cypress/e2e/wallet-connection.cy.ts,cypress/e2e/send-payment.cy.ts,cypress/e2e/offline-sync.cy.ts,cypress/e2e/budgets-goals-persistence.cy.ts"
+
+      - name: Run Cypress tests (shard 2)
+        if: matrix.shard == 2
+        run: npm run test:e2e -- --spec "cypress/e2e/i18n-rtl.cy.ts,cypress/e2e/user-journey.cy.ts"
+
       - name: Upload screenshots on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-screenshots
+          name: cypress-screenshots-shard-${{ matrix.shard }}
           path: cypress/screenshots
           if-no-files-found: ignore
-      
+
       - name: Upload videos on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-videos
+          name: cypress-videos-shard-${{ matrix.shard }}
           path: cypress/videos
           if-no-files-found: ignore
