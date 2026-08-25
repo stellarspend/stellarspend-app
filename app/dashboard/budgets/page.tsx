@@ -10,6 +10,7 @@ import {
 } from "@/lib/api/client";
 import BudgetForm from "@/components/budgets/BudgetForm";
 import { useOffline } from "@/components/offline/OfflineProvider";
+import { useBudgetProgress } from "@/hooks/useBudgetProgress";
 
 
 interface BudgetFormData {
@@ -28,6 +29,8 @@ export default function BudgetsPage() {
     const [error, setError] = useState<string | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
+
+    const { progress: budgetProgress, loading: progressLoading } = useBudgetProgress(budgets);
 
     const loadBudgets = useCallback(async () => {
         try {
@@ -189,7 +192,12 @@ export default function BudgetsPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {budgets.map((budget) => (
+        {budgets.map((budget) => {
+          const prog = budgetProgress.find((p) => p.budgetId === budget.id);
+          const spentPct = prog && prog.budgeted > 0 ? Math.min(100, (prog.spent / prog.budgeted) * 100) : 0;
+          const isOverBudget = prog && prog.spent > prog.budgeted;
+
+          return (
           <div
             key={budget.id}
             className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700"
@@ -242,9 +250,42 @@ export default function BudgetsPage() {
                   {new Date(budget.endDate).toLocaleDateString()}
                 </span>
               </div>
+
+              {/* Progress bar driven by real categorized transactions */}
+              <div className="pt-2">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    Spent
+                  </span>
+                  <span className={`text-xs font-semibold ${isOverBudget ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                    {progressLoading ? (
+                      <span className="text-gray-400">Calculating...</span>
+                    ) : prog ? (
+                      <>
+                        {prog.spent.toFixed(2)} / {prog.budgeted} {prog.asset}
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      isOverBudget
+                        ? 'bg-red-500'
+                        : spentPct > 75
+                          ? 'bg-amber-500'
+                          : 'bg-blue-500'
+                    }`}
+                    style={{ width: `${spentPct}%` }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {budgets.length === 0 && !showForm && (
