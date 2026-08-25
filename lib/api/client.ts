@@ -82,6 +82,7 @@ export interface Budget {
   endDate: string;
   createdAt: string;
   updatedAt: string;
+  version?: number;
 }
 export interface FilterParams {
   dateFrom?: string;
