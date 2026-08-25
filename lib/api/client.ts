@@ -82,6 +82,8 @@ export interface Budget {
   endDate: string;
   createdAt: string;
   updatedAt: string;
+  /** Monotonic version marker used for offline conflict detection. */
+  version: number;
 }
 export interface FilterParams {
   dateFrom?: string;
@@ -568,6 +570,7 @@ export async function createBudget(
     id: `budget_${Date.now()}`,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    version: 1,
   };
   mockBudgets.push(newBudget);
   setMockBudgetsFallback(mockBudgets);
@@ -594,6 +597,7 @@ export async function updateBudget(
     ...mockBudgets[budgetIndex],
     ...budgetData,
     updatedAt: new Date().toISOString(),
+    version: (mockBudgets[budgetIndex].version ?? 0) + 1,
   };
   setMockBudgetsFallback(mockBudgets);
   return mockBudgets[budgetIndex];
