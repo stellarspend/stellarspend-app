@@ -6,9 +6,10 @@ import { motion } from "framer-motion";
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  RefreshCw,
+  ArrowRight,
   ChevronRight,
   AlertCircle,
+  Inbox,
 } from "lucide-react";
 import { fetchTransactions, type Transaction } from "@/lib/api/client";
 
@@ -132,10 +133,25 @@ export default function RecentTransactions() {
         {loading ? (
           [0, 1, 2].map((i) => <SkeletonRow key={i} />)
         ) : txs.length === 0 ? (
-          <div className="text-center py-10">
-            <RefreshCw className="w-8 h-8 text-[#7a8aaa] mx-auto mb-3" />
-            <p className="text-[#7a8aaa] text-sm">No transactions yet.</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-12 px-4"
+          >
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl border border-white/10 bg-white/[0.03] flex items-center justify-center">
+              <Inbox className="w-7 h-7 text-[#7a8aaa]" />
+            </div>
+            <p className="text-[#7a8aaa] text-sm max-w-xs mx-auto leading-relaxed">
+              No transactions yet. Send or receive funds to get started.
+            </p>
+            <Link
+              href="/dashboard/transactions"
+              className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 bg-[#e8b84b] hover:bg-[#f0c85a] text-[#1a0f00] font-bold rounded-xl shadow-lg shadow-[#e8b84b]/20 transition-all hover:-translate-y-0.5 active:translate-y-0 text-xs uppercase tracking-wider group"
+            >
+              Send or Receive
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </motion.div>
         ) : (
           txs.map((tx, i) => <TxRow key={tx.id} tx={tx} index={i} />)
         )}

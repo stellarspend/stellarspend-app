@@ -93,9 +93,13 @@ export async function encryptData(data: unknown, passphrase: string): Promise<st
 export async function decryptData<T>(encryptedData: string, passphrase: string): Promise<T> {
   const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
 
-  const salt = new TextDecoder().decode(combined.slice(0, SALT_LENGTH));
-  const iv = combined.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
-  const encrypted = combined.slice(SALT_LENGTH + IV_LENGTH);
+  // `generateSalt` returns a hex string of `SALT_LENGTH * 2` characters, and
+  // `encryptData` stores it UTF-8 encoded (one byte per char), so the salt
+  // occupies `SALT_LENGTH * 2` bytes of the combined buffer.
+  const saltBytes = SALT_LENGTH * 2;
+  const salt = new TextDecoder().decode(combined.slice(0, saltBytes));
+  const iv = combined.slice(saltBytes, saltBytes + IV_LENGTH);
+  const encrypted = combined.slice(saltBytes + IV_LENGTH);
 
   const key = await deriveKey(passphrase, salt);
 
