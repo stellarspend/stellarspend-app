@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useForm } from "@/hooks/useForm";
 import { useOffline } from "@/components/offline/OfflineProvider";
 import { Budget } from "@/lib/api/client";
+import { CATEGORIES } from "@/lib/constants/categories";
 
 const budgetSchema = z
   .object({
@@ -124,11 +125,9 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                             }`}
                     >
                         <option value="">Select a category</option>
-                        <option value="food">Food & Drinks</option>
-                        <option value="transport">Transport</option>
-                        <option value="housing">Housing</option>
-                        <option value="utilities">Utilities</option>
-                        <option value="entertainment">Entertainment</option>
+                        {CATEGORIES.map((cat) => (
+                            <option key={cat.id} value={cat.id}>{cat.label}</option>
+                        ))}
                     </select>
                     {errors.category && (
                         <p id="category-error" className="text-xs text-red-500 mt-1" role="alert">{errors.category.message}</p>

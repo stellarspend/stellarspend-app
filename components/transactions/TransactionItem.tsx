@@ -6,7 +6,9 @@ import {
   AlertCircle,
   ChevronRight,
 } from "lucide-react";
-import { Transaction } from "@/lib/api/client";
+import { Transaction, getConnectedPublicKey } from "@/lib/api/client";
+import CategoryPicker from "./CategoryPicker";
+import { getMerchantAddress } from "@/lib/stellar/merchantTagging";
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -18,8 +20,10 @@ export default function TransactionItem({
   onOpenDrawer,
 }: TransactionItemProps) {
   const operation = transaction.operations[0];
-  const userAccount = "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";
+  const userAccount =
+    getConnectedPublicKey() || "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";
   const isIncoming = operation?.to === userAccount;
+  const merchantAddress = getMerchantAddress(transaction, userAccount);
 
   return (
     <tr
@@ -67,14 +71,27 @@ export default function TransactionItem({
         </div>
       </td>
 
-      {/* Memo & Hash */}
+      {/* Context */}
       <td className="px-8 py-6">
-        <p className="text-sm font-semibold text-[#e8edf8] group-hover:text-white transition-colors">
-          {transaction.memo || "Unlabeled"}
-        </p>
-        <p className="text-[10px] font-mono text-[#7a8aaa] mt-1 line-clamp-1 opacity-60">
-          {transaction.hash.substring(0, 32)}...
-        </p>
+        <div className="flex flex-col gap-1.5">
+          <p className="text-sm font-semibold text-[#e8edf8] group-hover:text-white transition-colors">
+            {transaction.memo || "Unlabeled"}
+          </p>
+          {!isIncoming && transaction.operations[0]?.type === "payment" && (
+            <CategoryPicker
+              txHash={transaction.hash}
+              merchantAddress={merchantAddress ?? undefined}
+              currentCategoryId={transaction.category}
+              onCategoryChanged={(categoryId) => {
+                transaction.category = categoryId;
+              }}
+              variant="inline"
+            />
+          )}
+          <p className="text-[10px] font-mono text-[#7a8aaa] line-clamp-1 opacity-60">
+            {transaction.hash.substring(0, 32)}...
+          </p>
+        </div>
       </td>
 
       {/* Amount & Asset */}

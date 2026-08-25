@@ -15,6 +15,9 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+import CategoryPicker from "./CategoryPicker";
+import { getConnectedPublicKey } from "@/lib/api/client";
+import { getMerchantAddress } from "@/lib/stellar/merchantTagging";
 
 interface Operation {
   id: string;
@@ -42,6 +45,8 @@ interface TransactionDetails {
   ledger: number;
   operations: Operation[];
   tags?: string[];
+  category?: string;
+  merchantAddress?: string;
 }
 
 interface TransactionDrawerProps {
@@ -139,6 +144,13 @@ export default function TransactionDrawer({
   const formatAddress = (address: string) => {
     return `${address.substring(0, 8)}...${address.substring(address.length - 8)}`;
   };
+
+  const userPublicKey =
+    getConnectedPublicKey() || "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";
+  const merchantAddress = getMerchantAddress(transaction, userPublicKey);
+  const isOutgoingPayment =
+    transaction.operations[0]?.type === "payment" &&
+    transaction.source_account === userPublicKey;
 
   const horizonUrl = `https://horizon.stellar.org/transactions/${transaction.hash}`;
 
@@ -274,6 +286,18 @@ export default function TransactionDrawer({
                   </div>
                 </div>
               </div>
+
+              {/* Category Assignment */}
+              {isOutgoingPayment && (
+                <div className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                  <CategoryPicker
+                    txHash={transaction.hash}
+                    merchantAddress={merchantAddress ?? undefined}
+                    currentCategoryId={transaction.category}
+                    variant="full"
+                  />
+                </div>
+              )}
 
               {/* Memo & Tags */}
               {(transaction.memo ||

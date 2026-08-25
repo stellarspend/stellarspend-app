@@ -62,6 +62,8 @@ export interface Transaction {
   operation_count: number;
   source_account: string;
   ledger: number;
+  category?: string;
+  merchantAddress?: string;
   operations: {
     id: string;
     type: string;
@@ -88,6 +90,7 @@ export interface FilterParams {
   dateTo?: string;
   asset?: string;
   type?: "in" | "out" | "all";
+  category?: string;
   search?: string;
 }
 
@@ -477,6 +480,11 @@ export async function fetchTransactions(
       }
       return true;
     });
+  }
+
+  // Apply category filter
+  if (filters?.category) {
+    filtered = filtered.filter((tx) => tx.category === filters.category);
   }
 
   // Apply search
