@@ -8,7 +8,10 @@ export interface EncryptionConfig {
   salt?: string;
 }
 
-const SALT_LENGTH = 16;
+/** Raw byte-length of the salt (16 random bytes). */
+const SALT_BYTES = 16;
+/** String length of the salt after hex encoding (16 bytes → 32 hex chars). */
+const SALT_HEX_LENGTH = SALT_BYTES * 2;
 const IV_LENGTH = 12;
 const KEY_LENGTH = 256;
 const ITERATIONS = 100000;
@@ -23,7 +26,7 @@ const STORAGE_KEYS = {
  * Generate a random salt
  */
 export function generateSalt(): string {
-  const array = new Uint8Array(SALT_LENGTH);
+  const array = new Uint8Array(SALT_BYTES);
   crypto.getRandomValues(array);
   return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
 }
@@ -78,11 +81,14 @@ export async function encryptData(data: unknown, passphrase: string): Promise<st
     encodedData
   );
 
-  // Combine salt + iv + encrypted data, all as base64
-  const combined = new Uint8Array(salt.length + iv.length + encrypted.byteLength);
+  // Combine salt + iv + encrypted data, all as base64.
+  // The salt hex string is always SALT_HEX_LENGTH (32) chars, which encodes
+  // to exactly 32 UTF-8 bytes. The decrypt path must match this with the
+  // same constant rather than the raw byte count.
+  const combined = new Uint8Array(SALT_HEX_LENGTH + iv.length + encrypted.byteLength);
   combined.set(new TextEncoder().encode(salt), 0);
-  combined.set(iv, salt.length);
-  combined.set(new Uint8Array(encrypted), salt.length + iv.length);
+  combined.set(iv, SALT_HEX_LENGTH);
+  combined.set(new Uint8Array(encrypted), SALT_HEX_LENGTH + iv.length);
 
   return btoa(String.fromCharCode(...combined));
 }
@@ -93,9 +99,10 @@ export async function encryptData(data: unknown, passphrase: string): Promise<st
 export async function decryptData<T>(encryptedData: string, passphrase: string): Promise<T> {
   const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
 
-  const salt = new TextDecoder().decode(combined.slice(0, SALT_LENGTH));
-  const iv = combined.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
-  const encrypted = combined.slice(SALT_LENGTH + IV_LENGTH);
+  // The salt was stored as UTF-8 hex chars: SALT_HEX_LENGTH (32) bytes.
+  const salt = new TextDecoder().decode(combined.slice(0, SALT_HEX_LENGTH));
+  const iv = combined.slice(SALT_HEX_LENGTH, SALT_HEX_LENGTH + IV_LENGTH);
+  const encrypted = combined.slice(SALT_HEX_LENGTH + IV_LENGTH);
 
   const key = await deriveKey(passphrase, salt);
 

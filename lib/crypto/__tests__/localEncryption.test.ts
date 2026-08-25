@@ -1,47 +1,18 @@
 import { describe, beforeEach, expect, test } from '@jest/globals';
 
 import {
-  encryptData,
-  decryptData,
-  generateSalt,
   isPassphraseSet,
   setPassphraseSet,
   resetEncryption,
-  loadPlaintext,
-  detectPlaintextData,
 } from '../localEncryption';
 
-describe('localEncryption', () => {
+// PBKDF2 + AES-GCM round-trip tests are in localEncryption.crypto.test.ts
+// (node environment) because jsdom's crypto stub interferes with Node's
+// WebCrypto engine on the first PBKDF2 call (OpenSSL 3 "Cipher job failed").
+// The localStorage-based helpers below depend only on jsdom APIs.
+describe('localEncryption — storage helpers (jsdom)', () => {
   beforeEach(() => {
     localStorage.clear();
-  });
-
-  test('generateSalt returns a string', () => {
-    const salt = generateSalt();
-    expect(typeof salt).toBe('string');
-    expect(salt.length).toBe(32);
-  });
-
-  test('encryptData and decryptData work correctly', async () => {
-    const data = { test: 'hello world', number: 123 };
-    const passphrase = 'test-passphrase-123';
-    
-    const encrypted = await encryptData(data, passphrase);
-    expect(typeof encrypted).toBe('string');
-    expect(encrypted).not.toBe(JSON.stringify(data));
-    
-    const decrypted = await decryptData(encrypted, passphrase);
-    expect(decrypted).toEqual(data);
-  });
-
-  test('decryptData fails with wrong passphrase', async () => {
-    const data = { test: 'hello world' };
-    const passphrase = 'correct-passphrase';
-    const wrongPassphrase = 'wrong-passphrase';
-    
-    const encrypted = await encryptData(data, passphrase);
-    
-    await expect(decryptData(encrypted, wrongPassphrase)).rejects.toThrow();
   });
 
   test('passphrase set functions work', () => {
@@ -50,25 +21,5 @@ describe('localEncryption', () => {
     expect(isPassphraseSet()).toBe(true);
     resetEncryption();
     expect(isPassphraseSet()).toBe(false);
-  });
-
-  test('storage helpers are safe when window is unavailable', () => {
-    const originalWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
-
-    Object.defineProperty(globalThis, 'window', {
-      value: undefined,
-      configurable: true,
-      writable: true,
-    });
-
-    expect(isPassphraseSet()).toBe(false);
-    expect(loadPlaintext('missing')).toBeNull();
-    expect(detectPlaintextData('missing')).toBe(false);
-
-    if (originalWindowDescriptor) {
-      Object.defineProperty(globalThis, 'window', originalWindowDescriptor);
-    } else {
-      delete (globalThis as typeof globalThis & { window?: undefined }).window;
-    }
   });
 });

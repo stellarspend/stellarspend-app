@@ -1,10 +1,18 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { z } from "zod";
 import { useForm } from "@/hooks/useForm";
 import { useOffline } from "@/components/offline/OfflineProvider";
 import { Budget } from "@/lib/api/client";
+import {
+  fetchOracleSnapshot,
+  getRateMap,
+  convertAmount,
+  toUsdAmount,
+  type OracleSnapshot,
+  type SupportedAsset,
+} from "@/lib/stellar/priceOracle";
 
 const budgetSchema = z
   .object({
@@ -42,6 +50,27 @@ interface BudgetFormProps {
 
 export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing = false }: BudgetFormProps) {
     const { isOnline: _isOnline, queueAction: _queueAction } = useOffline();
+    void _isOnline;
+    void _queueAction;
+
+    // Live oracle rates for cross-asset budget tracking: a budget denominated
+    // in one asset can be displayed against any other asset using real-time
+    // conversion instead of a fixed 1:1 assumption.
+    const [rates, setRates] = useState<OracleSnapshot | null>(null);
+
+    useEffect(() => {
+        let mounted = true;
+        fetchOracleSnapshot()
+            .then((snapshot) => {
+                if (mounted) setRates(snapshot);
+            })
+            .catch(() => {
+                /* keep rates null — form still works, just without equivalents */
+            });
+        return () => {
+            mounted = false;
+        };
+    }, []);
     
     // Calculate default end date once per component mount
     const [defaultEndDate] = React.useState(() => {
@@ -51,8 +80,9 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
     const {
         register,
         handleSubmit,
+        watch,
         formState: { errors, isValid, isSubmitting },
-        reset: _reset,
+        reset: _unusedReset,
     } = useForm<BudgetFormData>({
         schema: budgetSchema,
         defaultValues: {
@@ -65,6 +95,21 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
         },
         mode: 'onChange',
     });
+    void _unusedReset;
+
+    const selectedAsset = watch('asset') as SupportedAsset;
+    const enteredAmount = Number(watch('amount')) || 0;
+
+    // USD value of the budget amount, and its equivalent in every other asset.
+    const rateMap = rates ? getRateMap(rates) : null;
+    const usdValue = rateMap ? toUsdAmount(enteredAmount, selectedAsset, rateMap) : null;
+    const otherAssets = (['XLM', 'USDC', 'EURC'] as const).filter((a) => a !== selectedAsset);
+    const equivalents = rateMap
+        ? otherAssets.map((a) => ({
+              asset: a,
+              amount: convertAmount(enteredAmount, selectedAsset, a, rateMap),
+          }))
+        : [];
 
     return (
         <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
@@ -93,7 +138,7 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
 
                 <div className="space-y-1">
                     <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Amount (XLM) <span className="text-red-500" aria-label="required">*</span>
+                        Amount ({selectedAsset}) <span className="text-red-500" aria-label="required">*</span>
                     </label>
                     <input
                         id="amount"
@@ -106,6 +151,20 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                             }`}
                         placeholder="0.00"
                     />
+                    {usdValue !== null && enteredAmount > 0 && (
+                        <p id="amount-equivalents" className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            ≈ ${usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                            {equivalents.length > 0 && (
+                                <> · {equivalents.map((e, i) => (
+                                    <span key={e.asset}>
+                                        {i > 0 && ' / '}
+                                        {e.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {e.asset}
+                                    </span>
+                                ))}
+                                </>
+                            )}
+                        </p>
+                    )}
                     {errors.amount && (
                         <p id="amount-error" className="text-xs text-red-500 mt-1" role="alert">{errors.amount.message}</p>
                     )}

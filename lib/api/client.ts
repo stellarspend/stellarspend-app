@@ -12,6 +12,12 @@ import {
   getMockBudgetsFallback,
   setMockBudgetsFallback,
 } from '@/lib/stellar/budgetContract';
+import {
+  fetchOracleSnapshot,
+  round2,
+  type RateSource,
+  type SupportedAsset,
+} from '@/lib/stellar/priceOracle';
 
 interface LocalWallet {
   id: string;
@@ -48,6 +54,10 @@ export interface WalletBalances {
   balances: AssetBalance[];
   totalUsd: number;
   updatedAt: string;
+  /** True when the price oracle feed behind these values is stale. */
+  ratesStale?: boolean;
+  /** Where the displayed rates came from (oracle contract or local cache). */
+  ratesSource?: RateSource;
 }
 
 export interface Transaction {
@@ -103,15 +113,22 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ─── Mock Data ─────────────────────────────────────────────────────────────
 
-const MOCK_BALANCES: WalletBalances = {
-  balances: [
-    { asset: "XLM", balance: "4 210.50", usdValue: 631.58, change24h: +2.4 },
-    { asset: "USDC", balance: "1 085.20", usdValue: 1085.2, change24h: +0.01 },
-    { asset: "EURC", balance: "320.00", usdValue: 347.2, change24h: -0.31 },
-  ],
-  totalUsd: 2063.98,
-  updatedAt: new Date().toISOString(),
-};
+/**
+ * Raw asset balances. USD valuations are intentionally NOT stored here:
+ * they are derived at fetch time from the price oracle
+ * (lib/stellar/priceOracle.ts) so every dollar value shown in the UI reflects
+ * the current oracle-sourced rate instead of a hardcoded number.
+ */
+const MOCK_BALANCES: { asset: SupportedAsset; balance: string }[] = [
+  { asset: "XLM", balance: "4 210.50" },
+  { asset: "USDC", balance: "1 085.20" },
+  { asset: "EURC", balance: "320.00" },
+];
+
+/** Parse a display balance like "4 210.50" into a number. */
+function parseBalance(balance: string): number {
+  return parseFloat(balance.replace(/\s/g, ""));
+}
 
 export const MOCK_TRANSACTIONS: Transaction[] = [
   {
@@ -422,11 +439,36 @@ export const MOCK_BUDGETS: Budget[] = [
 // ─── API Functions ──────────────────────────────────────────────────────────
 
 /**
- * Fetch wallet balances (mock — 400 ms latency).
+ * Fetch wallet balances (mock — 400 ms latency) with USD valuations derived
+ * from the price oracle (lib/stellar/priceOracle.ts) rather than hardcoded
+ * numbers.
  */
 export async function fetchBalances(): Promise<WalletBalances> {
   await delay(400);
-  return { ...MOCK_BALANCES, updatedAt: new Date().toISOString() };
+
+  const publicKey = getConnectedPublicKey();
+  const snapshot = await fetchOracleSnapshot(publicKey);
+
+  const balances: AssetBalance[] = MOCK_BALANCES.map((raw) => {
+    const quote = snapshot.quotes[raw.asset];
+    const amount = parseBalance(raw.balance);
+    return {
+      asset: raw.asset,
+      balance: raw.balance,
+      usdValue: round2(amount * (quote?.priceUsd ?? 0)),
+      change24h: quote?.change24h ?? 0,
+    };
+  });
+
+  const totalUsd = round2(balances.reduce((sum, b) => sum + b.usdValue, 0));
+
+  return {
+    balances,
+    totalUsd,
+    updatedAt: new Date().toISOString(),
+    ratesStale: snapshot.isStale,
+    ratesSource: snapshot.source,
+  };
 }
 
 /**
@@ -624,23 +666,19 @@ export async function sendPayment(
   await delay(500);
 
   // Parse current balance
-  const balIndex = MOCK_BALANCES.balances.findIndex((b) => b.asset === asset);
+  const balIndex = MOCK_BALANCES.findIndex((b) => b.asset === asset);
   if (balIndex !== -1) {
-    const currentVal = parseFloat(MOCK_BALANCES.balances[balIndex].balance.replace(/\s/g, ''));
+    const currentVal = parseBalance(MOCK_BALANCES[balIndex].balance);
     if (currentVal < amount) {
       throw new Error(`Insufficient funds: You have ${currentVal} ${asset} but tried to send ${amount}.`);
     }
-    // Update balance
+    // Update balance. USD valuations are recomputed at fetch time from the
+    // price oracle, so no hardcoded conversion table is touched here.
     const nextVal = currentVal - amount;
-    MOCK_BALANCES.balances[balIndex].balance = nextVal.toLocaleString('en-US', {
+    MOCK_BALANCES[balIndex].balance = nextVal.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).replace(/,/g, ' '); // Match space format
-    
-    // Update usdValue
-    const conversionRates = { XLM: 0.15, USDC: 1.0, EURC: 1.08 };
-    MOCK_BALANCES.balances[balIndex].usdValue = nextVal * conversionRates[asset];
-    MOCK_BALANCES.totalUsd = MOCK_BALANCES.balances.reduce((acc, curr) => acc + curr.usdValue, 0);
   }
 
   // Create new transaction object
