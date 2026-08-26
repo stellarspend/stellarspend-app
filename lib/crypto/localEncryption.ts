@@ -20,7 +20,9 @@ const STORAGE_KEYS = {
 } as const;
 
 /**
- * Generate a random salt
+ * Generates a cryptographically secure random salt for key derivation.
+ * Uses the WebCrypto API to generate 16 bytes of random data.
+ * @returns A hex-encoded string representing the random salt.
  */
 export function generateSalt(): string {
   const array = new Uint8Array(SALT_LENGTH);
@@ -59,7 +61,12 @@ async function deriveKey(passphrase: string, salt: string): Promise<CryptoKey> {
 }
 
 /**
- * Encrypt data with a passphrase
+ * Encrypts arbitrary data using AES-256-GCM with a passphrase-derived key.
+ * Key derivation uses PBKDF2 with 100,000 iterations and SHA-256.
+ * The output format is base64-encoded: salt (16 bytes) + IV (12 bytes) + ciphertext.
+ * @param data - The data to encrypt. Will be JSON-serialized before encryption.
+ * @param passphrase - The user passphrase used to derive the encryption key.
+ * @returns A base64-encoded string containing the encrypted data with embedded salt and IV.
  */
 export async function encryptData(data: unknown, passphrase: string): Promise<string> {
   const salt = generateSalt();
@@ -87,8 +94,17 @@ export async function encryptData(data: unknown, passphrase: string): Promise<st
   return btoa(String.fromCharCode(...combined));
 }
 
+const SALT_HEX_LENGTH = SALT_LENGTH * 2;
+
 /**
- * Decrypt data with a passphrase
+ * Decrypts data that was encrypted with {@link encryptData}.
+ * Extracts the salt and IV from the base64-encoded input, derives the decryption key
+ * using PBKDF2, and decrypts using AES-256-GCM.
+ * @template T - The expected type of the decrypted data.
+ * @param encryptedData - The base64-encoded encrypted string to decrypt.
+ * @param passphrase - The passphrase used to derive the decryption key.
+ * @returns The decrypted data, parsed from JSON into type T.
+ * @throws Will throw if decryption fails (e.g., wrong passphrase or corrupted data).
  */
 export async function decryptData<T>(encryptedData: string, passphrase: string): Promise<T> {
   const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
@@ -100,6 +116,9 @@ export async function decryptData<T>(encryptedData: string, passphrase: string):
   const salt = new TextDecoder().decode(combined.slice(0, saltBytes));
   const iv = combined.slice(saltBytes, saltBytes + IV_LENGTH);
   const encrypted = combined.slice(saltBytes + IV_LENGTH);
+  const salt = new TextDecoder().decode(combined.slice(0, SALT_HEX_LENGTH));
+  const iv = combined.slice(SALT_HEX_LENGTH, SALT_HEX_LENGTH + IV_LENGTH);
+  const encrypted = combined.slice(SALT_HEX_LENGTH + IV_LENGTH);
 
   const key = await deriveKey(passphrase, salt);
 
@@ -117,7 +136,12 @@ export async function decryptData<T>(encryptedData: string, passphrase: string):
 }
 
 /**
- * Save encrypted data to localStorage
+ * Encrypts data and stores it in the browser's localStorage.
+ * Uses {@link encryptData} to encrypt before storage.
+ * @param key - The storage key under which the encrypted data will be saved.
+ * @param data - The data to encrypt and store. Will be JSON-serialized.
+ * @param passphrase - The passphrase used to derive the encryption key.
+ * @returns A promise that resolves when storage is complete. No-op on server-side.
  */
 export async function saveEncrypted(key: string, data: unknown, passphrase: string): Promise<void> {
   if (typeof window === 'undefined') return;
@@ -127,7 +151,12 @@ export async function saveEncrypted(key: string, data: unknown, passphrase: stri
 }
 
 /**
- * Load and decrypt data from localStorage
+ * Loads and decrypts data from localStorage.
+ * Retrieves the base64-encoded encrypted string and decrypts it using {@link decryptData}.
+ * @template T - The expected type of the decrypted data.
+ * @param key - The storage key from which to load the encrypted data.
+ * @param passphrase - The passphrase used to derive the decryption key.
+ * @returns The decrypted data of type T, or null if not found or decryption fails.
  */
 export async function loadEncrypted<T>(key: string, passphrase: string): Promise<T | null> {
   if (typeof window === 'undefined') return null;
@@ -142,7 +171,10 @@ export async function loadEncrypted<T>(key: string, passphrase: string): Promise
 }
 
 /**
- * Check if data is encrypted (vs plaintext)
+ * Checks whether data stored under the given key is encrypted.
+ * Identifies encrypted data by verifying it's a valid base64 string longer than 50 characters.
+ * @param key - The localStorage key to inspect.
+ * @returns True if the data appears to be encrypted (base64-encoded), false otherwise.
  */
 export function isEncrypted(key: string): boolean {
   if (typeof window === 'undefined') return false;
@@ -154,7 +186,10 @@ export function isEncrypted(key: string): boolean {
 }
 
 /**
- * Save plaintext data (migration helper)
+ * Saves plaintext data to localStorage (migration helper).
+ * Stores data as JSON without encryption. Intended for legacy data migration only.
+ * @param key - The localStorage key under which to store the data.
+ * @param data - The data to store. Will be JSON-serialized.
  */
 export function savePlaintext(key: string, data: unknown): void {
   if (typeof window === 'undefined') return;
@@ -163,7 +198,11 @@ export function savePlaintext(key: string, data: unknown): void {
 }
 
 /**
- * Load plaintext data (migration helper)
+ * Loads plaintext data from localStorage (migration helper).
+ * Retrieves and parses JSON data without decryption. Intended for legacy data migration only.
+ * @template T - The expected type of the stored data.
+ * @param key - The localStorage key from which to load the data.
+ * @returns The parsed data of type T, or null if not found or parsing fails.
  */
 export function loadPlaintext<T>(key: string): T | null {
   if (typeof window === 'undefined') return null;
@@ -178,7 +217,9 @@ export function loadPlaintext<T>(key: string): T | null {
 }
 
 /**
- * Remove stored data
+ * Removes stored data from localStorage.
+ * Deletes both the plaintext and encrypted versions of the data for the given key.
+ * @param key - The storage key identifying the data to remove.
  */
 export function removeStoredData(key: string): void {
   if (typeof window === 'undefined') return;
@@ -188,7 +229,9 @@ export function removeStoredData(key: string): void {
 }
 
 /**
- * Check if passphrase is set
+ * Checks whether an encryption passphrase has been configured.
+ * Reads the passphrase-set flag from localStorage.
+ * @returns True if the passphrase has been set, false otherwise.
  */
 export function isPassphraseSet(): boolean {
   if (typeof window === 'undefined') return false;
@@ -197,7 +240,8 @@ export function isPassphraseSet(): boolean {
 }
 
 /**
- * Set passphrase flag
+ * Sets the passphrase-configured flag in localStorage.
+ * Called after the user successfully sets or verifies their encryption passphrase.
  */
 export function setPassphraseSet(): void {
   if (typeof window === 'undefined') return;
@@ -206,7 +250,9 @@ export function setPassphraseSet(): void {
 }
 
 /**
- * Reset encryption (forgot passphrase recovery)
+ * Resets all encryption state for the application (forgot-passphrase recovery).
+ * Removes all encrypted data entries, the stored salt, and the passphrase-set flag from localStorage.
+ * This action is irreversible—encrypted data cannot be recovered without the passphrase.
  */
 export function resetEncryption(): void {
   if (typeof window === 'undefined') return;
@@ -226,7 +272,11 @@ export function resetEncryption(): void {
 }
 
 /**
- * Check if data is encrypted vs plaintext by looking at the raw data
+ * Detects whether data under the given key is stored as plaintext (not encrypted).
+ * Uses heuristic checks: if the data parses as valid JSON and doesn't start with a base64 pattern,
+ * it's considered plaintext. Encrypted data will be a long base64 string.
+ * @param key - The localStorage key to inspect.
+ * @returns True if the data appears to be plaintext, false otherwise.
  */
 export function detectPlaintextData(key: string): boolean {
   if (typeof window === 'undefined') return false;
@@ -248,7 +298,14 @@ export function detectPlaintextData(key: string): boolean {
 }
 
 /**
- * Migrate plaintext data to encrypted
+ * Migrates plaintext localStorage data to encrypted storage.
+ * If data is provided, it encrypts and stores it directly. Otherwise, loads existing
+ * plaintext data, encrypts it with the passphrase, and removes the plaintext entry.
+ * Uses AES-256-GCM encryption via {@link encryptData}.
+ * @param key - The storage key identifying the data to migrate.
+ * @param passphrase - The passphrase used to derive the encryption key.
+ * @param data - Optional explicit data to encrypt. If omitted, loads from localStorage.
+ * @returns True if migration succeeded, false if no plaintext data was found.
  */
 export async function migrateToEncrypted(
   key: string,

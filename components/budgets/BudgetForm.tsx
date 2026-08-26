@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useForm } from "@/hooks/useForm";
 import { useOffline } from "@/components/offline/OfflineProvider";
 import { Budget } from "@/lib/api/client";
+import { Progress } from "@/components/ui/progress";
 
 const budgetSchema = z
   .object({
@@ -38,9 +39,28 @@ interface BudgetFormProps {
     onCancel?: () => void;
     initialData?: Budget | null;
     isEditing?: boolean;
+    spent?: number;
 }
 
-export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing = false }: BudgetFormProps) {
+function getProgressColor(percentage: number): string {
+    if (percentage >= 90) {
+        return "bg-red-500";
+    } else if (percentage >= 75) {
+        return "bg-yellow-500";
+    }
+    return "bg-green-500";
+}
+
+function getProgressTextColor(percentage: number): string {
+    if (percentage >= 90) {
+        return "text-red-600 dark:text-red-400";
+    } else if (percentage >= 75) {
+        return "text-yellow-600 dark:text-yellow-400";
+    }
+    return "text-green-600 dark:text-green-400";
+}
+
+export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing = false, spent = 0 }: BudgetFormProps) {
     const { isOnline: _isOnline, queueAction: _queueAction } = useOffline();
     
     // Calculate default end date once per component mount
@@ -66,11 +86,55 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
         mode: 'onChange',
     });
 
+    // Calculate budget progress percentage
+    const budgetLimit = initialData?.amount || 0;
+    const spentPercentage = budgetLimit > 0 ? Math.min(100, (spent / budgetLimit) * 100) : 0;
+    const progressColor = getProgressColor(spentPercentage);
+    const progressTextColor = getProgressTextColor(spentPercentage);
+
     return (
         <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
             <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
                 {isEditing ? 'Edit Budget' : 'Create Budget'}
             </h2>
+
+            {isEditing && budgetLimit > 0 && (
+                <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Budget Progress
+                        </span>
+                        <span className={`text-sm font-semibold ${progressTextColor}`}>
+                            {spentPercentage.toFixed(1)}%
+                        </span>
+                    </div>
+                    <div className="relative h-4 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
+                        <div
+                            className={`h-full transition-all duration-300 ${progressColor}`}
+                            style={{ width: `${spentPercentage}%` }}
+                            role="progressbar"
+                            aria-valuenow={spentPercentage}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label={`Budget usage: ${spentPercentage.toFixed(1)}%`}
+                        />
+                    </div>
+                    <div className="flex justify-between items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        <span>Spent: {spent.toFixed(2)} {initialData?.asset || 'XLM'}</span>
+                        <span>Limit: {budgetLimit.toFixed(2)} {initialData?.asset || 'XLM'}</span>
+                    </div>
+                    {spentPercentage >= 90 && (
+                        <p className="mt-2 text-xs text-red-600 dark:text-red-400 font-medium">
+                            Warning: You have used over 90% of your budget!
+                        </p>
+                    )}
+                    {spentPercentage >= 75 && spentPercentage < 90 && (
+                        <p className="mt-2 text-xs text-yellow-600 dark:text-yellow-400 font-medium">
+                            Caution: You have used over 75% of your budget.
+                        </p>
+                    )}
+                </div>
+            )}
 
             <form onSubmit={(handleSubmit as unknown as (handler: (data: BudgetFormData) => void) => React.FormEventHandler<HTMLFormElement>)((data: BudgetFormData) => onSubmit(data))} className="space-y-4" noValidate>
                 <div className="space-y-1">
@@ -80,11 +144,12 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                     <input
                         id="name"
                         {...register('name')}
+                        aria-required="true"
                         aria-invalid={errors.name ? 'true' : 'false'}
                         aria-describedby={errors.name ? 'name-error' : undefined}
                         className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.name ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                             }`}
-                        placeholder="e.g. Groceries"
+                        placeholder="e.g. Monthly Groceries"
                     />
                     {errors.name && (
                         <p id="name-error" className="text-xs text-red-500 mt-1" role="alert">{errors.name.message}</p>
@@ -99,7 +164,9 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                         id="amount"
                         type="number"
                         step="0.01"
+                        inputMode="decimal"
                         {...register('amount')}
+                        aria-required="true"
                         aria-invalid={errors.amount ? 'true' : 'false'}
                         aria-describedby={errors.amount ? 'amount-error' : undefined}
                         className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.amount ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
@@ -118,6 +185,7 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                     <select
                         id="category"
                         {...register('category')}
+                        aria-required="true"
                         aria-invalid={errors.category ? 'true' : 'false'}
                         aria-describedby={errors.category ? 'category-error' : undefined}
                         className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.category ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
@@ -164,6 +232,7 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
     <div
         role="radiogroup"
         aria-labelledby="period-label"
+        aria-required="true"
         aria-invalid={errors.period ? 'true' : 'false'}
         aria-describedby={errors.period ? 'period-error' : undefined}
         className="flex space-x-4"

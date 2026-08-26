@@ -33,7 +33,10 @@ export default function TestimonialCard({
       aria-label={`Testimonial from ${author}`}
     >
       {/* Quote */}
-      <blockquote className="text-[#e8edf8] text-base leading-relaxed mb-6 italic flex-grow">
+      <blockquote
+        className="text-[#e8edf8] text-base leading-relaxed mb-6 italic flex-grow"
+        aria-label="Testimonial quote"
+      >
         &ldquo;{quote}&rdquo;
       </blockquote>
 

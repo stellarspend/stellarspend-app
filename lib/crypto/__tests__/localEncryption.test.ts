@@ -62,5 +62,10 @@ describe('localEncryption', () => {
     expect(detectPlaintextData('missing')).toBe(false);
     expect(() => isPassphraseSet()).not.toThrow();
     expect(() => loadPlaintext('missing')).not.toThrow();
+  test('storage helpers are safe when window is unavailable', () => {
+    // Test behavior when localStorage or window methods return safely
+    expect(isPassphraseSet()).toBe(false);
+    expect(loadPlaintext('missing')).toBeNull();
+    expect(detectPlaintextData('missing')).toBe(false);
   });
 });

@@ -104,6 +104,7 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
                         </label>
                         <input
                             id="title"
+                            aria-required="true"
                             {...register('title')}
                             className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-500 outline-none transition-all ${errors.title ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                                 }`}
@@ -121,6 +122,7 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
                         <input
                             id="targetAmount"
                             type="number"
+                            aria-required="true"
                             {...register('targetAmount')}
                             className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-500 outline-none transition-all ${errors.targetAmount ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                                 }`}
@@ -138,6 +140,7 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
                         <input
                             id="deadline"
                             type="date"
+                            aria-required="true"
                             {...register('deadline')}
                             className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-500 outline-none transition-all ${errors.deadline ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                                 }`}
@@ -153,6 +156,7 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
                         </label>
                         <select
                             id="recurrence"
+                            aria-required="true"
                             {...register('recurrence')}
                             className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-500 outline-none transition-all ${errors.recurrence ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                                 }`}

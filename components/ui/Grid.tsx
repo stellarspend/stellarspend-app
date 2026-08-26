@@ -3,6 +3,7 @@ import React from 'react';
 export interface GridProps {
   children: React.ReactNode;
   className?: string;
+  ariaLabel?: string;
   cols?: 1 | 2 | 3 | 4 | 6 | 12;
   gap?: 'sm' | 'md' | 'lg' | 'xl';
   responsive?: {
@@ -67,6 +68,7 @@ const gapMap = {
 export function Grid({ 
   children, 
   className = '', 
+  ariaLabel,
   cols = 1, 
   gap = 'md',
   responsive 
@@ -83,7 +85,10 @@ export function Grid({
     : '';
 
   return (
-    <div className={`grid ${baseColsClass} ${gapClass} ${responsiveClasses} ${className}`}>
+    <div
+      className={`grid ${baseColsClass} ${gapClass} ${responsiveClasses} ${className}`}
+      aria-label={ariaLabel}
+    >
       {children}
     </div>
   );

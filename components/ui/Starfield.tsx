@@ -52,7 +52,8 @@ export function Starfield() {
     <canvas
       ref={canvasRef}
       className="absolute inset-0 z-0 pointer-events-none"
-      aria-hidden="true"
+      role="img"
+      aria-label="Decorative starfield background"
     />
   );
 }

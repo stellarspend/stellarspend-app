@@ -1,18 +1,39 @@
 import Image from 'next/image';
 
+/**
+ * Props accepted by {@link OptimizedImage}.
+ *
+ * The wrapper requires the image source, accessible alternative text, and
+ * intrinsic dimensions used by Next.js to reserve space before the image loads.
+ */
 interface OptimizedImageProps {
+  /** Image URL or a path from the Next.js image configuration. */
   src: string;
+  /** Accessible description of the image. */
   alt: string;
+  /** Intrinsic image width in pixels. */
   width: number;
+  /** Intrinsic image height in pixels. */
   height: number;
+  /** Load the image eagerly when it is important to the initial viewport. */
   priority?: boolean;
+  /** CSS class names applied to the underlying Next.js Image. */
   className?: string;
+  /** Responsive image sizes hint passed to Next.js. */
   sizes?: string;
 }
 
 /**
- * Wrapper component for Next.js Image with optimized defaults
- * Use this for static images that need consistent optimization settings
+ * Renders a Next.js Image with the project's shared optimization defaults.
+ *
+ * Use this wrapper for static images so they consistently receive quality
+ * settings and an animated blur placeholder while loading. Provide `sizes`
+ * when the rendered image has responsive dimensions, and set `priority` only
+ * for images needed immediately by the initial viewport.
+ *
+ * @param props Image source, accessibility text, dimensions, and optional
+ *              loading or styling settings.
+ * @returns An optimized Next.js Image component.
  */
 export default function OptimizedImage({
   src,

@@ -23,6 +23,7 @@ if (typeof globalThis.TextDecoder === "undefined") {
 // `subtle`, and `globalThis.crypto` is configurable but not writable, so
 // reassigning directly would throw. Redefine it so PBKDF2/AES-GCM work.
 if (!globalThis.crypto?.subtle) {
+if (typeof globalThis.crypto === "undefined" || !globalThis.crypto.subtle) {
   Object.defineProperty(globalThis, "crypto", {
     value: webcrypto,
     configurable: true,

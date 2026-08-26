@@ -1,5 +1,14 @@
 "use client";
 
+/**
+ * hooks/useWallet.ts
+ *
+ * Combines wallet context (multi-wallet management, selection, balance refresh)
+ * with Freighter browser extension integration. Provides a single hook for
+ * connecting/disconnecting Freighter, formatting addresses, and aggregating
+ * balances across all managed wallets.
+ */
+
 import { useCallback, useState } from "react";
 import { useWalletContext, Wallet } from "@/context/WalletContext";
 
@@ -49,6 +58,13 @@ export interface UseWalletReturn {
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Provides combined wallet management and Freighter extension integration.
+ * Wraps the WalletContext for multi-wallet CRUD and adds Freighter connect/disconnect,
+ * address formatting, and cross-wallet balance aggregation.
+ * @returns A UseWalletReturn object with wallet state, Freighter state, and helper functions.
+ */
 export function useWallet(): UseWalletReturn {
   const context = useWalletContext();
 
