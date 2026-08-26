@@ -7,6 +7,8 @@ import { sendPayment } from "@/lib/api/client";
 import { generateSpendingProof } from "@/lib/zk/generateSpendingProof";
 import { useNotifications } from "@/context/NotificationContext";
 import { useOffline } from "@/components/offline/OfflineProvider";
+import { getRemaining, recordSpend } from "@/lib/stellar/spendingLimitsContract";
+import useWallet from "@/hooks/useWallet";
 
 interface SendPaymentModalProps {
   onClose: () => void;
@@ -19,11 +21,14 @@ const ZK_SPENDING_LIMIT_CEILING = Number(process.env.NEXT_PUBLIC_ZK_LIMIT_CEILIN
 export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
   const { addNotification } = useNotifications();
   const { isOnline, queueAction } = useOffline();
+  const { freighter } = useWallet();
+  const userPublicKey = freighter.publicKey || "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";
 
   // Form states
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [asset, setAsset] = useState<"XLM" | "USDC" | "EURC">("USDC");
+  const [memo, setMemo] = useState("");
   const [formError, setFormError] = useState("");
 
   // Process lifecycle states
@@ -89,6 +94,24 @@ export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
       return;
     }
 
+    // Check spending limit before ZK proof and submission
+    try {
+      const limitInfo = await getRemaining(userPublicKey, asset);
+      if (limitInfo && limitInfo.hasLimit && parsedAmount > limitInfo.remainingAmount) {
+        const periodLabel = limitInfo.period.charAt(0).toUpperCase() + limitInfo.period.slice(1);
+        const remainingFormatted = limitInfo.remainingAmount % 1 === 0
+          ? limitInfo.remainingAmount.toString()
+          : limitInfo.remainingAmount.toFixed(2);
+        const limitError = `${periodLabel} ${asset} limit reached — ${remainingFormatted} ${asset} remaining`;
+        setFormError(limitError);
+        addNotification("error", limitError);
+        setStatus("idle");
+        return;
+      }
+    } catch (err) {
+      console.error("Failed to check spending limit:", err);
+    }
+
     // Determine if ZK proof is required
     const requiresZkProof = parsedAmount > ZK_PROOF_THRESHOLD;
     let spendingProof: Uint8Array | undefined = undefined;
@@ -126,6 +149,9 @@ export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
       setStatus("submitting");
       const transaction = await sendPayment(recipient, parsedAmount, asset, spendingProof);
       
+      // Record spend against active limits
+      await recordSpend(userPublicKey, asset, parsedAmount);
+
       setTxHash(transaction.hash);
       setStatus("success");
       addNotification("success", `Successfully sent ${parsedAmount} ${asset} to ${recipient.substring(0, 8)}...`);
@@ -196,6 +222,7 @@ export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
                   placeholder="G..."
                   value={recipient}
                   onChange={(e) => setRecipient(e.target.value)}
+                  autoComplete="off"
                   className="w-full px-4 py-3.5 bg-white/[0.03] border border-white/10 rounded-2xl text-white font-mono text-sm placeholder-[#7a8aaa]/40 focus:outline-none focus:ring-2 focus:ring-[#e8b84b]/30 focus:border-[#e8b84b]/40 transition-all"
                 />
               </div>
@@ -227,6 +254,20 @@ export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
                     <option value="EURC">EURC</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="text-[#7a8aaa] text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">
+                  Memo (Optional, max 28 chars)
+                </label>
+                <input
+                  type="text"
+                  maxLength={28}
+                  placeholder="Payment note..."
+                  value={memo}
+                  onChange={(e) => setMemo(e.target.value)}
+                  className="w-full px-4 py-3.5 bg-white/[0.03] border border-white/10 rounded-2xl text-white font-mono text-sm placeholder-[#7a8aaa]/40 focus:outline-none focus:ring-2 focus:ring-[#e8b84b]/30 focus:border-[#e8b84b]/40 transition-all"
+                />
               </div>
 
               {/* Conditionally show ZK-gate warning badge */}

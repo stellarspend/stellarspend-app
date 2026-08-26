@@ -1,3 +1,12 @@
+/**
+ * lib/stellar/budgetContract.ts
+ *
+ * Client for the on-chain budget Soroban contract. Provides CRUD operations
+ * for user budgets backed by a deployed Soroban contract when
+ * NEXT_PUBLIC_BUDGET_CONTRACT_ID is configured, falling back to a
+ * localStorage-backed mock for offline/testnet usage.
+ */
+
 import {
   Contract,
   TransactionBuilder,
@@ -14,6 +23,11 @@ import { Budget } from '@/lib/api/client';
 const BUDGET_CONTRACT_ID = process.env.NEXT_PUBLIC_BUDGET_CONTRACT_ID || '';
 const LOCAL_BUDGETS_KEY = 'stellarspend_local_budgets';
 
+/**
+ * Dispatches a custom DOM notification event for UI feedback.
+ * @param type - The notification severity: 'success', 'error', or 'info'.
+ * @param message - The human-readable message to display.
+ */
 export function triggerNotification(type: 'success' | 'error' | 'info', message: string) {
   if (typeof window !== 'undefined') {
     const event = new CustomEvent('stellarspend_notification', {
@@ -23,6 +37,10 @@ export function triggerNotification(type: 'success' | 'error' | 'info', message:
   }
 }
 
+/**
+ * Loads mock budgets from localStorage (used as fallback when no contract is deployed).
+ * @returns An array of Budget objects, or an empty array if none are stored.
+ */
 export function getMockBudgetsFallback(): Budget[] {
   if (typeof window === 'undefined') return [];
   const stored = localStorage.getItem(LOCAL_BUDGETS_KEY);
@@ -36,6 +54,10 @@ export function getMockBudgetsFallback(): Budget[] {
   return [];
 }
 
+/**
+ * Persists mock budgets to localStorage.
+ * @param budgets - The array of Budget objects to store.
+ */
 export function setMockBudgetsFallback(budgets: Budget[]) {
   if (typeof window !== 'undefined') {
     localStorage.setItem(LOCAL_BUDGETS_KEY, JSON.stringify(budgets));
@@ -52,6 +74,14 @@ function toScVal(value: unknown) {
   return nativeToScVal(value);
 }
 
+/**
+ * Simulates a read-only Soroban contract call and returns the decoded result.
+ * @param publicKey - The account to use as the simulation source (for sequence numbers).
+ * @param contractId - The deployed Soroban contract address.
+ * @param method - The contract method name to invoke.
+ * @param args - Arguments to pass to the contract method.
+ * @returns The decoded return value of type T.
+ */
 export async function callContractView<T>(
   publicKey: string,
   contractId: string,
@@ -86,6 +116,16 @@ export async function callContractView<T>(
   return scValToNative(sim.result.retval) as T;
 }
 
+/**
+ * Builds, simulates, signs (via Freighter), and submits a Soroban contract transaction.
+ * Polls for on-chain confirmation after submission.
+ * @param publicKey - The account that will sign and submit the transaction.
+ * @param contractId - The deployed Soroban contract address.
+ * @param method - The contract method name to invoke.
+ * @param args - Arguments to pass to the contract method.
+ * @param statusCallback - Optional callback for progress updates (e.g. UI spinner).
+ * @returns The transaction hash on success, or null if no return value.
+ */
 export async function submitContractTx(
   publicKey: string,
   contractId: string,
@@ -172,6 +212,12 @@ export async function submitContractTx(
   throw new Error('Transaction confirmation timed out.');
 }
 
+/**
+ * Fetches all budgets for the given account from the Soroban contract.
+ * Falls back to localStorage mock data if the contract is not configured or the call fails.
+ * @param publicKey - The Stellar public key of the budget owner.
+ * @returns An array of Budget objects.
+ */
 export async function fetchBudgets(publicKey: string): Promise<Budget[]> {
   if (!BUDGET_CONTRACT_ID) {
     return getMockBudgetsFallback();
@@ -204,6 +250,13 @@ export async function fetchBudgets(publicKey: string): Promise<Budget[]> {
   }
 }
 
+/**
+ * Creates a new budget on-chain (or locally if no contract is configured).
+ * @param publicKey - The Stellar public key of the budget owner.
+ * @param budgetData - The budget details (name, amount, category, asset, dates).
+ * @param statusCallback - Optional callback for progress updates.
+ * @returns The newly created Budget object.
+ */
 export async function createBudget(
   publicKey: string,
   budgetData: Omit<Budget, 'id' | 'createdAt' | 'updatedAt'>,
@@ -254,6 +307,14 @@ export async function createBudget(
   }
 }
 
+/**
+ * Updates an existing budget on-chain (or locally if no contract is configured).
+ * @param publicKey - The Stellar public key of the budget owner.
+ * @param id - The ID of the budget to update.
+ * @param budgetData - Partial budget fields to merge into the existing record.
+ * @param statusCallback - Optional callback for progress updates.
+ * @returns The updated Budget object.
+ */
 export async function updateBudget(
   publicKey: string,
   id: string,
@@ -323,6 +384,12 @@ export async function updateBudget(
   }
 }
 
+/**
+ * Deletes a budget from the Soroban contract (or locally if no contract is configured).
+ * @param publicKey - The Stellar public key of the budget owner.
+ * @param id - The ID of the budget to delete.
+ * @param statusCallback - Optional callback for progress updates.
+ */
 export async function deleteBudget(
   publicKey: string,
   id: string,

@@ -24,6 +24,7 @@ import {
     scValToNative,
     nativeToScVal,
     Address,
+    xdr,
     rpc as SorobanRpc,
   } from '@stellar/stellar-sdk';
   
@@ -178,7 +179,7 @@ import {
    * ASSUMPTION: the contract's argument encoding — adjust per the real ABI
    * once you have it (e.g. addresses may need Address.fromString(), enums may
    * be represented as symbols rather than strings, etc). */
-  function toScVal(value: unknown) {
+  function toScVal(value: unknown): xdr.ScVal {
     if (typeof value === 'string' && value.startsWith('G') && value.length === 56) {
       // looks like a Stellar public key / contract address
       return new Address(value).toScVal();

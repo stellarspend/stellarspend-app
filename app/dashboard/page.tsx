@@ -6,9 +6,12 @@ import QuickActions from "@/components/dashboard/QuickActions";
 import RecentTransactions from "@/components/dashboard/RecentTransactions";
 import GoalForm from "@/components/savings/GoalForm";
 import { ContributionWidget } from "@/components/savings/ContributionWidget";
+import SplitBillModal from "@/components/payments/SplitBillModal";
+import PendingSplitCard from "@/components/payments/PendingSplitCard";
 import useWallet from "@/hooks/useWallet";
 import { useOffline } from "@/components/offline/OfflineProvider";
 import type { Goal, Contribution, GoalSchedule, RoundUpRule } from "@/lib/types/savings";
+import type { SplitBill } from "@/lib/types/splits";
 import {
   fetchGoals,
   contributeToGoal,
@@ -19,6 +22,7 @@ import {
   resumeScheduleOnChain,
   cancelScheduleOnChain,
 } from "@/lib/stellar/savingsGoalContract";
+import { fetchSplitsForUser } from "@/lib/stellar/escrowContract";
 
 export default function DashboardPage() {
   const { freighter } = useWallet();
@@ -28,7 +32,34 @@ export default function DashboardPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [goalModalOpen, setGoalModalOpen] = useState(false);
+  const [splits, setSplits] = useState<SplitBill[]>([]);
+  const [splitModalOpen, setSplitModalOpen] = useState(false);
   const availableBalance = 500;
+
+  useEffect(() => {
+    async function loadSplits() {
+      if (!publicKey) {
+        setSplits([]);
+        return;
+      }
+      try {
+        const userSplits = await fetchSplitsForUser(publicKey);
+        setSplits(userSplits);
+      } catch (e) {
+        console.error("Failed to load splits:", e);
+      }
+    }
+    loadSplits();
+  }, [publicKey]);
+
+  const handleSplitCreated = (split: SplitBill) => {
+    setSplits((prev) => [split, ...prev]);
+    setSplitModalOpen(false);
+  };
+
+  const handleSplitUpdated = (updated: SplitBill) => {
+    setSplits((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+  };
 
   useEffect(() => {
     async function loadGoals() {
@@ -160,6 +191,35 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <QuickActions />
 
+      {/* Bill Splits */}
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-white">Split Bills</h2>
+          <button
+            onClick={() => setSplitModalOpen(true)}
+            className="px-4 py-2 bg-[#e8b84b] text-black rounded-lg hover:bg-[#e8b84b]/90 transition-colors"
+          >
+            Split a Bill
+          </button>
+        </div>
+        {splits.length === 0 ? (
+          <div className="text-center py-8 text-[#7a8aaa]">
+            No split bills yet. Request a group payment and track collection in real time.
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {splits.map((split) => (
+              <PendingSplitCard
+                key={split.id}
+                split={split}
+                publicKey={publicKey}
+                onUpdate={handleSplitUpdated}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Savings Goals */}
       <div>
         <div className="flex justify-between items-center mb-4">
@@ -200,6 +260,14 @@ export default function DashboardPage() {
         onOpenChange={setGoalModalOpen}
         onGoalCreated={handleGoalCreated}
       />
+
+      {splitModalOpen && (
+        <SplitBillModal
+          publicKey={publicKey}
+          onClose={() => setSplitModalOpen(false)}
+          onCreated={handleSplitCreated}
+        />
+      )}
     </div>
   );
 }

@@ -1,3 +1,11 @@
+/**
+ * lib/i18n-locale.ts
+ *
+ * Internationalization locale utilities for StellarSpend. Maps supported
+ * language codes to Intl and date-fns locale objects, provides RTL detection,
+ * and offers locale-aware formatting helpers for amounts and dates.
+ */
+
 import { enUS, es, fr, pt, ar as arSA } from "date-fns/locale";
 import type { Locale as DateFnsLocale } from "date-fns";
 
@@ -10,6 +18,11 @@ export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const RTL_LANGUAGES: SupportedLanguage[] = ["ar"];
 
+/**
+ * Checks whether a given language code is a right-to-left language.
+ * @param lang - The language code to check (e.g. 'ar').
+ * @returns True if the language is RTL, false otherwise.
+ */
 export function isRTL(lang: string): boolean {
   return RTL_LANGUAGES.includes(lang as SupportedLanguage);
 }
@@ -34,10 +47,20 @@ const DATE_FNS_LOCALE_MAP: Record<SupportedLanguage, DateFnsLocale> = {
   ar: arSA,
 };
 
+/**
+ * Returns the BCP-47 Intl locale tag for a supported language code.
+ * @param lang - The language code (e.g. 'sw', 'ar').
+ * @returns The BCP-47 tag (e.g. 'sw-KE', 'ar-SA'), defaulting to 'en-US'.
+ */
 export function getIntlLocale(lang: string): string {
   return INTL_LOCALE_MAP[lang as SupportedLanguage] ?? "en-US";
 }
 
+/**
+ * Returns the date-fns Locale object for a supported language code.
+ * @param lang - The language code.
+ * @returns The corresponding date-fns Locale, defaulting to enUS.
+ */
 export function getDateFnsLocale(lang: string): DateFnsLocale {
   return DATE_FNS_LOCALE_MAP[lang as SupportedLanguage] ?? enUS;
 }
@@ -67,6 +90,13 @@ export function formatAmount(
   }).format(amount);
 }
 
+/**
+ * Formats a date value using locale-aware Intl.DateTimeFormat.
+ * @param date - The date to format (Date, timestamp, or ISO string).
+ * @param lang - The language code for formatting.
+ * @param options - Optional overrides for Intl.DateTimeFormat.
+ * @returns The formatted date string.
+ */
 export function formatDate(
   date: Date | number | string,
   lang: string,

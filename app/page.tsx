@@ -6,15 +6,23 @@ import Carousel from "@/components/carousel/Carousel";
 import PricingCards from "@/components/pricing/PricingCards";
 import type { CarouselSlide } from "@/components/carousel/Carousel";
 
+const HOME_DESCRIPTION =
+  "StellarSpend is a financial management platform for the unbanked and underbanked, built on the Stellar blockchain. Track spending, set budgets, and reach your savings goals.";
+
 export const metadata: Metadata = {
   title: "StellarSpend — Track your Stellar transactions",
-  description:
-    "StellarSpend is a financial management platform for the unbanked and underbanked, built on the Stellar blockchain. Track spending, set budgets, and reach your savings goals.",
+  description: HOME_DESCRIPTION,
   openGraph: {
     title: "StellarSpend",
-    description: "Blockchain-powered budgeting for everyone.",
+    description: HOME_DESCRIPTION,
     url: "https://stellarspend.app",
     siteName: "StellarSpend",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "StellarSpend — Track your Stellar transactions",
+    description: HOME_DESCRIPTION,
   },
 };
 
@@ -92,7 +100,7 @@ const FEATURE_SLIDES: CarouselSlide[] = [
 
 export default function HomePage() {
   return (
-    <main id="main-content">
+    <main>
       <Hero />
 
       <section

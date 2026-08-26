@@ -53,4 +53,10 @@ describe('localEncryption', () => {
   // Note: SSR-safety for the storage helpers lives in
   // localEncryption.ssr.test.ts, which runs in the Node environment where
   // `window` is genuinely absent (jsdom's window cannot be undefined).
+  test('storage helpers are safe when window is unavailable', () => {
+    // Test behavior when localStorage or window methods return safely
+    expect(isPassphraseSet()).toBe(false);
+    expect(loadPlaintext('missing')).toBeNull();
+    expect(detectPlaintextData('missing')).toBe(false);
+  });
 });

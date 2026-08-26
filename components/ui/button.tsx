@@ -5,7 +5,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'default'
 }
 
-export function Button({ variant = 'default', size = 'default', className = '', ...props }: ButtonProps) {
+export function Button({ variant = 'default', size = 'default', className = '', 'aria-label': ariaLabel, ...props }: ButtonProps) {
   const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50'
   const variantClasses = {
     default: 'bg-primary text-primary-foreground hover:bg-primary/90',
@@ -20,6 +20,7 @@ export function Button({ variant = 'default', size = 'default', className = '', 
   return (
     <button
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      aria-label={ariaLabel}
       {...props}
     />
   )
