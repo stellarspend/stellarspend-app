@@ -399,7 +399,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setMobileOpen(false)}
-            aria-label="Close navigation menu"
+            aria-label="Close menu"
             className="flex items-center justify-center w-9 h-9 rounded-lg text-gray-600 dark:text-[#94a3b8] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-white/[0.06] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8b84b]"
           >
             <X size={20} aria-hidden="true" />
