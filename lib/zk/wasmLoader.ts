@@ -9,10 +9,21 @@ let isInitialized = false;
 let initPromise: Promise<boolean> | null = null;
 
 /**
- * Initializes the Noir ZK WASM modules (acvm_js and noirc_abi) in the browser context.
- * Implements caching to ensure initialization is only performed once.
- * Returns true if the initialization succeeded, false if running in SSR context.
- * Throws if WASM modules fail to load in a browser environment.
+ * Initializes the Noir ZK compiler toolchain in the browser by loading two
+ * WebAssembly modules:
+ *
+ * - **`@noir-lang/acvm_js`** – the ACVM (Abstract Circuit Virtual Machine)
+ *   that executes Noir opcodes during proof generation.
+ * - **`@noir-lang/noirc_abi`** – the ABI compiler that encodes / decodes
+ *   circuit inputs and outputs.
+ *
+ * Call this function **once** before any ZK proof or verification work is
+ * attempted (e.g. when the user first navigates to the Prove or Verify
+ * pages).  Subsequent calls return the cached result immediately.
+ *
+ * @returns `true` when WASM modules are ready, `false` in an SSR context
+ *          where `window` is unavailable.
+ * @throws  If the browser fails to fetch or instantiate either WASM module.
  */
 export async function initZkToolchain(): Promise<boolean> {
   if (typeof window === 'undefined') {

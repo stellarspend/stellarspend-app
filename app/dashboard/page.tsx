@@ -10,6 +10,7 @@ import SplitBillModal from "@/components/payments/SplitBillModal";
 import PendingSplitCard from "@/components/payments/PendingSplitCard";
 import useWallet from "@/hooks/useWallet";
 import { useOffline } from "@/components/offline/OfflineProvider";
+import { useToast } from "@/components/ui/use-toast";
 import type { Goal, Contribution, GoalSchedule, RoundUpRule } from "@/lib/types/savings";
 import type { SplitBill } from "@/lib/types/splits";
 import {
@@ -28,6 +29,7 @@ export default function DashboardPage() {
   const { freighter } = useWallet();
   const publicKey = freighter.publicKey;
   const { isOnline, queueAction } = useOffline();
+  const { toast } = useToast();
 
   const [goals, setGoals] = useState<Goal[]>([]);
   const [contributions, setContributions] = useState<Contribution[]>([]);
@@ -108,7 +110,10 @@ export default function DashboardPage() {
   const handleContribute = async (goalId: string, amount: number) => {
     if (!isOnline) {
       queueAction('CONTRIBUTE_GOAL', `Contribute to goal: ${goalId}`, { goalId, amount });
-      alert('You are offline. Your contribution has been queued.');
+      toast({
+        title: "Contribution Queued",
+        description: "Offline: Your contribution has been queued and will be processed when you reconnect.",
+      });
       // Optimistic UI update
       setGoals(prev => prev.map(goal =>
         goal.id === goalId
@@ -123,9 +128,17 @@ export default function DashboardPage() {
         await contributeToGoal(publicKey, goalId, amount);
         const contractGoals = await fetchGoals(publicKey);
         setGoals(contractGoals);
+        toast({
+          title: "Contribution Successful",
+          description: `Successfully contributed ${amount} XLM to your goal.`,
+        });
       } catch (e: unknown) {
         const errMessage = e instanceof Error ? e.message : String(e);
-        alert(`Failed to contribute: ${errMessage}`);
+        toast({
+          title: "Contribution Failed",
+          description: errMessage,
+          variant: "destructive",
+        });
       }
     } else {
       // Fallback

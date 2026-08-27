@@ -1,7 +1,7 @@
 /**
- * StellarSpend — Mock API Client
- * Simulates network latency and returns typed mock data.
- * Replace with real Stellar Horizon calls in production.
+ * StellarSpend — API Client
+ * Read path (balances, transactions) calls real Stellar Horizon.
+ * Write/send path and budgets are out of scope (Issue #97).
  */
 
 import {
@@ -12,6 +12,11 @@ import {
   getMockBudgetsFallback,
   setMockBudgetsFallback,
 } from '@/lib/stellar/budgetContract';
+import {
+  fetchBalances as horizonFetchBalances,
+  fetchTransactions as horizonFetchTransactions,
+  fetchRecentTransactions as horizonFetchRecentTransactions,
+} from './horizon';
 
 interface LocalWallet {
   id: string;
@@ -99,7 +104,24 @@ export interface PaginatedResponse<T> {
   hasMore: boolean;
 }
 
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/**
+ * Re-export real Horizon implementations.
+ *
+ * Each function reads from Stellar Horizon via `getConnectedPublicKey()`
+ * and returns data shaped to the exact types defined below so no calling
+ * component needs to change its call signature.
+ */
+export const fetchBalances: () => Promise<WalletBalances> = horizonFetchBalances;
+
+export const fetchTransactions: (
+  filters?: FilterParams,
+  page?: number,
+  limit?: number,
+) => Promise<PaginatedResponse<Transaction>> = horizonFetchTransactions;
+
+export const fetchRecentTransactions: (
+  limit?: number,
+) => Promise<Transaction[]> = horizonFetchRecentTransactions;
 
 // ─── Mock Data ─────────────────────────────────────────────────────────────
 
@@ -421,125 +443,10 @@ export const MOCK_BUDGETS: Budget[] = [
 
 // ─── API Functions ──────────────────────────────────────────────────────────
 
-/**
- * Fetch wallet balances (mock — 400 ms latency).
- */
-export async function fetchBalances(): Promise<WalletBalances> {
-  await delay(400);
-  return { ...MOCK_BALANCES, updatedAt: new Date().toISOString() };
-}
+// ── Read-path functions (delegated to real Horizon) ───────────────────────
+// See re-exports above (fetchBalances, fetchTransactions, fetchRecentTransactions).
 
-/**
- * Fetch transactions with filtering, searching, and pagination (mock — 300 ms latency).
- * @param filters - Filter parameters (date range, asset, type, search)
- * @param page - Page number (1-based)
- * @param limit - Items per page (default 10)
- */
-export async function fetchTransactions(
-  filters?: FilterParams,
-  page = 1,
-  limit = 10,
-): Promise<PaginatedResponse<Transaction>> {
-  await delay(300);
-
-  let filtered = [...MOCK_TRANSACTIONS];
-
-  // Apply filters
-  if (filters?.dateFrom) {
-    const dateFrom = new Date(filters.dateFrom);
-    filtered = filtered.filter((tx) => new Date(tx.created_at) >= dateFrom);
-  }
-
-  if (filters?.dateTo) {
-    const dateTo = new Date(filters.dateTo);
-    // Set to end of day
-    dateTo.setHours(23, 59, 59, 999);
-    filtered = filtered.filter((tx) => new Date(tx.created_at) <= dateTo);
-  }
-
-  if (filters?.asset && filters.asset !== "all") {
-    filtered = filtered.filter(
-      (tx) => tx.operations[0]?.asset_code === filters.asset,
-    );
-  }
-
-  if (filters?.type && filters.type !== "all") {
-    filtered = filtered.filter((tx) => {
-      const recipient = tx.operations[0]?.to;
-      const sender = tx.operations[0]?.from;
-      const userAccount =
-        "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";
-
-      if (filters.type === "in") {
-        return recipient === userAccount;
-      } else if (filters.type === "out") {
-        return sender === userAccount;
-      }
-      return true;
-    });
-  }
-
-  // Apply search
-  if (filters?.search) {
-    const query = filters.search.trim().toLowerCase();
-    filtered = filtered.filter((tx) => {
-      const memo = tx.memo?.toLowerCase() ?? "";
-      const hash = tx.hash?.toLowerCase() ?? "";
-      const amount = tx.operations
-        .map((operation) => operation.amount ?? "")
-        .join(" ")
-        .toLowerCase();
-      const formattedDate = new Date(tx.created_at).toLocaleDateString(
-        undefined,
-        {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        },
-      ).toLowerCase();
-      const isoDate = tx.created_at.toLowerCase();
-
-      return (
-        memo.includes(query) ||
-        hash.includes(query) ||
-        amount.includes(query) ||
-        formattedDate.includes(query) ||
-        isoDate.includes(query)
-      );
-    });
-  }
-
-  // Sort by date descending
-  filtered.sort(
-    (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-  );
-
-  // Calculate pagination
-  const total = filtered.length;
-  const offset = (page - 1) * limit;
-  const paginatedData = filtered.slice(offset, offset + limit);
-  const hasMore = offset + limit < total;
-
-  return {
-    data: paginatedData,
-    total,
-    page,
-    limit,
-    hasMore,
-  };
-}
-
-/**
- * Fetch recent transactions (mock — 300 ms latency).
- * @param limit  maximum number of records to return (default 10)
- */
-export async function fetchRecentTransactions(
-  limit = 10,
-): Promise<Transaction[]> {
-  await delay(300);
-  return MOCK_TRANSACTIONS.slice(0, limit);
-}
+// ── Budget functions (still delegate to on-chain contract / local fallback) ──
 
 /**
  * Fetch all budgets (mock — 200 ms latency).
@@ -611,6 +518,10 @@ export async function deleteBudget(id: string): Promise<void> {
   const filtered = mockBudgets.filter((b) => b.id !== id);
   setMockBudgetsFallback(filtered);
 }
+
+// ── Send path (still mock — out of scope for issue #97) ───────────────────
+
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * Submits a send payment transaction, optionally attaching a ZK proof.

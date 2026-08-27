@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 import { X, Send, ShieldAlert, Cpu, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
 import { sendPayment } from "@/lib/api/client";
 import { generateSpendingProof } from "@/lib/zk/generateSpendingProof";
-import { useNotifications } from "@/context/NotificationContext";
 import { useOffline } from "@/components/offline/OfflineProvider";
+import { useToast } from "@/components/ui/use-toast";
 import { getRemaining, recordSpend } from "@/lib/stellar/spendingLimitsContract";
 import useWallet from "@/hooks/useWallet";
 
@@ -19,8 +19,8 @@ const ZK_PROOF_THRESHOLD = Number(process.env.NEXT_PUBLIC_ZK_LIMIT_THRESHOLD ?? 
 const ZK_SPENDING_LIMIT_CEILING = Number(process.env.NEXT_PUBLIC_ZK_LIMIT_CEILING ?? 500);
 
 export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
-  const { addNotification } = useNotifications();
   const { isOnline, queueAction } = useOffline();
+  const { toast } = useToast();
   const { freighter } = useWallet();
   const userPublicKey = freighter.publicKey || "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";
 
@@ -86,10 +86,10 @@ export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
         `Send ${parsedAmount} ${asset} to ${recipient.substring(0, 8)}...`,
         { recipient, amount: parsedAmount, asset }
       );
-      addNotification(
-        "info",
-        `Offline: Payment of ${parsedAmount} ${asset} has been queued.`
-      );
+      toast({
+        title: "Payment Queued",
+        description: `Offline: Payment of ${parsedAmount} ${asset} has been queued.`,
+      });
       onClose();
       return;
     }
@@ -136,7 +136,11 @@ export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
         console.error("ZK Proving failed:", zkErr);
         setStatus("zk_failed");
         setFormError(zkErrMsg || "Cryptographic proof generation failed constraint checks.");
-        addNotification("error", `ZK proving failed: ${zkErrMsg}`);
+        toast({
+          title: "ZK Proving Failed",
+          description: zkErrMsg || "Cryptographic proof generation failed constraint checks.",
+          variant: "destructive",
+        });
         return;
       }
     }
@@ -154,12 +158,19 @@ export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
 
       setTxHash(transaction.hash);
       setStatus("success");
-      addNotification("success", `Successfully sent ${parsedAmount} ${asset} to ${recipient.substring(0, 8)}...`);
+      toast({
+        title: "Payment Successful",
+        description: `Successfully sent ${parsedAmount} ${asset} to ${recipient.substring(0, 8)}...`,
+      });
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       setStatus("idle");
       setFormError(errMsg || "Transaction submission failed.");
-      addNotification("error", `Payment failed: ${errMsg}`);
+      toast({
+        title: "Payment Failed",
+        description: errMsg || "Transaction submission failed.",
+        variant: "destructive",
+      });
     }
   };
 

@@ -38,9 +38,36 @@ export function ContributionWidget({
   const [showHistory, setShowHistory] = useState(false)
   const { toast } = useToast()
 
+  const SOURCE_LABELS: Record<string, string> = {
+    manual: 'Manual',
+    scheduled: 'Scheduled',
+    'round-up': 'Round-Up',
+  }
+
+  const SOURCE_COLORS: Record<string, string> = {
+    manual: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    scheduled: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    'round-up': 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+  }
+
   const progress = (goal.currentAmount / goal.targetAmount) * 100
   const remainingAmount = goal.targetAmount - goal.currentAmount
   const goalContributions = contributions.filter((c) => c.goalId === goal.id)
+
+  const recentContributions = (() => {
+    const chronological = [...goalContributions].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    )
+    const withRunningTotal = chronological.map((c, index) => ({
+      ...c,
+      runningTotal: chronological
+        .slice(0, index + 1)
+        .reduce((total, contribution) => total + contribution.amount, 0),
+    }))
+    return withRunningTotal
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5)
+  })()
 
   const handleQuickContribution = (amount: number) => {
     if (amount > availableBalance) {
@@ -205,6 +232,56 @@ export function ContributionWidget({
             <span className="font-semibold">{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
+        </div>
+
+        {/* Recent contributions */}
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Recent Contributions</p>
+          {recentContributions.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-3">
+              No contributions yet. Start saving to see your activity here!
+            </p>
+          ) : (
+            <div className="space-y-0">
+              {recentContributions.map((contribution) => (
+                <div
+                  key={contribution.id}
+                  className="flex items-center justify-between py-2 border-b last:border-b-0"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">
+                        ${contribution.amount.toFixed(2)}
+                      </span>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${SOURCE_COLORS[contribution.source]}`}
+                      >
+                        {SOURCE_LABELS[contribution.source]}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(contribution.createdAt).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    Total: ${contribution.runningTotal.toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          {goalContributions.length > 0 && (
+            <button
+              className="text-sm text-primary hover:underline w-full text-center py-1"
+              onClick={() => setShowHistory(true)}
+            >
+              View all
+            </button>
+          )}
         </div>
 
         <div className="space-y-2">

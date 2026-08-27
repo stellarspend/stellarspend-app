@@ -34,22 +34,7 @@ function detectBrowserLanguage(): string {
   return "en";
 }
 
-/**
- * Get the initial language from localStorage, browser preference, or fallback.
- * This is called during SSR-safe initialization.
- */
-function getInitialLanguage(): string {
-  if (typeof window === "undefined") return "en";
 
-  // Priority 1: Stored preference in localStorage
-  const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  if (stored && (SUPPORTED_LANGUAGES as readonly string[]).includes(stored)) {
-    return stored;
-  }
-
-  // Priority 2: Browser's preferred language
-  return detectBrowserLanguage();
-}
 
 // Initialize i18next
 i18next.use(initReactI18next).init({

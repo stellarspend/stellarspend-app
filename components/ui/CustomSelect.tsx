@@ -8,13 +8,14 @@ interface CustomSelectProps {
   onChange: (value: string) => void;
   options: { value: string; label: string }[];
   label?: string;
+  ariaLabel?: string;
 }
 
 export default function CustomSelect({
   value,
   onChange,
   options,
-  label: _label,
+  ariaLabel,
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,6 +44,7 @@ export default function CustomSelect({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-4 py-2.5 bg-[#0f1420] border border-[#e8b84b]/60 rounded-xl text-white text-left font-semibold flex items-center justify-between hover:border-[#e8b84b] transition-all outline-none"
+        aria-label={ariaLabel}
       >
         <span>{selectedOption?.label || "Select..."}</span>
         <ChevronDown

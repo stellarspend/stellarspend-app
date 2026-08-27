@@ -4,33 +4,31 @@
  * hooks/useWallet.ts
  *
  * Combines wallet context (multi-wallet management, selection, balance refresh)
- * with Freighter browser extension integration. Provides a single hook for
- * connecting/disconnecting Freighter, formatting addresses, and aggregating
- * balances across all managed wallets.
+ * with a wallet-provider abstraction supporting Freighter, Ledger, xBull, and
+ * Albedo.  Provides a single hook for connecting/disconnecting any supported
+ * wallet, formatting addresses, and aggregating balances across all managed
+ * wallets.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import { useWalletContext, Wallet } from "@/context/WalletContext";
-
-// ── Freighter browser extension type declaration ──────────────────────────────
-declare global {
-  interface Window {
-    freighter?: {
-      isConnected: () => Promise<boolean>;
-      getPublicKey: () => Promise<string>;
-      requestAccess: () => Promise<string>;
-      signTransaction: (xdr: string, network: string) => Promise<string>;
-    };
-  }
-}
+import {
+  getProvider,
+  type WalletProvider,
+  type WalletProviderId,
+} from "@/lib/wallet-providers";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-export interface FreighterState {
+
+export interface WalletProviderState {
+  /** The provider currently connected (if any). */
+  providerId: WalletProviderId | null;
   isInstalled: boolean;
   isConnected: boolean;
   publicKey: string | null;
   isConnecting: boolean;
-  freighterError: string | null; // named freighterError to avoid clash with wallet context `error`
+  /** Named walletError to avoid clash with wallet context `error`. */
+  walletError: string | null;
 }
 
 export interface UseWalletReturn {
@@ -46,8 +44,14 @@ export interface UseWalletReturn {
   updateWalletName: (id: string, name: string) => void;
   setDefaultWallet: (id: string) => void;
   refreshBalances: () => Promise<void>;
-  // Freighter
-  freighter: FreighterState;
+  // Wallet-provider state (generalised)
+  walletProvider: WalletProviderState;
+  connectProvider: (providerId?: WalletProviderId) => Promise<void>;
+  disconnectProvider: () => void;
+  /** Get the underlying WalletProvider instance (e.g. for direct signing). */
+  getActiveProvider: () => WalletProvider | null;
+  // ── Legacy helpers (preserved for backward compat) ──
+  freighter: WalletProviderState;
   connectFreighter: () => Promise<void>;
   disconnectFreighter: () => void;
   // Helpers
@@ -68,66 +72,102 @@ export interface UseWalletReturn {
 export function useWallet(): UseWalletReturn {
   const context = useWalletContext();
 
-  const [freighterState, setFreighterState] = useState<FreighterState>({
+  const [providerState, setProviderState] = useState<WalletProviderState>({
+    providerId: null,
     isInstalled: false,
     isConnected: false,
     publicKey: null,
     isConnecting: false,
-    freighterError: null,
+    walletError: null,
   });
 
-  const connectFreighter = useCallback(async () => {
-    const installed = typeof window !== "undefined" && !!window.freighter;
+  // Keep a reference to the active provider for direct access (e.g. signing).
+  const activeProviderRef = useRef<WalletProvider | null>(null);
 
-    if (!installed) {
-      setFreighterState((s) => ({
-        ...s,
-        isInstalled: false,
-        freighterError: "Freighter not found. Install the extension to continue.",
-      }));
-      window.open("https://freighter.app", "_blank", "noopener,noreferrer");
-      return;
-    }
+  // ── Generic connect ───────────────────────────────────────────────────────
 
-    setFreighterState((s) => ({
-      ...s,
-      isInstalled: true,
-      isConnecting: true,
-      freighterError: null,
-    }));
+  const connectProvider = useCallback(
+    async (providerId: WalletProviderId = "freighter") => {
+      const provider = getProvider(providerId);
+      const installed = await provider.isAvailable().catch(() => false);
 
-    try {
-      const publicKey = await window.freighter!.requestAccess();
-      if (!publicKey) throw new Error("No public key returned.");
+      if (!installed && provider.getMeta().kind !== "web") {
+        setProviderState({
+          providerId,
+          isInstalled: false,
+          isConnected: false,
+          publicKey: null,
+          isConnecting: false,
+          walletError: `${provider.getMeta().name} not found. Install it to continue.`,
+        });
+        return;
+      }
 
-      setFreighterState((s) => ({
-        ...s,
-        isConnected: true,
-        publicKey,
-        isConnecting: false,
-        freighterError: null,
-      }));
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to connect Freighter.";
-      setFreighterState((s) => ({
-        ...s,
+      setProviderState({
+        providerId,
+        isInstalled: installed,
         isConnected: false,
         publicKey: null,
-        isConnecting: false,
-        freighterError: message,
-      }));
-    }
-  }, []);
+        isConnecting: true,
+        walletError: null,
+      });
 
-  const disconnectFreighter = useCallback(() => {
-    setFreighterState((s) => ({
-      ...s,
+      try {
+        const publicKey = await provider.connect();
+        if (!publicKey) throw new Error("No public key returned.");
+
+        activeProviderRef.current = provider;
+
+        setProviderState({
+          providerId,
+          isInstalled: true,
+          isConnected: true,
+          publicKey,
+          isConnecting: false,
+          walletError: null,
+        });
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to connect wallet.";
+        setProviderState({
+          providerId,
+          isInstalled: installed,
+          isConnected: false,
+          publicKey: null,
+          isConnecting: false,
+          walletError: message,
+        });
+      }
+    },
+    [],
+  );
+
+  const disconnectProvider = useCallback(() => {
+    activeProviderRef.current?.disconnect();
+    activeProviderRef.current = null;
+    setProviderState({
+      providerId: null,
+      isInstalled: false,
       isConnected: false,
       publicKey: null,
-      freighterError: null,
-    }));
+      isConnecting: false,
+      walletError: null,
+    });
   }, []);
+
+  const getActiveProvider = useCallback(() => activeProviderRef.current, []);
+
+  // ── Legacy Freighter helpers (delegate to generic connect) ────────────────
+
+  const connectFreighter = useCallback(
+    () => connectProvider("freighter"),
+    [connectProvider],
+  );
+
+  const disconnectFreighter = useCallback(
+    () => disconnectProvider(),
+    [disconnectProvider],
+  );
 
   const getWalletById = useCallback(
     (id: string) => context.wallets.find((w) => w.id === id),
@@ -173,7 +213,13 @@ export function useWallet(): UseWalletReturn {
     updateWalletName: context.updateWalletName,
     setDefaultWallet: context.setDefaultWallet,
     refreshBalances: context.refreshBalances,
-    freighter: freighterState,
+    // New generic provider state
+    walletProvider: providerState,
+    connectProvider,
+    disconnectProvider,
+    getActiveProvider,
+    // Legacy aliases
+    freighter: providerState,
     connectFreighter,
     disconnectFreighter,
     getWalletById,

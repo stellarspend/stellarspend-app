@@ -103,6 +103,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         <select
           value={language}
           onChange={(e) => handleLanguageChange(e.target.value)}
+          aria-label="Select language"
           className="bg-white/[0.02] border border-white/10 rounded-lg ps-3 pe-8 py-2 text-sm text-[#e8edf8] focus:outline-none focus:border-[#e8b84b]/50 focus:ring-1 focus:ring-[#e8b84b]/50 cursor-pointer appearance-none"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%237a8aaa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,

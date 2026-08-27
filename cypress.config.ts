@@ -15,6 +15,7 @@ export default defineConfig({
       openMode: 0,
     },
     setupNodeEvents(_on, _config) {
+    setupNodeEvents() {
       // implement node event listeners here
     },
   },
