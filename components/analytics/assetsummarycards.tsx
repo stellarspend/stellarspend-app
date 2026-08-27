@@ -21,7 +21,7 @@ export function AssetSummaryCards({ categoryBreakdown }: AssetSummaryCardsProps)
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Asset balances">
       {totalsByAsset.map(({ asset, totalStroops, transactionCount }) => (
         <div key={asset} className="rounded-lg border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">{asset} spent</p>

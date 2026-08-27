@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import CardErrorBoundary from '@/components/common/CardErrorBoundary';
 
 interface DashboardCardProps {
   title: string;
@@ -10,11 +11,7 @@ interface DashboardCardProps {
   trend?: 'up' | 'down' | 'neutral';
 }
 
-/**
- * Dashboard card component with optimized icon images
- * Demonstrates proper Image usage for small icons and graphics
- */
-export default function DashboardCard({
+function DashboardCardContent({
   title,
   value,
   change,
@@ -53,5 +50,18 @@ export default function DashboardCard({
         {change}
       </p>
     </div>
+  );
+}
+
+/**
+ * Dashboard card component with optimized icon images and per-card error boundary.
+ * If a card throws an error, only that card shows a graceful error state
+ * instead of crashing the entire dashboard.
+ */
+export default function DashboardCard(props: DashboardCardProps) {
+  return (
+    <CardErrorBoundary cardTitle={props.title}>
+      <DashboardCardContent {...props} />
+    </CardErrorBoundary>
   );
 }

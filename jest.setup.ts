@@ -27,5 +27,9 @@ if (typeof globalThis.crypto === "undefined" || !globalThis.crypto.subtle) {
     writable: true,
     configurable: true,
     enumerable: false,
+  Object.defineProperty(globalThis, "crypto", {
+    value: webcrypto,
+    configurable: true,
+    writable: true,
   });
 }

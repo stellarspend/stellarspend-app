@@ -190,6 +190,7 @@ const ACTIONS = [
   {
     id: "send",
     label: "Send",
+    ariaLabel: "Send payment",
     icon: Send,
     color: "#e8b84b",
     bg: "bg-[#e8b84b]/10",
@@ -199,6 +200,7 @@ const ACTIONS = [
   {
     id: "receive",
     label: "Receive",
+    ariaLabel: "Receive payment",
     icon: Download,
     color: "#4ade80",
     bg: "bg-[#4ade80]/10",
@@ -208,6 +210,7 @@ const ACTIONS = [
   {
     id: "budget",
     label: "New Budget",
+    ariaLabel: "Create new budget",
     icon: PieChart,
     color: "#4aa9e8",
     bg: "bg-[#4aa9e8]/10",
@@ -217,6 +220,7 @@ const ACTIONS = [
   {
     id: "goal",
     label: "New Goal",
+    ariaLabel: "Create new savings goal",
     icon: Target,
     color: "#a78bfa",
     bg: "bg-[#a78bfa]/10",
@@ -242,6 +246,7 @@ export default function QuickActions() {
             <motion.button
               key={action.id}
               id={`quick-action-${action.id}`}
+              aria-label={action.ariaLabel}
               onClick={() => setOpenModal(action.id as ModalId)}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

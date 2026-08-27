@@ -23,3 +23,11 @@ describe('localEncryption — storage helpers (jsdom)', () => {
     expect(isPassphraseSet()).toBe(false);
   });
 });
+
+  test('storage helpers are safe when window is unavailable', () => {
+    // Test behavior when localStorage or window methods return safely
+    expect(isPassphraseSet()).toBe(false);
+    expect(loadPlaintext('missing')).toBeNull();
+    expect(detectPlaintextData('missing')).toBe(false);
+  });
+});

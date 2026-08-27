@@ -44,7 +44,7 @@ export function BudgetVsActualChart({ data, asset }: BudgetVsActualChartProps) {
   }
 
   return (
-    <div className="h-72 w-full">
+    <div className="h-72 w-full" aria-label="Budget vs actual chart">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={rows} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />

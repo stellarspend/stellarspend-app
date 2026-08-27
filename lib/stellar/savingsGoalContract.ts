@@ -1,3 +1,12 @@
+/**
+ * lib/stellar/savingsGoalContract.ts
+ *
+ * Client for the on-chain savings-goal Soroban contract. Provides CRUD operations
+ * for savings goals, scheduled contributions, and round-up rules backed by a
+ * deployed Soroban contract when NEXT_PUBLIC_SAVINGS_CONTRACT_ID is configured,
+ * falling back to localStorage mock data for offline/testnet usage.
+ */
+
 import {
   Contract,
   TransactionBuilder,
@@ -78,6 +87,15 @@ function toScVal(value: unknown) {
   return nativeToScVal(value);
 }
 
+/**
+ * Creates a new savings goal on the Soroban contract.
+ * @param goalId - A unique identifier for the goal.
+ * @param ownerPublicKey - The Stellar public key of the goal owner.
+ * @param targetAmount - The target savings amount.
+ * @param deadline - The deadline date as a string.
+ * @param recurrence - The contribution recurrence type.
+ * @returns The contract-assigned goal ID or transaction hash.
+ */
 export async function createGoalOnChain(
   goalId: string,
   ownerPublicKey: string,
@@ -93,6 +111,14 @@ export async function createGoalOnChain(
   return result;
 }
 
+/**
+ * Records a contribution to a savings goal on the Soroban contract.
+ * @param goalId - The ID of the savings goal.
+ * @param amount - The contribution amount.
+ * @param source - The contribution source (e.g. 'manual', 'round-up').
+ * @param accountPublicKey - The contributor's Stellar public key.
+ * @returns A confirmation string from the contract.
+ */
 export async function contributeToGoalOnChain(
   goalId: string,
   amount: number,
@@ -107,6 +133,12 @@ export async function contributeToGoalOnChain(
   return result;
 }
 
+/**
+ * Fetches the contribution schedule for a savings goal from the Soroban contract.
+ * @param goalId - The ID of the savings goal.
+ * @param accountPublicKey - The owner's Stellar public key.
+ * @returns The GoalSchedule for the given goal.
+ */
 export async function getGoalScheduleOnChain(
   goalId: string,
   accountPublicKey: string,
@@ -119,6 +151,13 @@ export async function getGoalScheduleOnChain(
   return result;
 }
 
+/**
+ * Configures the round-up rule for a savings goal on the Soroban contract.
+ * @param goalId - The ID of the savings goal.
+ * @param enabled - Whether round-up is enabled.
+ * @param nearestUnit - The rounding unit (e.g. 1 or 5).
+ * @param accountPublicKey - The owner's Stellar public key.
+ */
 export async function setRoundUpRuleOnChain(
   goalId: string,
   enabled: boolean,
@@ -132,6 +171,12 @@ export async function setRoundUpRuleOnChain(
   );
 }
 
+/**
+ * Fetches the current round-up rule for a savings goal from the Soroban contract.
+ * @param goalId - The ID of the savings goal.
+ * @param accountPublicKey - The owner's Stellar public key.
+ * @returns The RoundUpRule configuration for the goal.
+ */
 export async function getRoundUpRuleOnChain(
   goalId: string,
   accountPublicKey: string,
@@ -144,6 +189,13 @@ export async function getRoundUpRuleOnChain(
   return result;
 }
 
+/**
+ * Applies a round-up contribution to a savings goal on the Soroban contract.
+ * @param goalId - The ID of the savings goal.
+ * @param transactionHash - The hash of the originating transaction.
+ * @param roundUpAmount - The round-up amount to contribute.
+ * @param accountPublicKey - The contributor's Stellar public key.
+ */
 export async function applyRoundUpOnChain(
   goalId: string,
   transactionHash: string,
@@ -157,6 +209,11 @@ export async function applyRoundUpOnChain(
   );
 }
 
+/**
+ * Pauses the contribution schedule for a savings goal on the Soroban contract.
+ * @param goalId - The ID of the savings goal.
+ * @param accountPublicKey - The owner's Stellar public key.
+ */
 export async function pauseScheduleOnChain(
   goalId: string,
   accountPublicKey: string,
@@ -168,6 +225,11 @@ export async function pauseScheduleOnChain(
   );
 }
 
+/**
+ * Resumes a paused contribution schedule on the Soroban contract.
+ * @param goalId - The ID of the savings goal.
+ * @param accountPublicKey - The owner's Stellar public key.
+ */
 export async function resumeScheduleOnChain(
   goalId: string,
   accountPublicKey: string,
@@ -179,6 +241,11 @@ export async function resumeScheduleOnChain(
   );
 }
 
+/**
+ * Permanently cancels the contribution schedule for a savings goal on the Soroban contract.
+ * @param goalId - The ID of the savings goal.
+ * @param accountPublicKey - The owner's Stellar public key.
+ */
 export async function cancelScheduleOnChain(
   goalId: string,
   accountPublicKey: string,
@@ -190,6 +257,12 @@ export async function cancelScheduleOnChain(
   );
 }
 
+/**
+ * Fetches the full contribution history for a savings goal from the Soroban contract.
+ * @param goalId - The ID of the savings goal.
+ * @param accountPublicKey - The owner's Stellar public key.
+ * @returns An array of Contribution records.
+ */
 export async function getContributionHistoryOnChain(
   goalId: string,
   accountPublicKey: string,
@@ -202,6 +275,11 @@ export async function getContributionHistoryOnChain(
   return result;
 }
 
+/**
+ * Loads mock savings goals from localStorage (fallback for offline/testnet usage).
+ * Returns a default "New Laptop" goal if nothing is stored.
+ * @returns An array of Goal objects.
+ */
 export function getMockGoalsFallback(): Goal[] {
   if (typeof window === 'undefined') return [];
   const stored = localStorage.getItem(LOCAL_GOALS_KEY);
@@ -230,12 +308,22 @@ export function getMockGoalsFallback(): Goal[] {
   ];
 }
 
+/**
+ * Persists mock savings goals to localStorage.
+ * @param goals - The array of Goal objects to store.
+ */
 export function setMockGoalsFallback(goals: Goal[]) {
   if (typeof window !== 'undefined') {
     localStorage.setItem(LOCAL_GOALS_KEY, JSON.stringify(goals));
   }
 }
 
+/**
+ * Fetches all savings goals for the given account from the Soroban contract.
+ * Falls back to localStorage mock data if the contract is not configured.
+ * @param publicKey - The Stellar public key of the goal owner.
+ * @returns An array of Goal objects.
+ */
 export async function fetchGoals(publicKey: string): Promise<Goal[]> {
   if (!SAVINGS_CONTRACT_ID) {
     return getMockGoalsFallback();
@@ -266,6 +354,13 @@ export async function fetchGoals(publicKey: string): Promise<Goal[]> {
   }
 }
 
+/**
+ * Creates a new savings goal on-chain (or locally if no contract is configured).
+ * @param publicKey - The Stellar public key of the goal owner.
+ * @param goalData - The goal details (title, target amount, deadline, recurrence).
+ * @param statusCallback - Optional callback for progress updates.
+ * @returns The newly created Goal object.
+ */
 export async function createGoal(
   publicKey: string,
   goalData: { title: string; targetAmount: number; deadline: string; recurrence: 'once' | 'monthly' | 'yearly' },
@@ -320,6 +415,13 @@ export async function createGoal(
   }
 }
 
+/**
+ * Contributes funds to a savings goal on-chain (or locally if no contract is configured).
+ * @param publicKey - The contributor's Stellar public key.
+ * @param goalId - The ID of the savings goal to contribute to.
+ * @param amount - The amount to contribute.
+ * @param statusCallback - Optional callback for progress updates.
+ */
 export async function contributeToGoal(
   publicKey: string,
   goalId: string,
