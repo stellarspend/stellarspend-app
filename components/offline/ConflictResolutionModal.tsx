@@ -42,7 +42,7 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
 
           {/* Remote Version */}
           <div className="border rounded p-4">
-            <h3 className="font-semibold text-green-600 mb-2">Other Device's Changes</h3>
+            <h3 className="font-semibold text-green-600 mb-2">Other Device&apos;s Changes</h3>
             <div className="text-sm">
               <p><strong>Name:</strong> {remoteData.name}</p>
               <p><strong>Amount:</strong> {remoteData.amount}</p>
