@@ -32,6 +32,7 @@ export class LedgerProvider implements WalletProvider {
       // WebUSB availability is a reasonable proxy for Ledger support.
       isAvailable:
         typeof navigator !== 'undefined' && 'usb' in navigator,
+        typeof navigator !== 'undefined' && !!(navigator as unknown as Record<string, unknown>).usb,
       kind: 'hardware',
     };
   }
@@ -41,6 +42,7 @@ export class LedgerProvider implements WalletProvider {
       try {
       return (
         typeof navigator !== 'undefined' && 'usb' in navigator
+        typeof navigator !== 'undefined' && !!(navigator as unknown as Record<string, unknown>).usb
       );
     } catch {
       return false;

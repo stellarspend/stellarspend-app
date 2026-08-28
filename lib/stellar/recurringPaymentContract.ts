@@ -9,18 +9,7 @@
  * configured, consistent with every other contract wrapper in this repo.
  */
 
-import {
-  Contract,
-  TransactionBuilder,
-  Account,
-  Address,
-  nativeToScVal,
-  scValToNative,
-  rpc as SorobanRpc,
-  Transaction,
-} from '@stellar/stellar-sdk';
 
-import { getSorobanServer, getNetworkPassphrase } from '@/lib/api/stellar/client';
 import {
   callContractView,
   submitContractTx,
@@ -67,19 +56,6 @@ const LOCAL_SCHEDULES_KEY = 'stellarspend_recurring_schedules';
 const LOCAL_EXECUTIONS_KEY = 'stellarspend_recurring_executions';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function toScVal(value: unknown) {
-  if (typeof value === 'string' && value.startsWith('G') && value.length === 56) {
-    return new Address(value).toScVal();
-  }
-  if (typeof value === 'number') {
-    return nativeToScVal(value, { type: 'u64' });
-  }
-  if (typeof value === 'boolean') {
-    return nativeToScVal(value ? 1 : 0, { type: 'u32' });
-  }
-  return nativeToScVal(value);
-}
 
 // ── Mock / fallback storage ───────────────────────────────────────────────────
 
@@ -149,7 +125,6 @@ export async function createRecurringPayment(
 
   if (!RECURRING_CONTRACT_ID) {
     const schedules = getMockSchedules();
-    const now = new Date(params.startDate);
     const schedule: RecurringPayment = {
       id,
       owner: publicKey,
