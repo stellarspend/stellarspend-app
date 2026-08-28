@@ -33,7 +33,7 @@ export class LedgerProvider implements WalletProvider {
       description: 'Hardware wallet — maximum custody security.',
       // WebUSB availability is a reasonable proxy for Ledger support.
       isAvailable:
-        typeof navigator !== 'undefined' && !!(navigator as any).usb,
+        typeof navigator !== 'undefined' && !!(navigator as unknown as Record<string, unknown>).usb,
       kind: 'hardware',
     };
   }
@@ -42,7 +42,7 @@ export class LedgerProvider implements WalletProvider {
   async isAvailable(): Promise<boolean> {
     try {
       return (
-        typeof navigator !== 'undefined' && !!(navigator as any).usb
+        typeof navigator !== 'undefined' && !!(navigator as unknown as Record<string, unknown>).usb
       );
     } catch {
       return false;

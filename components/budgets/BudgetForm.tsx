@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { z } from "zod";
 import { useForm } from "@/hooks/useForm";
-import { useOffline } from "@/components/offline/OfflineProvider";
 import { Budget } from "@/lib/api/client";
 import {
   fetchOracleSnapshot,
@@ -48,9 +47,6 @@ interface BudgetFormProps {
     initialData?: Budget | null;
     isEditing?: boolean;
     budgetCount?: number;
-}
-
-export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing = false, budgetCount = 0 }: BudgetFormProps) {
     spent?: number;
 }
 
