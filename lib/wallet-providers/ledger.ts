@@ -16,6 +16,7 @@ import type {
   WalletProviderMeta,
 } from './types';
 
+
 export class LedgerProvider implements WalletProvider {
   readonly id: WalletProviderId = 'ledger';
 
