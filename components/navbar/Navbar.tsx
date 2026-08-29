@@ -226,7 +226,7 @@ function WalletButton({ mobile = false }: { mobile?: boolean }) {
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [_pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -237,7 +237,7 @@ export default function Navbar() {
     }
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [startTransition]);
 
   const prevPathnameRef = useRef(pathname);
 
@@ -247,7 +247,7 @@ export default function Navbar() {
     startTransition(() => {
       setMobileOpen(false);
     });
-  }, [pathname]);
+  }, [pathname, startTransition]);
 
   // Lock body scroll while drawer is open
   useEffect(() => {
