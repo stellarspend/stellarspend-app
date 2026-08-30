@@ -1,12 +1,5 @@
 /**
  * app/dashboard/analytics/page.tsx
- *
- * Spending-insights view: trend over time, category breakdown, and
- * budget-vs-actual, all sourced from the on-chain analytics contract via
- * lib/stellar/analyticsContract.ts (see hooks/useAnalytics.ts).
- *
- * Client component: it holds time-range state and calls a hook that reads
- * from the connected wallet's account.
  */
 'use client';
 
@@ -18,6 +11,7 @@ import { TimeRangeSelector } from '@/components/analytics/timerangeselector';
 import { AnalyticsSection } from '@/components/analytics/analytics';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { getGranularity, SUPPORTED_ASSETS, TimeRange } from '@/lib/api/stellar/analyticsContract';
+import { exportToCsv } from '@/lib/api/stellar/exportAnalytics';
 import { useState } from 'react';
 
 export default function AnalyticsPage() {
@@ -26,6 +20,11 @@ export default function AnalyticsPage() {
 
   const { trend, categoryBreakdown, budgetVsActual, isLoading, error, refetch } =
     useAnalytics(range);
+
+  const handleExport = () => {
+    const dateStr = new Date().toISOString().slice(0, 10);
+    exportToCsv({ range, trend, categoryBreakdown, budgetVsActual }, `stellarspend-analytics-${range}-${dateStr}.csv`);
+  };
 
   return (
     <AnalyticsSection>
@@ -37,7 +36,16 @@ export default function AnalyticsPage() {
               Spending trends, category breakdown, and budget performance.
             </p>
           </div>
-          <TimeRangeSelector value={range} onChange={setRange} />
+          <div className="flex items-center gap-2">
+            <TimeRangeSelector value={range} onChange={setRange} />
+            <button
+              type="button"
+              onClick={handleExport}
+              className="rounded-md px-3 py-1 text-sm font-medium bg-muted text-foreground hover:bg-muted/80"
+            >
+              Export CSV
+            </button>
+          </div>
         </div>
 
         {error && (
