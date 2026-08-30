@@ -9,7 +9,6 @@ import type {
   WalletProvider,
   WalletProviderId,
   WalletProviderMeta,
-  WalletProviderConnection,
 } from './types';
 
 declare global {

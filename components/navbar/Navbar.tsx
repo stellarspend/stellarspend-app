@@ -226,7 +226,7 @@ function WalletButton({ mobile = false }: { mobile?: boolean }) {
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [_pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
 
