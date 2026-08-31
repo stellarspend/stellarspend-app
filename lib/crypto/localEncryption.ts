@@ -98,8 +98,6 @@ export async function encryptData(data: unknown, passphrase: string): Promise<st
   return btoa(String.fromCharCode(...combined));
 }
 
-const SALT_HEX_LENGTH = SALT_LENGTH * 2;
-
 /**
  * Decrypts data that was encrypted with {@link encryptData}.
  * Extracts the salt and IV from the base64-encoded input, derives the decryption key

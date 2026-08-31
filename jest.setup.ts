@@ -22,7 +22,6 @@ if (typeof globalThis.TextDecoder === "undefined") {
 // it has no `subtle`, which localEncryption's PBKDF2/AES-GCM flow needs.
 // Replace it with Node's full WebCrypto implementation in that case.
 if (typeof globalThis.crypto === "undefined" || !globalThis.crypto?.subtle) {
-if (typeof globalThis.crypto === "undefined" || !globalThis.crypto.subtle) {
   Object.defineProperty(globalThis, "crypto", {
     value: webcrypto,
     configurable: true,

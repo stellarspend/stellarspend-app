@@ -6,6 +6,8 @@ import {
   generateSalt,
   isPassphraseSet,
   setPassphraseSet,
+  loadPlaintext,
+  detectPlaintextData,
   resetEncryption,
 } from '../localEncryption';
 

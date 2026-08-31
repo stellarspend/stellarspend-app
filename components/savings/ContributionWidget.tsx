@@ -302,7 +302,7 @@ export function ContributionWidget({
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
+          <DialogTrigger>
             <Button variant="secondary" className="w-full">
               Custom Amount
             </Button>

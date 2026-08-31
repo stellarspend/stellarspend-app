@@ -1,5 +1,12 @@
 import type { NextConfig } from "next";
 
+// Optional Ledger hardware peer-deps map to a local stub so bundlers can
+// resolve them without the packages being installed.
+const ledgerAliases = {
+  '@ledgerhq/hw-transport-webusb': './lib/wallet-providers/ledgerStub.ts',
+  '@ledgerhq/hw-app-str': './lib/wallet-providers/ledgerStub.ts',
+};
+
 const nextConfig: NextConfig = {
   images: {
     // Configure external image domains if needed
@@ -29,9 +36,16 @@ const nextConfig: NextConfig = {
       '@noir-lang/noir_js': './lib/zk/mockWorkerThreads.ts',
       '@noir-lang/acvm_js': './lib/zk/mockWorkerThreads.ts',
       '@noir-lang/noirc_abi': './lib/zk/mockWorkerThreads.ts',
+      ...ledgerAliases,
     },
   },
   webpack: (config, { isServer }) => {
+    // Ledger is imported through useWallet (traced on server & client), so its
+    // aliases must apply to every build.
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      ...ledgerAliases,
+    };
     if (!isServer) {
       config.resolve.alias = {
         ...config.resolve.alias,
