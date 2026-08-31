@@ -119,6 +119,8 @@ export class LedgerProvider implements WalletProvider {
   }
 
   private async loadApp(): Promise<unknown> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async loadApp(): Promise<any> {
     const mod = await import('@ledgerhq/hw-app-str');
     return mod.default;
   }
