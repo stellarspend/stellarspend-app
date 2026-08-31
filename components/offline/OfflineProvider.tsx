@@ -94,6 +94,10 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   );
   const [queuedActions, setQueuedActions] = useState<QueuedAction[]>([]);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  // Whether the initial load from storage has finished. Prevents the mount-time
+  // `saveQueue` effect from clobbering already-persisted data with an empty
+  // array before the async load completes (a race that could wipe the queue).
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const loadQueue = useCallback(async () => {
     const data = await loadQueueData(sharedPassphrase || undefined);
@@ -101,6 +105,7 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     if (sharedPassphrase) {
       setIsUnlocked(true);
     }
+    setHasLoaded(true);
   }, []);
 
   // Fixed: Wrap loadQueue in an async init function
@@ -125,13 +130,14 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!hasLoaded) return;
     const saveQueue = async () => {
       if (queuedActions.length > 0 || localStorage.getItem(QUEUE_STORAGE_KEY)) {
         await saveQueueData(queuedActions, sharedPassphrase || undefined);
       }
     };
     saveQueue();
-  }, [queuedActions]);
+  }, [queuedActions, hasLoaded]);
 
   const unlockQueue = useCallback(async (passphrase: string): Promise<boolean> => {
     try {
