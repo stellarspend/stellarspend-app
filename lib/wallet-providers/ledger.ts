@@ -114,6 +114,7 @@ export class LedgerProvider implements WalletProvider {
     // Dynamic import keeps the bundle small. Ledger libs are optional
     // peer-deps aliased to a stub in next.config.ts for build resolution.
     // @ts-expect-error — optional peer-dep, not installed; resolved via alias.
+    // Dynamic import keeps the bundle small.
     const mod = await import('@ledgerhq/hw-transport-webusb');
     return mod.default;
   }
