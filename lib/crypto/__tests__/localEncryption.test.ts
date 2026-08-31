@@ -52,6 +52,16 @@ describe('localEncryption', () => {
     expect(isPassphraseSet()).toBe(false);
   });
 
+  test('storage helpers return safe defaults and never throw', () => {
+    // jsdom exposes a non-configurable global `window`, so the `typeof window
+    // === 'undefined'` guard cannot be forced in this environment. These
+    // assertions still verify the documented safe-default behaviour of the
+    // helpers when no data is stored.
+    expect(isPassphraseSet()).toBe(false);
+    expect(loadPlaintext('missing')).toBeNull();
+    expect(detectPlaintextData('missing')).toBe(false);
+    expect(() => isPassphraseSet()).not.toThrow();
+    expect(() => loadPlaintext('missing')).not.toThrow();
   test('storage helpers are safe when window is unavailable', () => {
     // Test behavior when localStorage or window methods return safely
     expect(isPassphraseSet()).toBe(false);
