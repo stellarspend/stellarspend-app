@@ -1,0 +1,7 @@
+{
+  "id": "goal_usdc_1234567890",
+  "name": "Emergency Fund",
+  "targetAmount": 1000,
+  "currentAmount": 250,
+  "asset": "USDC"
+}

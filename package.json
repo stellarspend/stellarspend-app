@@ -21,6 +21,8 @@
     "@ledgerhq/hw-app-str": "^7.7.7",
     "@ledgerhq/hw-transport-webusb": "^6.35.0",
     "@ledgerhq/logs": "^6.18.0",
+    "@ledgerhq/hw-app-str": "^7.7.7",
+    "@ledgerhq/hw-transport-webusb": "^6.35.0",
     "@noir-lang/acvm_js": "^0.30.0",
     "@noir-lang/noir_js": "^0.30.0",
     "@noir-lang/noirc_abi": "^0.30.0",
@@ -39,6 +41,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@ledgerhq/hw-app-str": "^7.7.7",
+    "@ledgerhq/hw-transport-webusb": "^6.35.0",
     "@tailwindcss/postcss": "^4.2.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

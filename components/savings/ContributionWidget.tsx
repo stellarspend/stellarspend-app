@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card'
 import { Progress } from '../ui/progress'
 import { FieldGroup, FieldLabel } from '../ui/field'
@@ -300,6 +300,10 @@ export function ContributionWidget({
             ))}
           </div>
         </div>
+
+        <Button variant="secondary" className="w-full" onClick={() => setOpen(true)}>
+          Custom Amount
+        </Button>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger>
