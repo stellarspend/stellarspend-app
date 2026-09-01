@@ -6,6 +6,7 @@ import { X, Send, ShieldAlert, Cpu, CheckCircle2, AlertTriangle, RefreshCw } fro
 import { sendPayment } from "@/lib/api/client";
 import { generateSpendingProof } from "@/lib/zk/generateSpendingProof";
 import { useOffline } from "@/components/offline/OfflineProvider";
+import { useNotifications } from "@/context/NotificationContext";
 import { useToast } from "@/components/ui/use-toast";
 import { getRemaining, recordSpend } from "@/lib/stellar/spendingLimitsContract";
 import useWallet from "@/hooks/useWallet";
@@ -20,6 +21,7 @@ const ZK_SPENDING_LIMIT_CEILING = Number(process.env.NEXT_PUBLIC_ZK_LIMIT_CEILIN
 
 export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
   const { isOnline, queueAction } = useOffline();
+  const { addNotification } = useNotifications();
   const { toast } = useToast();
   const { freighter } = useWallet();
   const userPublicKey = freighter.publicKey || "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";
