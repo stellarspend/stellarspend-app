@@ -112,14 +112,12 @@ export class LedgerProvider implements WalletProvider {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async loadTransport(): Promise<any> {
     // Dynamic import keeps the bundle small.
-    // @ts-expect-error — peer deps may not be installed yet.
     const mod = await import('@ledgerhq/hw-transport-webusb');
     return mod.default;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async loadApp(): Promise<any> {
-    // @ts-expect-error — peer deps may not be installed yet.
     const mod = await import('@ledgerhq/hw-app-str');
     return mod.default;
   }

@@ -75,7 +75,7 @@ function WalletButton({ mobile = false }: { mobile?: boolean }) {
   const [copied, setCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { isConnected, publicKey, isConnecting, freighterError } = freighter;
+  const { isConnected, publicKey, isConnecting, walletError } = freighter;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -213,9 +213,9 @@ function WalletButton({ mobile = false }: { mobile?: boolean }) {
         <span>{isConnecting ? "Connecting…" : "Connect Wallet"}</span>
       </button>
 
-      {freighterError && (
+      {walletError && (
         <p role="alert" className="text-[11px] text-red-400 text-center">
-          {freighterError}
+          {walletError}
         </p>
       )}
     </div>

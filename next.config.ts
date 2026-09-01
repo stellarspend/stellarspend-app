@@ -29,6 +29,9 @@ const nextConfig: NextConfig = {
       '@noir-lang/noir_js': './lib/zk/mockWorkerThreads.ts',
       '@noir-lang/acvm_js': './lib/zk/mockWorkerThreads.ts',
       '@noir-lang/noirc_abi': './lib/zk/mockWorkerThreads.ts',
+      // @ledgerhq/logs 6.18.0 declares an `import` condition pointing at
+      // lib-es/ which is not shipped, so bundlers must use the CJS build.
+      '@ledgerhq/logs': './node_modules/@ledgerhq/logs/lib/index.js',
     },
   },
   webpack: (config, { isServer }) => {
@@ -39,6 +42,7 @@ const nextConfig: NextConfig = {
         '@noir-lang/noir_js': false,
         '@noir-lang/acvm_js': false,
         '@noir-lang/noirc_abi': false,
+        '@ledgerhq/logs': require.resolve('@ledgerhq/logs'),
       };
     }
     return config;

@@ -4,6 +4,8 @@ import {
   isPassphraseSet,
   setPassphraseSet,
   resetEncryption,
+  loadPlaintext,
+  detectPlaintextData,
 } from '../localEncryption';
 
 // PBKDF2 + AES-GCM round-trip tests are in localEncryption.crypto.test.ts
@@ -22,7 +24,6 @@ describe('localEncryption — storage helpers (jsdom)', () => {
     resetEncryption();
     expect(isPassphraseSet()).toBe(false);
   });
-});
 
   test('storage helpers are safe when window is unavailable', () => {
     // Test behavior when localStorage or window methods return safely

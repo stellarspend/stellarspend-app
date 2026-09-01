@@ -12,7 +12,7 @@ import {
   type OracleSnapshot,
   type SupportedAsset,
 } from "@/lib/stellar/priceOracle";
-import { Progress } from "@/components/ui/progress";
+import { useOffline } from "@/components/offline/OfflineProvider";
 
 const budgetSchema = z
   .object({

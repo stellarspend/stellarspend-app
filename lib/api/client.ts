@@ -13,11 +13,10 @@ import {
   setMockBudgetsFallback,
 } from '@/lib/stellar/budgetContract';
 import {
-  fetchOracleSnapshot,
-  round2,
   type RateSource,
   type SupportedAsset,
 } from '@/lib/stellar/priceOracle';
+import {
   fetchBalances as horizonFetchBalances,
   fetchTransactions as horizonFetchTransactions,
   fetchRecentTransactions as horizonFetchRecentTransactions,
@@ -459,53 +458,6 @@ export const MOCK_BUDGETS: Budget[] = [
 
 // ─── API Functions ──────────────────────────────────────────────────────────
 
-/**
- * Fetch wallet balances (mock — 400 ms latency) with USD valuations derived
- * from the price oracle (lib/stellar/priceOracle.ts) rather than hardcoded
- * numbers.
- */
-export async function fetchBalances(): Promise<WalletBalances> {
-  await delay(400);
-
-  const publicKey = getConnectedPublicKey();
-  const snapshot = await fetchOracleSnapshot(publicKey);
-
-  const balances: AssetBalance[] = MOCK_BALANCES.map((raw) => {
-    const quote = snapshot.quotes[raw.asset];
-    const amount = parseBalance(raw.balance);
-    return {
-      asset: raw.asset,
-      balance: raw.balance,
-      usdValue: round2(amount * (quote?.priceUsd ?? 0)),
-      change24h: quote?.change24h ?? 0,
-    };
-  });
-
-  const totalUsd = round2(balances.reduce((sum, b) => sum + b.usdValue, 0));
-
-  return {
-    balances,
-    totalUsd,
-    updatedAt: new Date().toISOString(),
-    ratesStale: snapshot.isStale,
-    ratesSource: snapshot.source,
-  };
-}
-
-/**
- * Fetch transactions with filtering, searching, and pagination (mock — 300 ms latency).
- * @param filters - Filter parameters (date range, asset, type, search)
- * @param page - Page number (1-based)
- * @param limit - Items per page (default 10)
- */
-export async function fetchTransactions(
-  filters?: FilterParams,
-  page = 1,
-  limit = 10,
-): Promise<PaginatedResponse<Transaction>> {
-  await delay(300);
-
-  let filtered = [...MOCK_TRANSACTIONS];
 // ── Read-path functions (delegated to real Horizon) ───────────────────────
 // See re-exports above (fetchBalances, fetchTransactions, fetchRecentTransactions).
 
