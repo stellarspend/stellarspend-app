@@ -13,6 +13,13 @@ import {
   FilterParams,
   PaginatedResponse,
 } from "@/lib/api/client";
+import {
+  PAYMENT_CONFIRMED_EVENT,
+  PAYMENT_SUBMITTED_EVENT,
+  toTransactionRecord,
+  type PendingPayment,
+  type SubmittedPayment,
+} from "@/lib/stellar/submitTransaction";
 import TransactionItem from "./TransactionItem";
 import { ChevronLeft, ChevronRight, Search, Download } from "lucide-react";
 
@@ -35,6 +42,8 @@ export default function TransactionList({
   const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const livePaymentStatus = useRef(new Map<string, "pending" | "confirmed">());
+  const knownTransactionHashes = useRef(new Set<string>());
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -43,6 +52,43 @@ export default function TransactionList({
 
     return () => window.clearTimeout(timer);
   }, [searchQuery]);
+
+  useEffect(() => {
+    const handlePaymentSubmitted = (event: Event) => {
+      const payment = (event as CustomEvent<PendingPayment>).detail;
+      if (!payment || livePaymentStatus.current.has(payment.hash)) return;
+      livePaymentStatus.current.set(payment.hash, "pending");
+      const wasKnown = knownTransactionHashes.current.has(payment.hash);
+      knownTransactionHashes.current.add(payment.hash);
+      const transaction = toTransactionRecord(payment, "pending");
+      setTransactions((current) => {
+        if (current.some((item) => item.hash === transaction.hash)) return current;
+        return [transaction, ...current];
+      });
+      if (!wasKnown) setTotal((total) => total + 1);
+    };
+
+    const handlePaymentConfirmed = (event: Event) => {
+      const payment = (event as CustomEvent<SubmittedPayment>).detail;
+      if (!payment || livePaymentStatus.current.get(payment.hash) === "confirmed") return;
+      livePaymentStatus.current.set(payment.hash, "confirmed");
+      const wasKnown = knownTransactionHashes.current.has(payment.hash);
+      knownTransactionHashes.current.add(payment.hash);
+      const transaction = toTransactionRecord(payment, "confirmed");
+      setTransactions((current) => [
+        transaction,
+        ...current.filter((item) => item.hash !== transaction.hash),
+      ]);
+      if (!wasKnown) setTotal((total) => total + 1);
+    };
+
+    window.addEventListener(PAYMENT_SUBMITTED_EVENT, handlePaymentSubmitted);
+    window.addEventListener(PAYMENT_CONFIRMED_EVENT, handlePaymentConfirmed);
+    return () => {
+      window.removeEventListener(PAYMENT_SUBMITTED_EVENT, handlePaymentSubmitted);
+      window.removeEventListener(PAYMENT_CONFIRMED_EVENT, handlePaymentConfirmed);
+    };
+  }, []);
 
   const activeFilters = useMemo<FilterParams>(
     () => ({
@@ -63,6 +109,9 @@ export default function TransactionList({
         const response: PaginatedResponse<Transaction> =
           await fetchTransactions(activeFilters, pageNum, PAGE_SIZE);
 
+        response.data.forEach((transaction) => {
+          knownTransactionHashes.current.add(transaction.hash);
+        });
         setTransactions(response.data);
         setTotal(response.total);
       } catch (error) {

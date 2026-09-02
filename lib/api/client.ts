@@ -86,6 +86,7 @@ export interface Transaction {
   memo: string;
   memo_type?: string;
   successful: boolean;
+  status?: "pending" | "confirmed" | "failed";
   fee_charged: string;
   max_fee: string;
   operation_count: number;
