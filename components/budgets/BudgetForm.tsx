@@ -41,6 +41,7 @@ interface BudgetFormProps {
     spent?: number;
 }
 
+
 function getProgressColor(percentage: number): string {
     if (percentage >= 90) {
         return "bg-red-500";

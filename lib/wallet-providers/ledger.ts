@@ -21,10 +21,8 @@ export class LedgerProvider implements WalletProvider {
 
   private _publicKey: string | null = null;
   // Lazily-loaded module references so we don't bloat the initial bundle.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private _transport: any = null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private _app: any = null;
+  private _transport: unknown = null;
+  private _app: unknown = null;
 
   getMeta(): WalletProviderMeta {
     return {
@@ -33,6 +31,7 @@ export class LedgerProvider implements WalletProvider {
       description: 'Hardware wallet — maximum custody security.',
       // WebUSB availability is a reasonable proxy for Ledger support.
       isAvailable:
+        typeof navigator !== 'undefined' && 'usb' in navigator,
         typeof navigator !== 'undefined' && !!(navigator as unknown as Record<string, unknown>).usb,
       kind: 'hardware',
     };
@@ -40,8 +39,9 @@ export class LedgerProvider implements WalletProvider {
 
   /** @inheritdoc */
   async isAvailable(): Promise<boolean> {
-    try {
+      try {
       return (
+        typeof navigator !== 'undefined' && 'usb' in navigator
         typeof navigator !== 'undefined' && !!(navigator as unknown as Record<string, unknown>).usb
       );
     } catch {
@@ -51,15 +51,18 @@ export class LedgerProvider implements WalletProvider {
 
   /** @inheritdoc */
   async connect(): Promise<string> {
-    const TransportWebUSB = await this.loadTransport();
-    const Str = await this.loadApp();
+    // `loadTransport`/`loadApp` return unknown so cast locally for usage.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const TransportWebUSB = (await this.loadTransport()) as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Str = (await this.loadApp()) as any;
 
     // Open device — this triggers the browser's USB device picker.
     this._transport = await TransportWebUSB.create();
     this._app = new Str(this._transport);
 
     // The user must have the Stellar app open on the device.
-    const { publicKey } = await this._app.getAddress("44'/148'/0'");
+    const { publicKey } = await (this._app as any).getAddress("44'/148'/0'");
     this._publicKey = publicKey;
     return publicKey;
   }
@@ -67,7 +70,7 @@ export class LedgerProvider implements WalletProvider {
   /** @inheritdoc */
   disconnect(): void {
     if (this._transport) {
-      this._transport.close().catch(() => {});
+      (this._transport as any).close().catch(() => {});
       this._transport = null;
     }
     this._app = null;
@@ -93,7 +96,7 @@ export class LedgerProvider implements WalletProvider {
     const accountIndex = "44'/148'/0'";
     // signTransaction returns the signed TX as a Buffer / Uint8Array.
     // The second arg is the BIP-32 path index, defaulting to 0.
-    const signedBuf = await this._app.signTransaction(
+    const signedBuf = await (this._app as any).signTransaction(
       accountIndex,
       0, // signer index within the account
       Buffer.from(xdr, 'base64'),
@@ -109,13 +112,13 @@ export class LedgerProvider implements WalletProvider {
 
   // ── Dynamic imports ──────────────────────────────────────────────────────
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async loadTransport(): Promise<any> {
+  private async loadTransport(): Promise<unknown> {
     // Dynamic import keeps the bundle small.
     const mod = await import('@ledgerhq/hw-transport-webusb');
     return mod.default;
   }
 
+  private async loadApp(): Promise<unknown> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async loadApp(): Promise<any> {
     const mod = await import('@ledgerhq/hw-app-str');
