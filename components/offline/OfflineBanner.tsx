@@ -25,13 +25,14 @@ export default function OfflineBanner() {
         <AnimatePresence>
             {!isOnline && !dismissed && (
                 <motion.div
+                    role="alert"
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.3 }}
                     className="sticky top-0 z-50 w-full bg-amber-500 text-white py-2 px-4 shadow-md overflow-hidden"
                 >
-                    <div className="relative max-w-7xl mx-auto flex items-center justify-center space-x-3 px-8 text-sm font-medium">
+                    <div className="relative max-w-7xl mx-auto flex items-center justify-center space-x3 px-8 text-sm font-medium">
                         <WifiOff className="w-4 h-4 animate-pulse" />
                         <span>You are currently offline. Some features may be unavailable, but your actions will be queued.</span>
                         <button

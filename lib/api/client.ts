@@ -13,6 +13,30 @@ import {
   setMockBudgetsFallback,
 } from '@/lib/stellar/budgetContract';
 import {
+  fetchSharedBudgets as fetchContractSharedBudgets,
+  createSharedBudget as createContractSharedBudget,
+  proposeBudgetChange as proposeContractBudgetChange,
+  approveBudgetChange as approveContractBudgetChange,
+  rejectBudgetChange as rejectContractBudgetChange,
+  fetchPendingChanges as fetchContractPendingChanges,
+  subscribeToSharedBudgets as subscribeContractSharedBudgets,
+} from '@/lib/stellar/sharedBudgetContract';
+
+import type {
+  SharedBudget,
+  SharedBudgetInput,
+  PendingBudgetChange,
+} from '@/lib/stellar/sharedBudgetContract';
+
+export type {
+  SharedBudget,
+  SharedBudgetInput,
+  PendingBudgetChange,
+  SharedBudgetChangeType,
+  SharedBudgetChangeStatus,
+} from '@/lib/stellar/sharedBudgetContract';
+
+import {
   fetchBalances as horizonFetchBalances,
   fetchTransactions as horizonFetchTransactions,
   fetchRecentTransactions as horizonFetchRecentTransactions,
@@ -87,6 +111,14 @@ export interface Budget {
   endDate: string;
   createdAt: string;
   updatedAt: string;
+  /** Address of the wallet that created the budget (shared budgets only). */
+  ownerAddress?: string;
+  /** Co-owner Stellar addresses, excluding the owner (shared budgets only). */
+  coOwners?: string[];
+  /** Approvals required before a change is applied (shared budgets only). */
+  approvalThreshold?: number;
+  /** True when the budget requires co-owner approval for changes. */
+  isShared?: boolean;
 }
 export interface FilterParams {
   dateFrom?: string;
@@ -504,6 +536,88 @@ export async function updateBudget(
   };
   setMockBudgetsFallback(mockBudgets);
   return mockBudgets[budgetIndex];
+}
+
+// ─── Shared (multisig) budgets ─────────────────────────────────────────────
+
+/**
+ * Fetch shared budgets the connected wallet is a member of (co-owner or owner).
+ */
+export async function fetchSharedBudgets(): Promise<SharedBudget[]> {
+  const publicKey = getConnectedPublicKey();
+  return fetchContractSharedBudgets(publicKey);
+}
+
+/**
+ * Create a shared budget with co-owners and an approval threshold.
+ */
+export async function createSharedBudget(
+  budgetData: SharedBudgetInput,
+): Promise<SharedBudget> {
+  const publicKey = getConnectedPublicKey();
+  if (!publicKey) {
+    throw new Error("Connect a wallet to create a shared budget.");
+  }
+  return createContractSharedBudget(publicKey, budgetData);
+}
+
+/**
+ * Propose a change to a shared budget; applies once co-owners meet the threshold.
+ */
+export async function proposeBudgetChange(
+  budgetId: string,
+  changes: Partial<Pick<SharedBudget, "name" | "amount" | "category" | "asset" | "startDate" | "endDate">>,
+  description?: string,
+): Promise<PendingBudgetChange> {
+  const publicKey = getConnectedPublicKey();
+  if (!publicKey) {
+    throw new Error("Connect a wallet to propose a change.");
+  }
+  return proposeContractBudgetChange(publicKey, budgetId, changes, description);
+}
+
+/**
+ * Approve a pending change from the connected wallet.
+ */
+export async function approveBudgetChange(
+  changeId: string,
+): Promise<PendingBudgetChange> {
+  const publicKey = getConnectedPublicKey();
+  if (!publicKey) {
+    throw new Error("Connect a wallet to approve a change.");
+  }
+  return approveContractBudgetChange(publicKey, changeId);
+}
+
+/**
+ * Reject a pending change from the connected wallet.
+ */
+export async function rejectBudgetChange(
+  changeId: string,
+): Promise<PendingBudgetChange> {
+  const publicKey = getConnectedPublicKey();
+  if (!publicKey) {
+    throw new Error("Connect a wallet to reject a change.");
+  }
+  return rejectContractBudgetChange(publicKey, changeId);
+}
+
+/**
+ * Fetch pending changes for shared budgets the connected wallet belongs to.
+ */
+export async function fetchPendingChanges(): Promise<PendingBudgetChange[]> {
+  const publicKey = getConnectedPublicKey();
+  return fetchContractPendingChanges(publicKey);
+}
+
+/**
+ * Subscribe to shared-budget updates across co-owner sessions.
+ */
+export function subscribeToSharedBudgets(
+  onUpdate: () => void,
+  options?: { pollIntervalMs?: number; enablePolling?: boolean },
+): () => void {
+  return subscribeContractSharedBudgets(onUpdate, options);
 }
 
 /**

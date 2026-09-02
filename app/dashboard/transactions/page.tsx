@@ -8,6 +8,9 @@ import { Search, Filter, RefreshCw } from "lucide-react";
 import { Transaction, FilterParams } from "@/lib/api/client";
 import SendPaymentModal from "@/components/transactions/SendPaymentModal";
 import { AnimatePresence } from "framer-motion";
+import { useWallet } from "@/hooks/useWallet";
+import { setCategory } from "@/lib/stellar/categoriesContract";
+import { triggerNotification } from "@/lib/stellar/budgetContract";
 
 
 export default function TransactionsPage() {
@@ -15,6 +18,8 @@ export default function TransactionsPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
+  const { freighter } = useWallet();
 
   // Filter state
   const [filters, setFilters] = useState<FilterParams>({});
@@ -27,6 +32,42 @@ export default function TransactionsPage() {
   const handleOpenDrawer = (tx: Transaction) => {
     setSelectedTx(tx);
     setIsDrawerOpen(true);
+  };
+
+  const handleCategoryLoaded = (transactionId: string, category: string | null) => {
+    if (!category) return;
+    setCategoryMap((prev) =>
+      prev[transactionId] === category ? prev : { ...prev, [transactionId]: category },
+    );
+  };
+
+  const handleCategoryChange = async (transactionId: string, category: string) => {
+    const publicKey = freighter.publicKey;
+    if (!publicKey) {
+      triggerNotification("error", "Connect your wallet to assign a category.");
+      return;
+    }
+
+    const previousCategory = categoryMap[transactionId];
+
+    // Optimistic UI: show the new badge immediately.
+    setCategoryMap((prev) => ({ ...prev, [transactionId]: category }));
+
+    try {
+      await setCategory(publicKey, transactionId, category);
+    } catch (error) {
+      // setCategory already surfaces an error toast; just roll back the badge.
+      console.error("Failed to set transaction category", error);
+      setCategoryMap((prev) => {
+        const next = { ...prev };
+        if (previousCategory) {
+          next[transactionId] = previousCategory;
+        } else {
+          delete next[transactionId];
+        }
+        return next;
+      });
+    }
   };
 
   const applyFilters = () => {
@@ -224,13 +265,20 @@ export default function TransactionsPage() {
         </div>
 
         {/* Transaction List with pagination */}
-        <TransactionList filters={filters} onOpenDrawer={handleOpenDrawer} />
+        <TransactionList
+          filters={filters}
+          onOpenDrawer={handleOpenDrawer}
+          categoryMap={categoryMap}
+        />
       </div>
 
       <TransactionDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         transaction={selectedTx}
+        category={selectedTx ? categoryMap[selectedTx.id] : undefined}
+        onCategoryChange={handleCategoryChange}
+        onCategoryLoaded={handleCategoryLoaded}
       />
 
       <AnimatePresence>

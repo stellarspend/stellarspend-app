@@ -7,15 +7,18 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Transaction } from "@/lib/api/client";
+import { getCategoryColor } from "@/lib/stellar/categoriesContract";
 
 interface TransactionItemProps {
   transaction: Transaction;
   onOpenDrawer: (tx: Transaction) => void;
+  category?: string;
 }
 
 export default function TransactionItem({
   transaction,
   onOpenDrawer,
+  category,
 }: TransactionItemProps) {
   const operation = transaction.operations[0];
   const userAccount = "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";
@@ -69,9 +72,22 @@ export default function TransactionItem({
 
       {/* Memo & Hash */}
       <td className="px-8 py-6">
-        <p className="text-sm font-semibold text-[#e8edf8] group-hover:text-white transition-colors">
-          {transaction.memo || "Unlabeled"}
-        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm font-semibold text-[#e8edf8] group-hover:text-white transition-colors">
+            {transaction.memo || "Unlabeled"}
+          </p>
+          {category &&
+            (() => {
+              const colors = getCategoryColor(category);
+              return (
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${colors.bg} ${colors.text} ${colors.border}`}
+                >
+                  {category}
+                </span>
+              );
+            })()}
+        </div>
         <p className="text-[10px] font-mono text-[#7a8aaa] mt-1 line-clamp-1 opacity-60">
           {transaction.hash.substring(0, 32)}...
         </p>

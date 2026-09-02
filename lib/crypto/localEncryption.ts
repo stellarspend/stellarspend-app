@@ -112,6 +112,9 @@ export async function decryptData<T>(encryptedData: string, passphrase: string):
   const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
 
   // Layout written by encryptData: [salt hex string][iv][ciphertext]
+  // generateSalt() returns a hex string (2 chars per salt byte), which is what
+  // encryptData() writes into the combined payload. SALT_LENGTH is the raw byte
+  // count, so the hex representation occupies SALT_LENGTH * 2 UTF-8 bytes.
   const salt = new TextDecoder().decode(combined.slice(0, SALT_HEX_LENGTH));
   const iv = combined.slice(SALT_HEX_LENGTH, SALT_HEX_LENGTH + IV_LENGTH);
   const encrypted = combined.slice(SALT_HEX_LENGTH + IV_LENGTH);
