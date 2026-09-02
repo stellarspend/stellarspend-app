@@ -73,7 +73,7 @@ jobs:
 
       - name: Run Cypress tests (shard 2)
         if: matrix.shard == 2
-        run: npm run test:e2e -- --spec "cypress/e2e/i18n-rtl.cy.ts,cypress/e2e/user-journey.cy.ts"
+        run: npm run test:e2e -- --spec "cypress/e2e/i18n-rtl.cy.ts,cypress/e2e/user-journey.cy.ts,cypress/e2e/multisig-approval.cy.ts"
 
       - name: Upload screenshots on failure
         if: failure()

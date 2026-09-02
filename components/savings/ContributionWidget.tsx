@@ -306,11 +306,6 @@ export function ContributionWidget({
         </Button>
 
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger>
-            <Button variant="secondary" className="w-full">
-              Custom Amount
-            </Button>
-          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Contribute to {goal.name}</DialogTitle>
