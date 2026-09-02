@@ -19,9 +19,13 @@ if (typeof globalThis.TextDecoder === "undefined") {
 }
 
 if (typeof globalThis.crypto === "undefined" || !globalThis.crypto.subtle) {
+  // jsdom provides a crypto stub without WebCrypto `subtle` support, and
+  // its globalThis.crypto getter has no setter (so assignment does nothing).
+  // Re-define the property with Node's full webcrypto.
   Object.defineProperty(globalThis, "crypto", {
     value: webcrypto,
-    configurable: true,
     writable: true,
+    configurable: true,
+    enumerable: false,
   });
 }

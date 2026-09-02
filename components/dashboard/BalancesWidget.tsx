@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { RefreshCw, TrendingUp, TrendingDown } from "lucide-react";
+import { RefreshCw, TrendingUp, TrendingDown, Clock } from "lucide-react";
 import {
   fetchBalances,
   type AssetBalance,
@@ -170,6 +170,15 @@ export default function BalancesWidget() {
         </div>
 
         <div className="flex items-center gap-3">
+          {data && data.ratesStale && (
+            <span
+              title="The oracle price feed is older than its staleness threshold — displayed rates may be delayed."
+              className="flex items-center gap-1 px-2 py-1 rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-300 text-[10px] font-bold uppercase tracking-wider"
+            >
+              <Clock className="w-3 h-3" />
+              Rates may be delayed
+            </span>
+          )}
           {data && (
             <p className="text-[10px] text-[#7a8aaa] font-mono hidden sm:block">
               Updated{" "}

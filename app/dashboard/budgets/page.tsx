@@ -11,6 +11,12 @@ import {
 import BudgetForm from "@/components/budgets/BudgetForm";
 import BudgetCategoryBreakdownChart from "@/components/budgets/BudgetCategoryBreakdownChart";
 import { useOffline } from "@/components/offline/OfflineProvider";
+import {
+  fetchOracleSnapshot,
+  getRateMap,
+  toUsdAmount,
+  type RateMap,
+} from "@/lib/stellar/priceOracle";
 import { useToast } from "@/components/ui/use-toast";
 
 
@@ -31,6 +37,23 @@ export default function BudgetsPage() {
     const [error, setError] = useState<string | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
+    // Live oracle rates so budgets denominated in one asset can be read
+    // against any other asset (e.g. a USDC budget viewed in USD).
+    const [rateMap, setRateMap] = useState<RateMap | null>(null);
+
+    useEffect(() => {
+        let mounted = true;
+        fetchOracleSnapshot()
+            .then((snapshot) => {
+                if (mounted) setRateMap(getRateMap(snapshot));
+            })
+            .catch(() => {
+                /* keep rateMap null — budget cards still render without USD */
+            });
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     const loadBudgets = useCallback(async () => {
         try {
@@ -265,6 +288,16 @@ export default function BudgetsPage() {
                 </span>
                 <span className="font-medium text-gray-900 dark:text-white">
                   {budget.amount} {budget.asset}
+                  {rateMap && (
+                    <span className="text-gray-500 dark:text-gray-400 font-normal">
+                      {" "}≈ $
+                      {toUsdAmount(budget.amount, budget.asset, rateMap).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                      USD
+                    </span>
+                  )}
                 </span>
               </div>
 

@@ -16,6 +16,11 @@
   "dependencies": {
     "@aztec/bb.js": "^0.30.0",
     "@hookform/resolvers": "^5.2.2",
+    "@ledgerhq/devices": "^8.17.0",
+    "@ledgerhq/errors": "^7.0.0",
+    "@ledgerhq/hw-app-str": "^7.7.7",
+    "@ledgerhq/hw-transport-webusb": "^6.35.0",
+    "@ledgerhq/logs": "^6.18.0",
     "@ledgerhq/hw-app-str": "^7.7.7",
     "@ledgerhq/hw-transport-webusb": "^6.35.0",
     "@noir-lang/acvm_js": "^0.30.0",
