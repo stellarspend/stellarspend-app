@@ -18,7 +18,14 @@ if (typeof globalThis.TextDecoder === "undefined") {
   globalThis.TextDecoder = TextDecoder as typeof TextDecoder;
 }
 
-if (typeof globalThis.crypto === "undefined" || !globalThis.crypto.subtle) {
+// Some jsdom versions ship a `crypto` global without `subtle`; the encryption
+// helpers need the full WebCrypto API, so replace it whenever subtle is missing.
+// Plain assignment is not enough — the global can be an accessor — so we use
+// Object.defineProperty (the property is configurable in this environment).
+if (
+  typeof globalThis.crypto === "undefined" ||
+  typeof (globalThis.crypto as Crypto).subtle === "undefined"
+) {
   Object.defineProperty(globalThis, "crypto", {
     value: webcrypto,
     configurable: true,
