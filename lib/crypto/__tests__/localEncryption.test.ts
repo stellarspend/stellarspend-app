@@ -6,9 +6,9 @@ import {
   generateSalt,
   isPassphraseSet,
   setPassphraseSet,
-  resetEncryption,
   loadPlaintext,
   detectPlaintextData,
+  resetEncryption,
 } from '../localEncryption';
 
 describe('localEncryption', () => {
@@ -52,6 +52,9 @@ describe('localEncryption', () => {
     expect(isPassphraseSet()).toBe(false);
   });
 
+  // Note: SSR-safety for the storage helpers lives in
+  // localEncryption.ssr.test.ts, which runs in the Node environment where
+  // `window` is genuinely absent (jsdom's window cannot be undefined).
   test('storage helpers are safe when window is unavailable', () => {
     const originalWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
     // Some jsdom versions install `window` as a non-configurable accessor that

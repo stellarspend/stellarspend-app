@@ -13,6 +13,10 @@ const IV_LENGTH = 12;
 const KEY_LENGTH = 256;
 const ITERATIONS = 100000;
 
+// generateSalt() hex-encodes the 16 random bytes, so the salt occupies
+// SALT_LENGTH * 2 characters in the serialized blob.
+const SALT_HEX_LENGTH = SALT_LENGTH * 2;
+
 const STORAGE_KEYS = {
   ENCRYPTED_PREFIX: 'stellarspend_encrypted_',
   SALT_KEY: 'stellarspend_encryption_salt',
@@ -94,8 +98,6 @@ export async function encryptData(data: unknown, passphrase: string): Promise<st
   return btoa(String.fromCharCode(...combined));
 }
 
-const SALT_HEX_LENGTH = SALT_LENGTH * 2;
-
 /**
  * Decrypts data that was encrypted with {@link encryptData}.
  * Extracts the salt and IV from the base64-encoded input, derives the decryption key
@@ -109,6 +111,7 @@ const SALT_HEX_LENGTH = SALT_LENGTH * 2;
 export async function decryptData<T>(encryptedData: string, passphrase: string): Promise<T> {
   const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
 
+  // Layout written by encryptData: [salt hex string][iv][ciphertext]
   // generateSalt() returns a hex string (2 chars per salt byte), which is what
   // encryptData() writes into the combined payload. SALT_LENGTH is the raw byte
   // count, so the hex representation occupies SALT_LENGTH * 2 UTF-8 bytes.

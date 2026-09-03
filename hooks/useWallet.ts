@@ -120,7 +120,9 @@ export function useWallet(): UseWalletReturn {
           isConnected: false,
           publicKey: null,
           isConnecting: false,
-          walletError: `${provider.getMeta().name} not found. Install it to continue.`,
+          walletError: `${provider.getMeta().name} not found. Install ${
+            provider.getMeta().kind === 'extension' ? 'the extension' : 'it'
+          } to continue.`,
         });
         return;
       }

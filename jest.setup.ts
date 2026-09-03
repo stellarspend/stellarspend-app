@@ -18,6 +18,10 @@ if (typeof globalThis.TextDecoder === "undefined") {
   globalThis.TextDecoder = TextDecoder as typeof TextDecoder;
 }
 
+// jsdom ships a `crypto` global that only implements getRandomValues() —
+// it has no `subtle`, which localEncryption's PBKDF2/AES-GCM flow needs.
+// Replace it with Node's full WebCrypto implementation in that case.
+if (typeof globalThis.crypto === "undefined" || !globalThis.crypto?.subtle) {
 // Some jsdom versions ship a `crypto` global without `subtle`; the encryption
 // helpers need the full WebCrypto API, so replace it whenever subtle is missing.
 // Plain assignment is not enough — the global can be an accessor — so we use
