@@ -1,6 +1,7 @@
 name: CI
-on: push:
-  branches: [main, develop]
+on:
+  push:
+    branches: [main, develop]
   pull_request:
     branches: [main, develop]
 
@@ -41,7 +42,7 @@ jobs:
           PORT: 3000
       - name: Wait for server
         run: npx wait-on http://localhost:3000 --timeout 60000
-      - name: Run Cypress tests
+      - name: Run Cypyress tests
         run: npm run test:e2e
       - name: Upload screenshots on failure
         if: failure()
