@@ -33,7 +33,7 @@ export class LedgerProvider implements WalletProvider {
       description: 'Hardware wallet — maximum custody security.',
       // WebUSB availability is a reasonable proxy for Ledger support.
       isAvailable:
-        typeof navigator !== 'undefined' && !!(navigator as any).usb,
+        typeof navigator !== 'undefined' && !!(navigator as unknown as Record<string, unknown>).usb,
       kind: 'hardware',
     };
   }
@@ -42,7 +42,7 @@ export class LedgerProvider implements WalletProvider {
   async isAvailable(): Promise<boolean> {
     try {
       return (
-        typeof navigator !== 'undefined' && !!(navigator as any).usb
+        typeof navigator !== 'undefined' && !!(navigator as unknown as Record<string, unknown>).usb
       );
     } catch {
       return false;
@@ -112,14 +112,12 @@ export class LedgerProvider implements WalletProvider {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async loadTransport(): Promise<any> {
     // Dynamic import keeps the bundle small.
-    // @ts-expect-error — peer deps may not be installed yet.
     const mod = await import('@ledgerhq/hw-transport-webusb');
     return mod.default;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async loadApp(): Promise<any> {
-    // @ts-expect-error — peer deps may not be installed yet.
     const mod = await import('@ledgerhq/hw-app-str');
     return mod.default;
   }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, expect, test, jest, beforeEach } from '@jest/globals';
+import { describe, expect, test, beforeEach } from '@jest/globals';
 import SendPaymentModal from '../SendPaymentModal';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { OfflineProvider } from '@/components/offline/OfflineProvider';
@@ -8,6 +8,20 @@ import { WalletProvider } from '@/context/WalletContext';
 
 jest.mock('@/lib/zk/generateSpendingProof', () => ({
   generateSpendingProof: jest.fn(),
+}));
+
+jest.mock('@/hooks/useWallet', () => ({
+  __esModule: true,
+  default: () => ({
+    freighter: {
+      isInstalled: true,
+      isConnected: true,
+      publicKey: 'GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO',
+      isConnecting: false,
+      freighterError: null,
+    },
+    sendPayment: jest.fn(),
+  }),
 }));
 
 describe('SendPaymentModal spending limit checks', () => {
@@ -54,9 +68,10 @@ describe('SendPaymentModal spending limit checks', () => {
     // Enter amount 200 (exceeds 40 USDC remaining)
     const amountInput = screen.getByPlaceholderText('0.00');
     fireEvent.change(amountInput, { target: { value: '200' } });
+    fireEvent.change(screen.getByLabelText('Asset'), { target: { value: 'USDC' } });
 
     // Click Send Payment
-    const sendButton = screen.getByRole('button', { name: /Send Payment/i });
+    const sendButton = screen.getByRole('button', { name: /Sign and Send Payment/i });
     fireEvent.click(sendButton);
 
     // Verify error message is shown and ZK proof is blocked

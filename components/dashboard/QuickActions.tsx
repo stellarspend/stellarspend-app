@@ -5,13 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Send, Download, PieChart, Target, X } from "lucide-react";
 import SendPaymentModal from "../transactions/SendPaymentModal";
 
-// Module-level constant — Math.random() runs once when the module loads,
-// never during a component render, so the react-hooks/purity rule is satisfied.
-const QR_CELLS: readonly boolean[] = Array.from(
-  { length: 16 },
-  () => Math.random() > 0.5,
-);
-
 // ─── Mini Receive Modal ──────────────────────────────────────────────────────
 function ReceiveModal({ onClose }: { onClose: () => void }) {
   const address = "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";

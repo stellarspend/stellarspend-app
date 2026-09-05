@@ -27,6 +27,8 @@ export const Toast: React.FC<Notification> = ({ id, type, message }) => {
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
       className={`flex items-center gap-4 p-4 mb-3 min-w-[320px] max-w-md border rounded-2xl shadow-2xl backdrop-blur-xl ${styles[type]}`}
+      // aria-live="polite" announces toast messages to screen readers without interrupting current speech
+      aria-live="polite"
     >
       <div className="flex-shrink-0 relative">
         {icons[type]}

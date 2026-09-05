@@ -11,14 +11,24 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { fetchTransactions, type Transaction } from "@/lib/api/client";
+import {
+  PAYMENT_CONFIRMED_EVENT,
+  PAYMENT_SUBMITTED_EVENT,
+  toTransactionRecord,
+  type PendingPayment,
+  type SubmittedPayment,
+} from "@/lib/stellar/submitTransaction";
 
 function TxRow({ tx, index }: { tx: Transaction; index: number }) {
   const op = tx.operations[0];
   const isOut = op?.type === "payment" && op.from?.startsWith("GDQD");
   const failed = !tx.successful;
+  const pending = tx.status === "pending";
 
   const iconBg = failed
     ? "bg-red-500/10 text-red-400 border-red-500/20"
+    : pending
+      ? "bg-[#e8b84b]/10 text-[#e8b84b] border-[#e8b84b]/20"
     : isOut
       ? "bg-[#e8b84b]/10 text-[#e8b84b] border-[#e8b84b]/20"
       : "bg-[#4ade80]/10 text-[#4ade80] border-[#4ade80]/20";
@@ -74,7 +84,7 @@ function TxRow({ tx, index }: { tx: Transaction; index: number }) {
 
       {/* Status dot */}
       <div
-        className={`flex-shrink-0 w-2 h-2 rounded-full ${failed ? "bg-red-400" : "bg-[#4ade80]"}`}
+        className={`flex-shrink-0 w-2 h-2 rounded-full ${failed ? "bg-red-400" : pending ? "bg-[#e8b84b] animate-pulse" : "bg-[#4ade80]"}`}
       />
     </motion.div>
   );
@@ -99,12 +109,44 @@ function SkeletonRow() {
 export default function RecentTransactions() {
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const livePaymentStatus = React.useRef(new Map<string, "pending" | "confirmed">());
 
   useEffect(() => {
     fetchTransactions(undefined, 1, 3).then((response) => {
       setTxs(response.data);
       setLoading(false);
     });
+  }, []);
+
+  useEffect(() => {
+    const handlePaymentSubmitted = (event: Event) => {
+      const payment = (event as CustomEvent<PendingPayment>).detail;
+      if (!payment || livePaymentStatus.current.has(payment.hash)) return;
+      livePaymentStatus.current.set(payment.hash, "pending");
+      const transaction = toTransactionRecord(payment, "pending");
+      setTxs((current) => {
+        if (current.some((item) => item.hash === transaction.hash)) return current;
+        return [transaction, ...current].slice(0, 3);
+      });
+    };
+
+    const handlePaymentConfirmed = (event: Event) => {
+      const payment = (event as CustomEvent<SubmittedPayment>).detail;
+      if (!payment || livePaymentStatus.current.get(payment.hash) === "confirmed") return;
+      livePaymentStatus.current.set(payment.hash, "confirmed");
+      const transaction = toTransactionRecord(payment, "confirmed");
+      setTxs((current) => [
+        transaction,
+        ...current.filter((item) => item.hash !== transaction.hash),
+      ].slice(0, 3));
+    };
+
+    window.addEventListener(PAYMENT_SUBMITTED_EVENT, handlePaymentSubmitted);
+    window.addEventListener(PAYMENT_CONFIRMED_EVENT, handlePaymentConfirmed);
+    return () => {
+      window.removeEventListener(PAYMENT_SUBMITTED_EVENT, handlePaymentSubmitted);
+      window.removeEventListener(PAYMENT_CONFIRMED_EVENT, handlePaymentConfirmed);
+    };
   }, []);
 
   return (

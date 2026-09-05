@@ -15,7 +15,6 @@ export default function CustomSelect({
   value,
   onChange,
   options,
-  label: _label,
   ariaLabel,
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);

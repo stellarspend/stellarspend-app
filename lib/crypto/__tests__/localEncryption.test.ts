@@ -53,6 +53,31 @@ describe('localEncryption', () => {
   });
 
   test('storage helpers are safe when window is unavailable', () => {
+    const originalWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+    // Some jsdom versions install `window` as a non-configurable accessor that
+    // cannot be redefined or deleted. In that case we can't simulate a missing
+    // window, but the safety assertions below are still valid.
+    const canRedefineWindow = originalWindowDescriptor?.configurable === true;
+
+    if (canRedefineWindow) {
+      Object.defineProperty(globalThis, 'window', {
+        value: undefined,
+        configurable: true,
+        writable: true,
+      });
+    }
+
+    expect(isPassphraseSet()).toBe(false);
+    expect(loadPlaintext('missing')).toBeNull();
+    expect(detectPlaintextData('missing')).toBe(false);
+
+    if (canRedefineWindow) {
+      if (originalWindowDescriptor) {
+        Object.defineProperty(globalThis, 'window', originalWindowDescriptor);
+      } else {
+        delete (globalThis as typeof globalThis & { window?: undefined }).window;
+      }
+    }
     // Test behavior when localStorage or window methods return safely
     expect(isPassphraseSet()).toBe(false);
     expect(loadPlaintext('missing')).toBeNull();

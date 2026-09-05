@@ -7,19 +7,23 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Transaction } from "@/lib/api/client";
+import { getCategoryColor } from "@/lib/stellar/categoriesContract";
 
 interface TransactionItemProps {
   transaction: Transaction;
   onOpenDrawer: (tx: Transaction) => void;
+  category?: string;
 }
 
 export default function TransactionItem({
   transaction,
   onOpenDrawer,
+  category,
 }: TransactionItemProps) {
   const operation = transaction.operations[0];
   const userAccount = "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";
   const isIncoming = operation?.to === userAccount;
+  const isPending = transaction.status === "pending";
 
   return (
     <tr
@@ -33,6 +37,8 @@ export default function TransactionItem({
             className={`p-3 rounded-2xl border ${
               !transaction.successful
                 ? "bg-red-500/10 text-red-400 border-red-500/20"
+                : isPending
+                  ? "bg-[#e8b84b]/10 text-[#e8b84b] border-[#e8b84b]/20"
                 : isIncoming
                   ? "bg-[#4ade80]/10 text-[#4ade80] border-[#4ade80]/20"
                   : "bg-[#f97316]/10 text-[#f97316] border-[#f97316]/20"
@@ -40,6 +46,8 @@ export default function TransactionItem({
           >
             {!transaction.successful ? (
               <AlertCircle className="w-5 h-5" />
+            ) : isPending ? (
+              <span className="block w-5 h-5 rounded-full border-2 border-[#e8b84b]/30 border-t-[#e8b84b] animate-spin" />
             ) : isIncoming ? (
               <ArrowDownLeft className="w-5 h-5" />
             ) : (
@@ -51,10 +59,15 @@ export default function TransactionItem({
               {operation?.type.replace(/_/g, " ") || "Unknown"}
             </p>
             <p className="text-[10px] font-bold text-[#7a8aaa] uppercase tracking-widest mt-1">
-              {transaction.successful ? (
+              {transaction.successful && !isPending ? (
                 <span className="flex items-center gap-1.5 text-[#4ade80]/80">
                   <span className="w-1 h-1 rounded-full bg-[#4ade80]" />
                   Verified
+                </span>
+              ) : isPending ? (
+                <span className="flex items-center gap-1.5 text-[#e8b84b]/80">
+                  <span className="w-1 h-1 rounded-full bg-[#e8b84b]" />
+                  Pending
                 </span>
               ) : (
                 <span className="flex items-center gap-1.5 text-red-400/80">
@@ -69,9 +82,22 @@ export default function TransactionItem({
 
       {/* Memo & Hash */}
       <td className="px-8 py-6">
-        <p className="text-sm font-semibold text-[#e8edf8] group-hover:text-white transition-colors">
-          {transaction.memo || "Unlabeled"}
-        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm font-semibold text-[#e8edf8] group-hover:text-white transition-colors">
+            {transaction.memo || "Unlabeled"}
+          </p>
+          {category &&
+            (() => {
+              const colors = getCategoryColor(category);
+              return (
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${colors.bg} ${colors.text} ${colors.border}`}
+                >
+                  {category}
+                </span>
+              );
+            })()}
+        </div>
         <p className="text-[10px] font-mono text-[#7a8aaa] mt-1 line-clamp-1 opacity-60">
           {transaction.hash.substring(0, 32)}...
         </p>
