@@ -112,6 +112,8 @@ export interface Budget {
   endDate: string;
   createdAt: string;
   updatedAt: string;
+  /** Monotonic version marker used for offline conflict detection. */
+  version: number;
   /** Address of the wallet that created the budget (shared budgets only). */
   ownerAddress?: string;
   /** Co-owner Stellar addresses, excluding the owner (shared budgets only). */
@@ -508,6 +510,7 @@ export async function createBudget(
     id: `budget_${Date.now()}`,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    version: 1,
   };
   mockBudgets.push(newBudget);
   setMockBudgetsFallback(mockBudgets);
@@ -534,6 +537,7 @@ export async function updateBudget(
     ...mockBudgets[budgetIndex],
     ...budgetData,
     updatedAt: new Date().toISOString(),
+    version: (mockBudgets[budgetIndex].version ?? 0) + 1,
   };
   setMockBudgetsFallback(mockBudgets);
   return mockBudgets[budgetIndex];
@@ -696,4 +700,3 @@ export async function sendPayment(
   MOCK_TRANSACTIONS.unshift(newTx);
   return newTx;
 }
-
