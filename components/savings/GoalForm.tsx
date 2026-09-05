@@ -6,6 +6,7 @@ import { useForm } from "@/hooks/useForm";
 import { useOffline } from "@/components/offline/OfflineProvider";
 import useWallet from "@/hooks/useWallet";
 import { createGoal, Goal } from "@/lib/stellar/savingsGoalContract";
+import { useToast } from "@/components/ui/use-toast";
 
 const goalSchema = z.object({
     title: z.string().min(1, 'Goal title is required').max(100, 'Title is too long'),
@@ -33,6 +34,7 @@ interface GoalFormProps {
 export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalFormProps) {
     const { isOnline, queueAction } = useOffline();
     const { freighter } = useWallet();
+    const { toast } = useToast();
     const publicKey = freighter.publicKey;
     const [txStatus, setTxStatus] = useState<string | null>(null);
 
@@ -55,14 +57,21 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
     const onSubmit = async (data: GoalFormData) => {
         if (!isOnline) {
             queueAction('CREATE_GOAL', `Create goal: ${data.title}`, data);
-            alert('You are offline. Your goal has been queued and will be saved when you reconnect.');
+            toast({
+                title: "Goal Queued",
+                description: "Offline: Your goal has been queued and will be saved when you reconnect.",
+            });
             reset();
             onOpenChange(false);
             return;
         }
 
         if (!publicKey) {
-            alert('Please connect your Freighter wallet to persist this savings goal on-chain.');
+            toast({
+                title: "Wallet Not Connected",
+                description: "Please connect your Freighter wallet to persist this savings goal on-chain.",
+                variant: "destructive",
+            });
             return;
         }
 
@@ -71,14 +80,21 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
             const newGoal = await createGoal(publicKey, data, (status) => {
                 setTxStatus(status);
             });
-            alert('Savings goal created successfully!');
+            toast({
+                title: "Goal Created Successfully",
+                description: `Your savings goal "${data.title}" has been created.`,
+            });
             onGoalCreated(newGoal);
             reset();
             onOpenChange(false);
         } catch (error: unknown) {
             console.error(error);
             const errMessage = error instanceof Error ? error.message : String(error);
-            alert(`Failed to create savings goal: ${errMessage}`);
+            toast({
+                title: "Failed to Create Goal",
+                description: errMessage,
+                variant: "destructive",
+            });
         } finally {
             setTxStatus(null);
         }
@@ -104,6 +120,7 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
                         </label>
                         <input
                             id="title"
+                            aria-required="true"
                             {...register('title')}
                             className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-500 outline-none transition-all ${errors.title ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                                 }`}
@@ -121,6 +138,7 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
                         <input
                             id="targetAmount"
                             type="number"
+                            aria-required="true"
                             {...register('targetAmount')}
                             className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-500 outline-none transition-all ${errors.targetAmount ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                                 }`}
@@ -138,6 +156,7 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
                         <input
                             id="deadline"
                             type="date"
+                            aria-required="true"
                             {...register('deadline')}
                             className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-500 outline-none transition-all ${errors.deadline ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                                 }`}
@@ -153,6 +172,7 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
                         </label>
                         <select
                             id="recurrence"
+                            aria-required="true"
                             {...register('recurrence')}
                             className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-500 outline-none transition-all ${errors.recurrence ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                                 }`}
@@ -186,6 +206,7 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
                         </button>
                         <button
                             type="submit"
+                            aria-label="Create savings goal"
                             disabled={!isValid || isSubmitting || !!txStatus}
                             className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold rounded-lg shadow-md transition-colors duration-200"
                         >

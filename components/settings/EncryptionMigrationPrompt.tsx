@@ -7,6 +7,14 @@ import { detectPlaintextData } from "../../lib/crypto/localEncryption";
 const WALLETS_STORAGE_KEY = "stellarspend_wallets";
 const QUEUE_STORAGE_KEY = "stellarspend_offline_queue";
 
+/**
+ * Prompts the user to create and confirm a passphrase when unencrypted
+ * (plaintext) wallet or offline-queue data is detected in localStorage.
+ *
+ * This modal appears as part of the encryption migration flow, inviting the
+ * user to set a passphrase so their legacy data can be encrypted. It renders
+ * nothing when no plaintext data is present.
+ */
 export function EncryptionMigrationPrompt() {
   const { setPassphrase } = useWalletContext();
   const [hasPlaintextData, setHasPlaintextData] = useState(() => {

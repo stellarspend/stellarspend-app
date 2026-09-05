@@ -13,19 +13,28 @@ import {
   FilterParams,
   PaginatedResponse,
 } from "@/lib/api/client";
+import {
+  PAYMENT_CONFIRMED_EVENT,
+  PAYMENT_SUBMITTED_EVENT,
+  toTransactionRecord,
+  type PendingPayment,
+  type SubmittedPayment,
+} from "@/lib/stellar/submitTransaction";
 import TransactionItem from "./TransactionItem";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Download } from "lucide-react";
 
 const PAGE_SIZE = 10;
 
 interface TransactionListProps {
   filters: FilterParams;
   onOpenDrawer: (tx: Transaction) => void;
+  categoryMap?: Record<string, string>;
 }
 
 export default function TransactionList({
   filters,
   onOpenDrawer,
+  categoryMap = {},
 }: TransactionListProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +42,8 @@ export default function TransactionList({
   const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const livePaymentStatus = useRef(new Map<string, "pending" | "confirmed">());
+  const knownTransactionHashes = useRef(new Set<string>());
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -41,6 +52,43 @@ export default function TransactionList({
 
     return () => window.clearTimeout(timer);
   }, [searchQuery]);
+
+  useEffect(() => {
+    const handlePaymentSubmitted = (event: Event) => {
+      const payment = (event as CustomEvent<PendingPayment>).detail;
+      if (!payment || livePaymentStatus.current.has(payment.hash)) return;
+      livePaymentStatus.current.set(payment.hash, "pending");
+      const wasKnown = knownTransactionHashes.current.has(payment.hash);
+      knownTransactionHashes.current.add(payment.hash);
+      const transaction = toTransactionRecord(payment, "pending");
+      setTransactions((current) => {
+        if (current.some((item) => item.hash === transaction.hash)) return current;
+        return [transaction, ...current];
+      });
+      if (!wasKnown) setTotal((total) => total + 1);
+    };
+
+    const handlePaymentConfirmed = (event: Event) => {
+      const payment = (event as CustomEvent<SubmittedPayment>).detail;
+      if (!payment || livePaymentStatus.current.get(payment.hash) === "confirmed") return;
+      livePaymentStatus.current.set(payment.hash, "confirmed");
+      const wasKnown = knownTransactionHashes.current.has(payment.hash);
+      knownTransactionHashes.current.add(payment.hash);
+      const transaction = toTransactionRecord(payment, "confirmed");
+      setTransactions((current) => [
+        transaction,
+        ...current.filter((item) => item.hash !== transaction.hash),
+      ]);
+      if (!wasKnown) setTotal((total) => total + 1);
+    };
+
+    window.addEventListener(PAYMENT_SUBMITTED_EVENT, handlePaymentSubmitted);
+    window.addEventListener(PAYMENT_CONFIRMED_EVENT, handlePaymentConfirmed);
+    return () => {
+      window.removeEventListener(PAYMENT_SUBMITTED_EVENT, handlePaymentSubmitted);
+      window.removeEventListener(PAYMENT_CONFIRMED_EVENT, handlePaymentConfirmed);
+    };
+  }, []);
 
   const activeFilters = useMemo<FilterParams>(
     () => ({
@@ -61,6 +109,9 @@ export default function TransactionList({
         const response: PaginatedResponse<Transaction> =
           await fetchTransactions(activeFilters, pageNum, PAGE_SIZE);
 
+        response.data.forEach((transaction) => {
+          knownTransactionHashes.current.add(transaction.hash);
+        });
         setTransactions(response.data);
         setTotal(response.total);
       } catch (error) {
@@ -71,6 +122,65 @@ export default function TransactionList({
     },
     [activeFilters],
   );
+
+  const exportToCSV = useCallback(async () => {
+    try {
+      // Fetch all transactions for export (up to a reasonable limit)
+      const response: PaginatedResponse<Transaction> =
+        await fetchTransactions(activeFilters, 1, 1000);
+
+      const allTransactions = response.data;
+
+      if (allTransactions.length === 0) {
+        alert("No transactions to export.");
+        return;
+      }
+
+      // CSV headers
+      const headers = ["Date", "Description", "Amount", "Type", "Status"];
+
+      // Format transactions for CSV
+      const rows = allTransactions.map((tx) => {
+        const operation = tx.operations[0];
+        const date = new Date(tx.created_at).toISOString().split("T")[0];
+        const description = (tx.memo || "").replace(/"/g, '""');
+        const amount = operation?.amount || "0";
+        const type = operation?.type || "unknown";
+        const status = tx.successful ? "completed" : "failed";
+
+        return [
+          date,
+          `"${description}"`,
+          amount,
+          type,
+          status,
+        ].join(",");
+      });
+
+      // Combine headers and rows
+      const csvContent = [headers.join(","), ...rows].join("\n");
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      // Generate filename with current date
+      const today = new Date().toISOString().split("T")[0];
+      link.setAttribute("href", url);
+      link.setAttribute("download", `transactions-${today}.csv`);
+      link.style.visibility = "hidden";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to export transactions:", error);
+      alert("Failed to export transactions. Please try again.");
+    }
+  }, [activeFilters]);
 
   useEffect(() => {
     const filtersChanged =
@@ -95,13 +205,25 @@ export default function TransactionList({
 
   const searchInput = (
     <div className="mb-6">
-      <label
-        htmlFor="transaction-search"
-        className="text-[10px] font-black text-[#7a8aaa] uppercase tracking-[0.3em]"
-      >
-        Search transactions
-      </label>
-      <div className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 shadow-inner shadow-black/20">
+      <div className="flex items-center justify-between mb-3">
+        <label
+          htmlFor="transaction-search"
+          className="text-[10px] font-black text-[#7a8aaa] uppercase tracking-[0.3em]"
+        >
+          Search transactions
+        </label>
+        <button
+          type="button"
+          onClick={exportToCSV}
+          disabled={loading || transactions.length === 0}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#e8b84b]/30 bg-[#e8b84b]/10 text-[#e8b84b] text-xs font-bold uppercase tracking-wider hover:bg-[#e8b84b]/20 hover:border-[#e8b84b]/50 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#e8b84b]/10 disabled:hover:border-[#e8b84b]/30"
+          aria-label="Export transactions to CSV"
+        >
+          <Download className="w-4 h-4" />
+          Export CSV
+        </button>
+      </div>
+      <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 shadow-inner shadow-black/20">
         <Search className="w-4 h-4 text-[#7a8aaa]" />
         <input
           id="transaction-search"
@@ -261,6 +383,7 @@ export default function TransactionList({
                       key={tx.id}
                       transaction={tx}
                       onOpenDrawer={onOpenDrawer}
+                      category={categoryMap[tx.id]}
                     />
                   ))}
             </tbody>

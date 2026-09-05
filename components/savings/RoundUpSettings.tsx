@@ -13,6 +13,15 @@ interface RoundUpSettingsProps {
 
 const NEAREST_UNITS = [1, 5, 10, 25, 50, 100]
 
+/**
+ * Component that controls round-up savings settings for a specific goal.
+ * It allows the user to enable or disable round-ups, set the nearest unit to round up to (e.g., 1, 5, 10 XLM),
+ * and pause or resume the round-up rule.
+ * 
+ * @param {RoundUpSettingsProps} props - The component props.
+ * @param {Goal} props.goal - The goal for which round-up settings are being configured.
+ * @param {(goalId: string, rule: RoundUpRule) => void} props.onUpdateRule - Callback function to update the round-up rule for the goal.
+ */
 export function RoundUpSettings({ goal, onUpdateRule }: RoundUpSettingsProps) {
   const [selectedUnit, setSelectedUnit] = useState(
     goal.roundUpRule?.nearestUnit ?? 1,

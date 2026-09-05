@@ -25,7 +25,17 @@ export interface Wallet {
   isDefault: boolean;
   createdAt: number;
 }
-
+/**
+ * Represents the wallet context state and actions managed by WalletProvider.
+ *
+ * Managed State:
+ * - `wallets`: List of stored wallets including public key, address, balances, and metadata.
+ * - `selectedWallet`: Currently active wallet selected for transactions and views.
+ * - `isLoading`: Boolean indicating whether wallet data is being loaded or processed.
+ * - `isUnlocked`: Boolean indicating whether local encrypted storage is unlocked with session passphrase.
+ * - `error`: Error message string if a wallet operation fails, or null if no error.
+ * - `passphraseSet`: Boolean indicating if an encryption passphrase has been configured.
+ */
 export interface WalletContextType {
   wallets: Wallet[];
   selectedWallet: Wallet | null;

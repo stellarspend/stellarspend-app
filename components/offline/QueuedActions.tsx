@@ -4,6 +4,11 @@ import { useState } from "react";
 import { Clock, RefreshCw, Trash2 } from "lucide-react";
 import { QueuedAction, useOffline } from "./OfflineProvider";
 
+/**
+ * QueuedActions displays a collapsible panel of actions that were queued
+ * while the user was offline. It shows the count of pending actions and
+ * provides buttons to retry syncing or clear the queue entirely.
+ */
 export default function QueuedActions() {
   const { queuedActions, retryQueuedActions, clearQueue } = useOffline();
   const [isOpen, setIsOpen] = useState(false);

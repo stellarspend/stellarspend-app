@@ -27,6 +27,13 @@ export interface UseAnalyticsResult {
   refetch: () => void;
 }
 
+/**
+ * React hook that fetches and manages analytics data for a given time range.
+ * Pulls spending trend, category breakdown, and budget-vs-actual data from the
+ * on-chain analytics contract, scoped to the connected wallet's account.
+ * @param range - The time range to query ('week', 'month', 'quarter', or 'year').
+ * @returns An UseAnalyticsResult with trend data, loading state, error info, and a refetch function.
+ */
 export function useAnalytics(range: TimeRange): UseAnalyticsResult {
     const { freighter } = useWallet();
     const publicKey = freighter.publicKey;
