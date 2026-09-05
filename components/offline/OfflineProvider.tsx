@@ -8,6 +8,8 @@ import {
   migrateToEncrypted,
   detectPlaintextData,
 } from "../../lib/crypto/localEncryption";
+import { ConflictResolutionModal } from "./ConflictResolutionModal";
+import type { Budget } from "@/lib/api/client";
 
 /**
  * Represents a pending action that was queued while offline.
@@ -29,6 +31,7 @@ interface OfflineContextType {
   clearQueue: () => void;
   isUnlocked: boolean;
   unlockQueue: (passphrase: string) => Promise<boolean>;
+  triggerConflict: (localData: Partial<Budget>, remoteData: Partial<Budget>, onResolve: (decision: 'local' | 'remote') => void) => void;
 }
 
 const OfflineContext = createContext<OfflineContextType | undefined>(undefined);
@@ -94,6 +97,18 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   );
   const [queuedActions, setQueuedActions] = useState<QueuedAction[]>([]);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [conflictState, setConflictState] = useState<{
+    localData: Partial<Budget>;
+    remoteData: Partial<Budget>;
+    onResolve: (decision: 'local' | 'remote') => void;
+  } | null>(null);
+
+  const triggerConflict = useCallback(
+    (localData: Partial<Budget>, remoteData: Partial<Budget>, onResolve: (decision: 'local' | 'remote') => void) => {
+      setConflictState({ localData, remoteData, onResolve });
+    },
+    []
+  );
 
   const loadQueue = useCallback(async () => {
     const data = await loadQueueData(sharedPassphrase || undefined);
@@ -181,9 +196,21 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
         clearQueue,
         isUnlocked,
         unlockQueue,
+        triggerConflict,
       }}
     >
       {children}
+      {conflictState && (
+        <ConflictResolutionModal
+          localData={conflictState.localData}
+          remoteData={conflictState.remoteData}
+          onResolve={(decision) => {
+            conflictState.onResolve(decision);
+            setConflictState(null);
+          }}
+          onClose={() => setConflictState(null)}
+        />
+      )}
     </OfflineContext.Provider>
   );
 }

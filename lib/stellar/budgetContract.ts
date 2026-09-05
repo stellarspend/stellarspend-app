@@ -271,6 +271,7 @@ export async function createBudget(
       id: newId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      version: 1,
     };
     mockBudgets.push(newBudget);
     setMockBudgetsFallback(mockBudgets);
@@ -299,6 +300,7 @@ export async function createBudget(
       id: result || newId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      version: 1,
     };
     return newBudget;
   } catch (e: unknown) {
@@ -330,6 +332,7 @@ export async function updateBudget(
       ...mockBudgets[index],
       ...budgetData,
       updatedAt: new Date().toISOString(),
+      version: (mockBudgets[index].version || 0) + 1,
     };
     setMockBudgetsFallback(mockBudgets);
     return mockBudgets[index];
@@ -362,6 +365,7 @@ export async function updateBudget(
         ...mockBudgets[index],
         ...budgetData,
         updatedAt: new Date().toISOString(),
+        version: (mockBudgets[index].version || 0) + 1,
       };
       return mockBudgets[index];
     }
@@ -376,6 +380,7 @@ export async function updateBudget(
       endDate: budgetData.endDate || '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      version: (existing?.version || 0) + 1,
     };
   } catch (e: unknown) {
     const errMessage = e instanceof Error ? e.message : String(e);

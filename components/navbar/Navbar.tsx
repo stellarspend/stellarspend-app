@@ -237,7 +237,7 @@ export default function Navbar() {
     }
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [startTransition]);
 
   const prevPathnameRef = useRef(pathname);
 
@@ -247,7 +247,7 @@ export default function Navbar() {
     startTransition(() => {
       setMobileOpen(false);
     });
-  }, [pathname]);
+  }, [pathname, startTransition]);
 
   // Lock body scroll while drawer is open
   useEffect(() => {

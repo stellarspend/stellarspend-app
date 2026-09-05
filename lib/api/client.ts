@@ -112,6 +112,7 @@ export interface Budget {
   endDate: string;
   createdAt: string;
   updatedAt: string;
+  version?: number;
   /** Address of the wallet that created the budget (shared budgets only). */
   ownerAddress?: string;
   /** Co-owner Stellar addresses, excluding the owner (shared budgets only). */
@@ -696,4 +697,3 @@ export async function sendPayment(
   MOCK_TRANSACTIONS.unshift(newTx);
   return newTx;
 }
-
