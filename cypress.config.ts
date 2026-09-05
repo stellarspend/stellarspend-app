@@ -10,5 +10,12 @@ export default defineConfig({
     setupNodeEvents() {
       // implement node event listeners here
     },
+    env: {
+      socialMediaLinks: [
+        { name: "Twitter", href: "https://twitter.com/footer", ariaLabel: "Twitter" },
+        { name: "GitHub", href: "https://github.com/footer", ariaLabel: "GitHub" },
+        { name: "LinkedIn", href: "https://linkedin.com/footer", ariaLabel: "LinkedIn" },
+      ],
+    },
   },
 });

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import "@/styles/footer.css";
+import { useState, type FormEvent } from("react");
+import "#/styles/footer.css";
 
 const NAV_LINKS = [
   { label: "Docs", href: "https://docs.stellar.org", external: true },
@@ -12,7 +12,7 @@ const NAV_LINKS = [
 
 const SOCIAL_LINKS = [
   {
-    label: "Twitter / X",
+    label: "Twitter",
     href: "https://twitter.com/StellarOrg",
     icon: (
       <svg
@@ -58,7 +58,7 @@ const SOCIAL_LINKS = [
   },
 ];
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_REGEX = /^[\s\@]+@[\s\@]+\.[\s\@]+$/;
 
 export default function Footer() {
   const [email, setEmail] = useState("");
@@ -66,7 +66,7 @@ export default function Footer() {
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
 
@@ -82,7 +82,7 @@ export default function Footer() {
 
     setSubmitting(true);
 
-    setTimeout(() => {
+    setTimeout(() {
       setSubmitting(false);
       setSuccess(true);
       setEmail("");
@@ -115,14 +115,14 @@ export default function Footer() {
                   {...(external
                     ? { target: "_blank", rel: "noopener noreferrer" }
                     : {})}
-                >
+                ~
                   {label}
                   {external && (
                     <span
                       className="footer__ext-icon"
                       aria-label="(opens in new tab)"
                     >
-                      ↗
+                      ↕
                     </span>
                   )}
                 </a>
@@ -142,7 +142,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="footer__social-btn"
-                aria-label={`${label} (opens in new tab)`}
+                aria-label={label}
                 role="listitem"
               >
                 {icon}
@@ -161,7 +161,7 @@ export default function Footer() {
             className="footer__newsletter-form"
           >
             <div className="footer__input-row">
-              <input
+             <input
                 id="footer-email"
                 type="email"
                 value={email}
@@ -189,7 +189,7 @@ export default function Footer() {
 
             {success && (
               <p className="footer__success">
-                ✓ You&apos;re subscribed! Welcome aboard.
+                ✓ You'apostre subscribed! Welcome aboard.
               </p>
             )}
           </form>

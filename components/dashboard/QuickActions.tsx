@@ -35,6 +35,7 @@ function ReceiveModal({ onClose }: { onClose: () => void }) {
       >
         <button
           onClick={onClose}
+          aria-label="Close modal"
           className="absolute top-5 right-5 text-[#7a8aaa] hover:text-white transition-colors"
         >
           <X className="w-5 h-5" />
@@ -84,6 +85,7 @@ function BudgetModal({ onClose }: { onClose: () => void }) {
       >
         <button
           onClick={onClose}
+          aria-label="Close modal"
           className="absolute top-5 right-5 text-[#7a8aaa] hover:text-white transition-colors"
         >
           <X className="w-5 h-5" />
@@ -137,6 +139,7 @@ function GoalModal({ onClose }: { onClose: () => void }) {
       >
         <button
           onClick={onClose}
+          aria-label="Close modal"
           className="absolute top-5 right-5 text-[#7a8aaa] hover:text-white transition-colors"
         >
           <X className="w-5 h-5" />
