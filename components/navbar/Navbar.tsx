@@ -327,6 +327,7 @@ export default function Navbar() {
                     href={link.href}
                     target={link.external ? "_blank" : undefined}
                     rel={link.external ? "noopener noreferrer" : undefined}
+                    aria-label={link.external ? link.label : undefined}
                     aria-current={active ? "page" : undefined}
                     className={[
                       "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-150",
