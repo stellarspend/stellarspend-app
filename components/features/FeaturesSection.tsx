@@ -27,8 +27,9 @@ const features = [
 export default function FeaturesSection() {
   return (
     <section
+      role="region"
       className="relative w-full py-24 px-6 overflow-hidden"
-      aria-label="Platform features"
+      aria-label="Features"
     >
       {/* Background gradient */}
       <div

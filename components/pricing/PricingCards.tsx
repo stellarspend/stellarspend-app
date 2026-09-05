@@ -212,6 +212,7 @@ export default function PricingCards() {
               <Link
                 href={tier.ctaHref}
                 className={`pricing-card__cta${tier.highlight ? " pricing-card__cta--primary" : ""}`}
+                aria-label={`${tier.cta} with ${tier.name} plan`}
               >
                 {tier.cta}
               </Link>

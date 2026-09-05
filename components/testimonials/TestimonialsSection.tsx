@@ -71,7 +71,8 @@ export default function TestimonialsSection() {
   return (
     <section
       className="relative w-full py-24 px-6"
-      aria-label="User testimonials"
+      role="region"
+      aria-label="Testimonials"
     >
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}

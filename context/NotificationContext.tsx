@@ -29,12 +29,44 @@ interface NotificationContextType {
   toasts: Notification[];
   addNotification: (type: NotificationType, message: string) => void;
   markAsRead: (id: string) => void;
+  markAllAsRead: () => void;
   removeToast: (id: string) => void;
   clearAll: () => void;
   preferences: NotificationPreferences;
   updatePreferences: (prefs: Partial<NotificationPreferences>) => void;
 }
 
+
+
+interface NotificationContextType {
+  notifications: Notification[];
+  toasts: Notification[];
+  addNotification: (type: NotificationType, message: string) => void;
+  markAsRead: (id: string) => void;
+  markAllAsRead: () => void;
+  removeToast: (id: string) => void;
+  clearAll: () => void;
+  preferences: NotificationPreferences;
+  updatePreferences: (prefs: Partial<NotificationPreferences>) => void;
+}
+/**
+ * React context that manages in-app notifications and toast messages.
+ *
+ * Provides persistent notifications (stored in localStorage) and
+ * ephemeral toast alerts that auto-dismiss after 5 seconds.
+ *
+ * @example
+ * ```tsx
+ * // Consume via the hook:
+ * const { addNotification, notifications } = useNotifications();
+ *
+ * // Trigger a toast + persistent notification:
+ * addNotification("success", "Payment sent!");
+ *
+ * // Read all notifications:
+ * notifications.forEach(n => console.log(n.message, n.read));
+ * ```
+ */
 export const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 const STORAGE_KEY = "stellarspend_notifications";
@@ -88,6 +120,16 @@ function loadPreferences(): NotificationPreferences {
   }
 }
 
+/**
+ * Provider component that wraps the application and supplies
+ * notification state and actions via {@link NotificationContext}.
+ *
+ * - Persists notifications and user preferences to localStorage.
+ * - Toasts are ephemeral and auto-remove after 5 seconds.
+ * - Users can toggle which notification types appear as toasts.
+ *
+ * @param children - Child components that will have access to notifications.
+ */
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -130,7 +172,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
         setTimeout(() => {
           removeToast(newNotification.id);
-        }, 5000);
+        }, 4000);
       }
     },
     [preferences, removeToast],
@@ -141,6 +183,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       prev.map((notification) =>
         notification.id === id ? { ...notification, read: true } : notification,
       ),
+    );
+  }, []);
+
+  const markAllAsRead = useCallback(() => {
+    setNotifications((prev) =>
+      prev.map((notification) => ({ ...notification, read: true })),
     );
   }, []);
 
@@ -162,6 +210,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         toasts,
         addNotification,
         markAsRead,
+        markAllAsRead,
         removeToast,
         clearAll,
         preferences,
@@ -173,6 +222,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
+/**
+ * Hook to access the notification context.
+ *
+ * Must be used within a {@link NotificationProvider}.
+ *
+ * @returns The notification context containing notifications, toasts,
+ *   and action methods like `addNotification`, `markAsRead`, etc.
+ * @throws Error if used outside of a `NotificationProvider`.
+ */
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (context === undefined) {

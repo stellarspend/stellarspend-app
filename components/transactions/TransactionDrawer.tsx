@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -14,7 +14,12 @@ import {
   Tag,
   CheckCircle2,
   AlertCircle,
+  ShoppingBag,
 } from "lucide-react";
+import CategoryPicker from "./CategoryPicker";
+import { getCategory } from "@/lib/stellar/categoriesContract";
+import { useToast } from "@/components/ui/use-toast";
+import { useWallet } from "@/hooks/useWallet";
 
 interface Operation {
   id: string;
@@ -48,58 +53,97 @@ interface TransactionDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   transaction: TransactionDetails | null;
+  category?: string | null;
+  onCategoryChange: (transactionId: string, category: string) => void | Promise<void>;
+  onCategoryLoaded?: (transactionId: string, category: string | null) => void;
 }
 
 export default function TransactionDrawer({
   isOpen,
   onClose,
   transaction,
+  category,
+  onCategoryChange,
+  onCategoryLoaded,
 }: TransactionDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const { freighter } = useWallet();
+  const { toast } = useToast();
+
+  const currentTransactionId = transaction?.id ?? null;
+  const [prevTransactionId, setPrevTransactionId] = useState<string | null>(currentTransactionId);
+  const [isCategoryLoading, setIsCategoryLoading] = useState(false);
+
+  // Reset the loading state whenever a new transaction is opened so the picker
+  // stays disabled while its category is being fetched.
+  if (currentTransactionId !== prevTransactionId) {
+    setPrevTransactionId(currentTransactionId);
+    setIsCategoryLoading(true);
+  }
+
+  // Fetch the currently assigned category whenever the drawer opens for a transaction.
+  useEffect(() => {
+    if (!isOpen || !transaction) return;
+    const publicKey = freighter.publicKey;
+    if (!publicKey) return;
+
+    let cancelled = false;
+    getCategory(publicKey, transaction.id)
+      .then((fetched) => {
+        if (!cancelled) onCategoryLoaded?.(transaction.id, fetched);
+      })
+      .catch((err) => {
+        console.error("Failed to load transaction category", err);
+      })
+      .finally(() => {
+        if (!cancelled) setIsCategoryLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, transaction?.id, freighter.publicKey]);
 
   // Focus management
   useEffect(() => {
-    if (isOpen && drawerRef.current) {
-      // Focus the close button when drawer opens
-      closeButtonRef.current?.focus();
+    if (!isOpen || !drawerRef.current) return;
 
-      // Trap focus within drawer
-      const handleTabKey = (e: KeyboardEvent) => {
-        if (e.key !== "Tab") return;
+    closeButtonRef.current?.focus();
 
-        const focusableElements = drawerRef.current?.querySelectorAll(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-        ) as NodeListOf<HTMLElement>;
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== "Tab" || !isOpen) return;
 
-        if (focusableElements.length === 0) return;
+      const focusableElements = drawerRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      ) as NodeListOf<HTMLElement>;
 
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
+      if (focusableElements.length === 0) return;
 
-        if (e.shiftKey) {
-          if (document.activeElement === firstElement) {
-            e.preventDefault();
-            lastElement.focus();
-          }
-        } else {
-          if (document.activeElement === lastElement) {
-            e.preventDefault();
-            firstElement.focus();
-          }
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
         }
-      };
+      } else {
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
 
-      document.addEventListener("keydown", handleTabKey);
+    document.addEventListener("keydown", handleTabKey);
+    document.body.style.overflow = "hidden";
 
-      // Prevent body scroll when drawer is open
-      document.body.style.overflow = "hidden";
-
-      return () => {
-        document.removeEventListener("keydown", handleTabKey);
-        document.body.style.overflow = "";
-      };
-    }
+    return () => {
+      document.removeEventListener("keydown", handleTabKey);
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   // Close on escape key
@@ -117,8 +161,10 @@ export default function TransactionDrawer({
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    // In a real app, we'd show a toast here
-    alert("Copied to clipboard!");
+    toast({
+      title: "Copied to Clipboard",
+      description: "Transaction hash has been copied to your clipboard.",
+    });
   };
 
   const exportJson = () => {
@@ -310,6 +356,24 @@ export default function TransactionDrawer({
                   )}
                 </div>
               )}
+
+              {/* Category */}
+              <div>
+                <label className="text-[10px] font-bold text-[var(--color-text-secondary)] uppercase tracking-[0.15em] mb-2 flex items-center gap-2">
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  Spending Category
+                </label>
+                <CategoryPicker
+                  value={category ?? null}
+                  disabled={isCategoryLoading || !freighter.publicKey}
+                  onChange={(selected) => onCategoryChange(transaction.id, selected)}
+                />
+                {!freighter.publicKey && (
+                  <p className="text-[10px] text-[var(--color-text-secondary)] mt-2">
+                    Connect your wallet to assign a category.
+                  </p>
+                )}
+              </div>
 
               {/* Operations */}
               <div>

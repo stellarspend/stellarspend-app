@@ -7,8 +7,8 @@
   --color-surface: #0d1117;
   --color-bg: #080b18;
   --color-text-secondary: #94a3b8; /* Improved contrast from #7a8aaa */
-  --font-sans: var(--font-geist-sans), "Inter", system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), "Fira Code", monospace;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-mono: "Fira Code", monospace, ui-monospace;
 }
 
 html {

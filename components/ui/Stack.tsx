@@ -3,6 +3,7 @@ import React from 'react';
 export interface StackProps {
   children: React.ReactNode;
   className?: string;
+  'aria-label'?: string;
   direction?: 'horizontal' | 'vertical';
   spacing?: 'sm' | 'md' | 'lg' | 'xl';
   align?: 'start' | 'center' | 'end' | 'stretch';
@@ -34,6 +35,7 @@ const justifyMap = {
 export function Stack({ 
   children, 
   className = '', 
+  'aria-label': ariaLabel,
   direction = 'vertical',
   spacing = 'md',
   align = 'stretch',
@@ -45,7 +47,7 @@ export function Stack({
   const justifyClass = justifyMap[justify];
 
   return (
-    <div className={`flex ${directionClass} ${spacingClass} ${alignClass} ${justifyClass} ${className}`}>
+    <div aria-label={ariaLabel} className={`flex ${directionClass} ${spacingClass} ${alignClass} ${justifyClass} ${className}`}>
       {children}
     </div>
   );

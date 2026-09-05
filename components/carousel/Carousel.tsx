@@ -138,6 +138,7 @@ export default function Carousel({
         <button
           className="carousel__btn carousel__btn--prev"
           onClick={prev}
+          tabIndex={0}
           aria-label="Previous slide"
         >
           <svg
@@ -177,6 +178,7 @@ export default function Carousel({
         <button
           className="carousel__btn carousel__btn--next"
           onClick={next}
+          tabIndex={0}
           aria-label="Next slide"
         >
           <svg

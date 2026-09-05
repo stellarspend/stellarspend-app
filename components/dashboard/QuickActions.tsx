@@ -5,13 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Send, Download, PieChart, Target, X } from "lucide-react";
 import SendPaymentModal from "../transactions/SendPaymentModal";
 
-// Module-level constant — Math.random() runs once when the module loads,
-// never during a component render, so the react-hooks/purity rule is satisfied.
-const QR_CELLS: readonly boolean[] = Array.from(
-  { length: 16 },
-  () => Math.random() > 0.5,
-);
-
 // ─── Mini Receive Modal ──────────────────────────────────────────────────────
 function ReceiveModal({ onClose }: { onClose: () => void }) {
   const address = "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";
@@ -190,6 +183,7 @@ const ACTIONS = [
   {
     id: "send",
     label: "Send",
+    ariaLabel: "Send payment",
     icon: Send,
     color: "#e8b84b",
     bg: "bg-[#e8b84b]/10",
@@ -199,6 +193,7 @@ const ACTIONS = [
   {
     id: "receive",
     label: "Receive",
+    ariaLabel: "Receive payment",
     icon: Download,
     color: "#4ade80",
     bg: "bg-[#4ade80]/10",
@@ -208,6 +203,7 @@ const ACTIONS = [
   {
     id: "budget",
     label: "New Budget",
+    ariaLabel: "Create new budget",
     icon: PieChart,
     color: "#4aa9e8",
     bg: "bg-[#4aa9e8]/10",
@@ -217,6 +213,7 @@ const ACTIONS = [
   {
     id: "goal",
     label: "New Goal",
+    ariaLabel: "Create new savings goal",
     icon: Target,
     color: "#a78bfa",
     bg: "bg-[#a78bfa]/10",
@@ -242,6 +239,7 @@ export default function QuickActions() {
             <motion.button
               key={action.id}
               id={`quick-action-${action.id}`}
+              aria-label={action.ariaLabel}
               onClick={() => setOpenModal(action.id as ModalId)}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

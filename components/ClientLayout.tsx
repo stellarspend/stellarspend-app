@@ -45,7 +45,7 @@ export default function ClientLayout({
     return (
         <OfflineProvider>
             <OfflineBanner />
-            <main className="min-h-screen" id="main-content">
+            <main className="min-h-screen">
                 {children}
             </main>
             <QueuedActions />

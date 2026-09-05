@@ -41,7 +41,7 @@ function Logo() {
     <Link
       href="/"
       aria-label="StellarSpend home"
-      className="flex items-center gap-2.5 group rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8b84b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#080b18]"
+      className="flex items-center gap-2.5 group rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8b84b] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#080b18]"
     >
       <div className="relative w-8 h-8 flex items-center justify-center">
         <div className="absolute inset-0 rounded-full bg-[#e8b84b]/10 group-hover:bg-[#e8b84b]/20 transition-colors duration-200" />
@@ -60,7 +60,7 @@ function Logo() {
           />
         </svg>
       </div>
-      <span className="font-bold text-[15px] tracking-tight text-white">
+      <span className="font-bold text-[15px] tracking-tight text-gray-900 dark:text-white">
         Stellar<span className="text-[#e8b84b]">Spend</span>
       </span>
     </Link>
@@ -75,7 +75,7 @@ function WalletButton({ mobile = false }: { mobile?: boolean }) {
   const [copied, setCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { isConnected, publicKey, isConnecting, freighterError } = freighter;
+  const { isConnected, publicKey, isConnecting, walletError } = freighter;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -108,10 +108,10 @@ function WalletButton({ mobile = false }: { mobile?: boolean }) {
           aria-label="Wallet menu"
           className={[
             "inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium",
-            "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+            "border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
             "hover:bg-emerald-500/20 hover:border-emerald-500/50",
             "transition-all duration-150",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#080b18]",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#080b18]",
             mobile ? "w-full justify-between" : "",
           ].join(" ")}
         >
@@ -134,13 +134,13 @@ function WalletButton({ mobile = false }: { mobile?: boolean }) {
         {open && (
           <div
             role="menu"
-            className="absolute right-0 mt-2 w-72 rounded-xl border border-white/10 bg-[#0d1117]/95 backdrop-blur-md shadow-2xl shadow-black/50 overflow-hidden z-50"
+            className="absolute right-0 mt-2 w-72 rounded-xl border border-gray-200 dark:border-white/10 bg-white/95 dark:bg-[#0d1117]/95 backdrop-blur-md shadow-2xl shadow-black/20 dark:shadow-black/50 overflow-hidden z-50"
           >
-            <div className="px-4 py-3 border-b border-white/[0.06]">
-              <p className="text-[10px] text-[#7a8aaa] uppercase tracking-widest mb-1.5 font-medium">
+            <div className="px-4 py-3 border-b border-gray-100 dark:border-white/[0.06]">
+              <p className="text-[10px] text-gray-500 dark:text-[#7a8aaa] uppercase tracking-widest mb-1.5 font-medium">
                 Connected Wallet
               </p>
-              <p className="font-mono text-[11px] text-white/70 break-all leading-relaxed">
+              <p className="font-mono text-[11px] text-gray-700 dark:text-white/70 break-all leading-relaxed">
                 {publicKey}
               </p>
             </div>
@@ -150,18 +150,18 @@ function WalletButton({ mobile = false }: { mobile?: boolean }) {
                 type="button"
                 role="menuitem"
                 onClick={handleCopy}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors duration-100 focus-visible:outline-none focus-visible:bg-white/[0.06]"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-900 dark:hover:text-white transition-colors duration-100 focus-visible:outline-none focus-visible:bg-gray-100 dark:focus-visible:bg-white/[0.06]"
               >
                 {copied ? (
                   <Check
                     size={15}
-                    className="text-emerald-400"
+                    className="text-emerald-500 dark:text-emerald-400"
                     aria-hidden="true"
                   />
                 ) : (
                   <Copy
                     size={15}
-                    className="text-[#7a8aaa]"
+                    className="text-gray-400 dark:text-[#7a8aaa]"
                     aria-hidden="true"
                   />
                 )}
@@ -175,7 +175,7 @@ function WalletButton({ mobile = false }: { mobile?: boolean }) {
                   disconnectFreighter();
                   setOpen(false);
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400/80 hover:bg-red-500/[0.08] hover:text-red-400 transition-colors duration-100 focus-visible:outline-none focus-visible:bg-red-500/[0.08]"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-500 dark:text-red-400/80 hover:bg-red-50 dark:hover:bg-red-500/[0.08] hover:text-red-600 dark:hover:text-red-400 transition-colors duration-100 focus-visible:outline-none focus-visible:bg-red-50 dark:focus-visible:bg-red-500/[0.08]"
               >
                 <LogOut size={15} aria-hidden="true" />
                 <span>Disconnect</span>
@@ -201,7 +201,7 @@ function WalletButton({ mobile = false }: { mobile?: boolean }) {
           "hover:bg-[#f0c85a] hover:shadow-[0_4px_20px_rgba(232,184,75,0.3)]",
           "disabled:opacity-60 disabled:cursor-not-allowed",
           "transition-all duration-150 active:scale-[0.98]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8b84b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#080b18]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8b84b] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#080b18]",
           mobile ? "w-full" : "",
         ].join(" ")}
       >
@@ -213,9 +213,9 @@ function WalletButton({ mobile = false }: { mobile?: boolean }) {
         <span>{isConnecting ? "Connecting…" : "Connect Wallet"}</span>
       </button>
 
-      {freighterError && (
+      {walletError && (
         <p role="alert" className="text-[11px] text-red-400 text-center">
-          {freighterError}
+          {walletError}
         </p>
       )}
     </div>
@@ -226,7 +226,7 @@ function WalletButton({ mobile = false }: { mobile?: boolean }) {
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [_pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -307,7 +307,7 @@ export default function Navbar() {
         className={[
           "fixed top-0 left-0 right-0 z-40 transition-all duration-300",
           scrolled
-            ? "border-b border-white/[0.07] bg-[#080b18]/90 backdrop-blur-xl shadow-lg shadow-black/20"
+            ? "border-b border-gray-200/70 dark:border-white/[0.07] bg-white/90 dark:bg-[#080b18]/90 backdrop-blur-xl shadow-lg shadow-black/10 dark:shadow-black/20"
             : "bg-transparent",
         ].join(" ")}
       >
@@ -330,10 +330,10 @@ export default function Navbar() {
                     aria-current={active ? "page" : undefined}
                     className={[
                       "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-150",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8b84b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#080b18]",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8b84b] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#080b18]",
                       active
                         ? "text-[#e8b84b] bg-[#e8b84b]/[0.08]"
-                        : "text-[#94a3b8] hover:text-white hover:bg-white/[0.06]",
+                        : "text-gray-600 dark:text-[#94a3b8] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-white/[0.06]",
                     ].join(" ")}
                   >
                     {link.label}
@@ -361,7 +361,7 @@ export default function Navbar() {
               aria-label="Open navigation menu"
               aria-expanded={mobileOpen}
               aria-controls="mobile-drawer"
-              className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg text-[#94a3b8] hover:text-white hover:bg-white/[0.06] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8b84b]"
+              className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg text-gray-600 dark:text-[#94a3b8] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-white/[0.06] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8b84b]"
             >
               <Menu size={20} aria-hidden="true" />
             </button>
@@ -388,19 +388,19 @@ export default function Navbar() {
         onKeyDown={onDrawerKeyDown}
         className={[
           "fixed top-0 right-0 bottom-0 z-50 w-[min(320px,90vw)]",
-          "flex flex-col bg-[#0d1117] border-l border-white/[0.07]",
+          "flex flex-col bg-white dark:bg-[#0d1117] border-l border-gray-200/80 dark:border-white/[0.07]",
           "shadow-2xl shadow-black/50 md:hidden",
           "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
           mobileOpen ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
       >
-        <div className="flex items-center justify-between px-5 h-16 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-5 h-16 border-b border-gray-100 dark:border-white/[0.06]">
           <Logo />
           <button
             type="button"
             onClick={() => setMobileOpen(false)}
             aria-label="Close navigation menu"
-            className="flex items-center justify-center w-9 h-9 rounded-lg text-[#94a3b8] hover:text-white hover:bg-white/[0.06] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8b84b]"
+            className="flex items-center justify-center w-9 h-9 rounded-lg text-gray-600 dark:text-[#94a3b8] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-white/[0.06] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8b84b]"
           >
             <X size={20} aria-hidden="true" />
           </button>
@@ -426,7 +426,7 @@ export default function Navbar() {
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8b84b] focus-visible:ring-inset",
                       active
                         ? "text-[#e8b84b] bg-[#e8b84b]/[0.08]"
-                        : "text-[#94a3b8] hover:text-white hover:bg-white/[0.05]",
+                        : "text-gray-600 dark:text-[#94a3b8] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/60 dark:hover:bg-white/[0.05]",
                     ].join(" ")}
                   >
                     {link.label}
@@ -444,8 +444,8 @@ export default function Navbar() {
           </ul>
         </nav>
 
-        <div className="px-4 py-5 border-t border-white/[0.06]">
-          <p className="text-[10px] text-[#7a8aaa] uppercase tracking-widest mb-3 font-medium px-1">
+        <div className="px-4 py-5 border-t border-gray-100 dark:border-white/[0.06]">
+          <p className="text-[10px] text-gray-500 dark:text-[#7a8aaa] uppercase tracking-widest mb-3 font-medium px-1">
             Wallet
           </p>
           <WalletButton mobile />
