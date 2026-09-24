@@ -21,7 +21,14 @@ const goalSchema = z.object({
         message: 'Deadline must be a future date',
     }),
     recurrence: z.enum(['once', 'monthly', 'yearly']),
-});
+    scheduleAmount: z.coerce.number().optional(),
+}).refine(
+    (data) => data.recurrence === 'once' || (data.scheduleAmount ?? 0) > 0,
+    {
+        message: 'Enter how much to contribute each period',
+        path: ['scheduleAmount'],
+    },
+);
 
 type GoalFormData = z.infer<typeof goalSchema>;
 
@@ -41,6 +48,7 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
     const {
         register,
         handleSubmit,
+        watch,
         formState: { errors, isValid, isSubmitting },
         reset,
     } = useForm<GoalFormData>({
@@ -50,9 +58,12 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
             targetAmount: 0,
             deadline: '',
             recurrence: 'once',
+            scheduleAmount: undefined,
         },
         mode: 'onChange',
     });
+
+    const recurrence = watch('recurrence');
 
     const onSubmit = async (data: GoalFormData) => {
         if (!isOnline) {
@@ -185,6 +196,26 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
                             <p className="text-xs text-red-500 mt-1">{errors.recurrence.message}</p>
                         )}
                     </div>
+
+                    {recurrence !== 'once' && (
+                        <div className="space-y-1">
+                            <label htmlFor="scheduleAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Amount per {recurrence === 'monthly' ? 'month' : 'year'} (XLM)
+                            </label>
+                            <input
+                                id="scheduleAmount"
+                                type="number"
+                                aria-required="true"
+                                {...register('scheduleAmount')}
+                                className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-500 outline-none transition-all ${errors.scheduleAmount ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
+                                    }`}
+                                placeholder="50"
+                            />
+                            {errors.scheduleAmount && (
+                                <p className="text-xs text-red-500 mt-1">{errors.scheduleAmount.message}</p>
+                            )}
+                        </div>
+                    )}
 
                     <div className="flex justify-end gap-2 pt-4">
                         {txStatus && (
