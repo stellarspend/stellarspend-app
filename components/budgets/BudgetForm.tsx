@@ -266,7 +266,7 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                         aria-describedby={errors.amount ? 'amount-error' : undefined}
                         className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.amount ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                             }`}
-                        placeholder="0.00"
+                        placeholder="e.g. 500"
                     />
                     {errors.amount && (
                         <p id="amount-error" className="text-xs text-red-500 mt-1" role="alert">{errors.amount.message}</p>
