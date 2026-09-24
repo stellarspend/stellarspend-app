@@ -108,7 +108,7 @@ A client-side, module-level account-stream manager:
 - `npm run type-check` — passes.
 - `npm run lint` — passes (only a pre-existing upstream warning in
   `SendPaymentModal.tsx`).
-- `npm test` — 97 tests pass, including the new stream-manager and widget
+- `npm test` — 98 tests pass, including the new stream-manager and widget
   tests.
 - Manual: with the dashboard open on wallet A, send a testnet payment to
   wallet A from another account and confirm the balance/transaction list update
