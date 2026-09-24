@@ -19,6 +19,11 @@ import {
   type PendingPayment,
   type SubmittedPayment,
 } from "@/lib/stellar/submitTransaction";
+import {
+  startAccountStream,
+  subscribeAccountStream,
+  subscribeAccountStreamStatus,
+} from "@/lib/stellar/accountStream";
 
 function TxRow({ tx, index }: { tx: Transaction; index: number }) {
   const op = tx.operations[0];
@@ -110,14 +115,32 @@ function SkeletonRow() {
 export default function RecentTransactions() {
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newActivity, setNewActivity] = useState(false);
   const livePaymentStatus = React.useRef(new Map<string, "pending" | "confirmed">());
+  const activityTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastStreamAt = React.useRef(0);
+  const lastStreamAccount = React.useRef<string | null>(null);
 
-  useEffect(() => {
+  const loadRecent = React.useCallback(() => {
     fetchTransactions(undefined, 1, 3).then((response) => {
-      setTxs(response.data);
+      const incoming = response.data;
+      setTxs((current) => {
+        const seen = new Set<string>();
+        return [...incoming, ...current]
+          .filter((tx) => {
+            if (seen.has(tx.hash)) return false;
+            seen.add(tx.hash);
+            return true;
+          })
+          .slice(0, 3);
+      });
       setLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    loadRecent();
+  }, [loadRecent]);
 
   useEffect(() => {
     const handlePaymentSubmitted = (event: Event) => {
@@ -150,6 +173,44 @@ export default function RecentTransactions() {
     };
   }, []);
 
+  // ── Live Horizon SSE stream ─────────────────────────────────────────────
+  useEffect(() => {
+    const handleStreamActivity = () => {
+      const now = Date.now();
+      if (now - lastStreamAt.current < 2000) return;
+      lastStreamAt.current = now;
+
+      loadRecent();
+      setNewActivity(true);
+      if (activityTimeout.current) clearTimeout(activityTimeout.current);
+      activityTimeout.current = setTimeout(() => setNewActivity(false), 3000);
+    };
+
+    const handleStreamStatus = (state: {
+      status: string;
+      account: string | null;
+    }) => {
+      if (
+        state.status === "connected" &&
+        state.account &&
+        state.account !== lastStreamAccount.current
+      ) {
+        lastStreamAccount.current = state.account;
+        loadRecent();
+      }
+    };
+
+    const unsubscribeEvent = subscribeAccountStream(handleStreamActivity);
+    const unsubscribeStatus = subscribeAccountStreamStatus(handleStreamStatus);
+    startAccountStream();
+
+    return () => {
+      unsubscribeEvent();
+      unsubscribeStatus();
+      if (activityTimeout.current) clearTimeout(activityTimeout.current);
+    };
+  }, [loadRecent]);
+
   return (
     <div className="rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-sm p-6">
       {/* Header */}
@@ -159,6 +220,12 @@ export default function RecentTransactions() {
           <h2 className="text-sm font-black text-white uppercase tracking-[0.15em]">
             Recent Transactions
           </h2>
+          {newActivity && (
+            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#e8b84b]/10 border border-[#e8b84b]/20 text-[#e8b84b] text-[9px] font-bold uppercase tracking-widest animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#e8b84b]" />
+              New activity
+            </span>
+          )}
         </div>
         <Link
           href="/dashboard/transactions"

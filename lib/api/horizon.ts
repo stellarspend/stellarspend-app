@@ -33,7 +33,7 @@ const BASE_URL =
 /** Singleton Horizon REST client. */
 let _horizon: InstanceType<typeof Horizon.Server> | null = null;
 
-function getHorizon(): InstanceType<typeof Horizon.Server> {
+export function getHorizon(): InstanceType<typeof Horizon.Server> {
   if (!_horizon) _horizon = new Horizon.Server(BASE_URL);
   return _horizon;
 }
