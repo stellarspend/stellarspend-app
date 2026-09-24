@@ -284,6 +284,7 @@ export default function SplitBillModal({ publicKey, onClose, onCreated }: SplitB
                       <button
                         type="button"
                         onClick={() => removeParticipant(i)}
+                        aria-label="Remove participant"
                         disabled={status === "submitting" || participants.length <= 2}
                         className="p-3 rounded-xl bg-white/[0.03] border border-white/10 text-[#7a8aaa] hover:text-red-400 hover:border-red-500/30 transition-all disabled:opacity-30"
                       >
