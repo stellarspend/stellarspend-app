@@ -35,7 +35,7 @@ interface UseFormProps<
 export function useForm<TFieldValues extends FieldValues = FieldValues>({
   schema,
   ...options
-}: UseFormProps<TFieldValues>) {
+}: UseFormProps<TFieldValues>): UseFormReturn<TFieldValues> {
   return useHookForm<TFieldValues>({
     ...options,
     // @ts-expect-error - Type mismatch between @hookform/resolvers and react-hook-form versions
