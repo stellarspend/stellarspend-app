@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
 import { useForm } from "@/hooks/useForm";
 import { useOffline } from "@/components/offline/OfflineProvider";
@@ -29,14 +30,200 @@ interface GoalFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onGoalCreated: (goal: Goal) => void;
+    /** Current saved amount toward the goal, used to detect 100 % completion. */
+    currentAmount?: number;
+    /** Target amount for the goal — required alongside currentAmount. */
+    targetAmount?: number;
 }
 
-export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalFormProps) {
+// ---------------------------------------------------------------------------
+// Confetti data — deterministic so no hydration mismatch
+// ---------------------------------------------------------------------------
+const CONFETTI_DOTS = [
+    { id: 0,  x: 10, delay: 0,    rotate: 120,  color: "bg-green-400" },
+    { id: 1,  x: 20, delay: 0.05, rotate: -90,  color: "bg-yellow-400" },
+    { id: 2,  x: 30, delay: 0.1,  rotate: 200,  color: "bg-blue-400" },
+    { id: 3,  x: 42, delay: 0.07, rotate: -150, color: "bg-pink-400" },
+    { id: 4,  x: 55, delay: 0.03, rotate: 75,   color: "bg-purple-400" },
+    { id: 5,  x: 65, delay: 0.12, rotate: -60,  color: "bg-orange-400" },
+    { id: 6,  x: 75, delay: 0.04, rotate: 180,  color: "bg-teal-400" },
+    { id: 7,  x: 85, delay: 0.09, rotate: -110, color: "bg-red-400" },
+    { id: 8,  x: 50, delay: 0.15, rotate: 240,  color: "bg-indigo-400" },
+    { id: 9,  x: 35, delay: 0.06, rotate: -30,  color: "bg-emerald-400" },
+];
+
+// ---------------------------------------------------------------------------
+// CompletionOverlay
+// ---------------------------------------------------------------------------
+// Rendered inside the modal when the goal reaches 100 %. Fires once per mount
+// of the overlay (tracked by the parent via hasAnimatedRef).
+// ---------------------------------------------------------------------------
+
+interface CompletionOverlayProps {
+    reducedMotion: boolean;
+    onDismiss: () => void;
+}
+
+function CompletionOverlay({ reducedMotion, onDismiss }: CompletionOverlayProps) {
+    return (
+        <motion.div
+            key="completion-overlay"
+            // Full-cover layer that sits on top of the form content
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl overflow-hidden bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm"
+            initial={reducedMotion ? { opacity: 1 } : { opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
+            transition={
+                reducedMotion
+                    ? { duration: 0.15 }
+                    : { type: "spring", damping: 20, stiffness: 260, duration: 0.45 }
+            }
+            role="status"
+            aria-live="polite"
+            aria-label="Goal completed"
+        >
+            {/* Confetti burst — skip when reduced motion is preferred */}
+            {!reducedMotion && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+                    {CONFETTI_DOTS.map((dot) => (
+                        <motion.span
+                            key={dot.id}
+                            className={`absolute w-2.5 h-2.5 rounded-full ${dot.color}`}
+                            style={{ left: `${dot.x}%`, top: "40%" }}
+                            initial={{ y: 0, opacity: 1, scale: 0 }}
+                            animate={{
+                                y: [0, -80, 60],
+                                opacity: [1, 1, 0],
+                                scale: [0, 1.2, 0.8],
+                                rotate: [0, dot.rotate],
+                            }}
+                            transition={{
+                                duration: 1.1,
+                                delay: dot.delay,
+                                ease: "easeOut",
+                            }}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Trophy icon */}
+            <motion.div
+                className="mb-4"
+                initial={reducedMotion ? {} : { scale: 0, rotate: -15 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={
+                    reducedMotion
+                        ? { duration: 0 }
+                        : { type: "spring", damping: 12, stiffness: 300, delay: 0.1 }
+                }
+                aria-hidden="true"
+            >
+                <div className="p-4 bg-green-100 dark:bg-green-900 rounded-full shadow-lg">
+                    <svg
+                        className="w-12 h-12 text-green-600 dark:text-green-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="1.8"
+                            d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+                        />
+                    </svg>
+                </div>
+            </motion.div>
+
+            {/* Heading & sub-copy */}
+            <motion.h3
+                className="text-2xl font-bold text-gray-900 dark:text-white mb-1 text-center"
+                initial={reducedMotion ? {} : { opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reducedMotion ? 0 : 0.2, duration: 0.3 }}
+            >
+                Goal Complete! 🎉
+            </motion.h3>
+
+            <motion.p
+                className="text-sm text-gray-500 dark:text-gray-400 text-center px-6 mb-6"
+                initial={reducedMotion ? {} : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reducedMotion ? 0 : 0.3, duration: 0.3 }}
+            >
+                You&apos;ve hit 100% of your savings target. Keep it up!
+            </motion.p>
+
+            {/* Dismiss button */}
+            <motion.button
+                type="button"
+                onClick={onDismiss}
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                initial={reducedMotion ? {} : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reducedMotion ? 0 : 0.38, duration: 0.25 }}
+                aria-label="Dismiss goal completion celebration"
+            >
+                Awesome!
+            </motion.button>
+        </motion.div>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// GoalForm
+// ---------------------------------------------------------------------------
+
+export default function GoalForm({ open, onOpenChange, onGoalCreated, currentAmount, targetAmount }: GoalFormProps) {
     const { isOnline, queueAction } = useOffline();
     const { freighter } = useWallet();
     const { toast } = useToast();
     const publicKey = freighter.publicKey;
     const [txStatus, setTxStatus] = useState<string | null>(null);
+
+    // --- Completion animation state ---
+    const [showCompletion, setShowCompletion] = useState(false);
+    // Guard: only fire the animation once per component lifecycle.
+    const hasAnimatedRef = useRef(false);
+
+    // Detect user's motion preference once (stable across renders).
+    const reducedMotionRef = useRef(
+        typeof window !== "undefined"
+            ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            : false,
+    );
+    const reducedMotion = reducedMotionRef.current;
+
+    // Compute progress and decide whether to show the overlay.
+    useEffect(() => {
+        if (
+            !open ||
+            hasAnimatedRef.current ||
+            typeof currentAmount !== "number" ||
+            typeof targetAmount !== "number" ||
+            targetAmount <= 0
+        ) {
+            return;
+        }
+
+        const progress = (currentAmount / targetAmount) * 100;
+
+        if (progress >= 100) {
+            hasAnimatedRef.current = true;
+            setShowCompletion(true);
+        }
+    }, [open, currentAmount, targetAmount]);
+
+    // Reset the one-shot guard when the modal is fully closed so it can fire
+    // again if the same component instance is reused for a different goal.
+    useEffect(() => {
+        if (!open) {
+            hasAnimatedRef.current = false;
+            setShowCompletion(false);
+        }
+    }, [open]);
 
     const {
         register,
@@ -103,7 +290,18 @@ export default function GoalForm({ open, onOpenChange, onGoalCreated }: GoalForm
     return (
         <div className={`fixed inset-0 z-50 flex items-center justify-center ${open ? 'block' : 'hidden'}`}>
             <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => onOpenChange(false)}></div>
-            <div className="relative w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+            <div className="relative w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+
+                {/* ---------- Completion animation overlay ---------- */}
+                <AnimatePresence>
+                    {showCompletion && (
+                        <CompletionOverlay
+                            reducedMotion={reducedMotion}
+                            onDismiss={() => setShowCompletion(false)}
+                        />
+                    )}
+                </AnimatePresence>
+
                 <div className="flex items-center space-x-2 mb-6">
                     <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
                         <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
