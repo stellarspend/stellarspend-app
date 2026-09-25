@@ -8,6 +8,11 @@ import {
   type AssetBalance,
   type WalletBalances,
 } from "@/lib/api/client";
+import {
+  startAccountStream,
+  subscribeAccountStream,
+  subscribeAccountStreamStatus,
+} from "@/lib/stellar/accountStream";
 
 // ─── Asset colour map ─────────────────────────────────────────────────────
 
@@ -119,6 +124,10 @@ export default function BalancesWidget() {
   const [data, setData] = useState<WalletBalances | null>(null);
   const [loading, setLoading] = useState(true);
   const [spinning, setSpinning] = useState(false);
+  const [newActivity, setNewActivity] = useState(false);
+  const activityTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastStreamAt = React.useRef(0);
+  const lastStreamAccount = React.useRef<string | null>(null);
 
   const load = useCallback(async (manual = false) => {
     if (manual) {
@@ -158,6 +167,44 @@ export default function BalancesWidget() {
     };
   }, []);
 
+  // ── Live Horizon SSE stream ─────────────────────────────────────────────
+  useEffect(() => {
+    const handleStreamActivity = () => {
+      const now = Date.now();
+      if (now - lastStreamAt.current < 2000) return;
+      lastStreamAt.current = now;
+
+      load();
+      setNewActivity(true);
+      if (activityTimeout.current) clearTimeout(activityTimeout.current);
+      activityTimeout.current = setTimeout(() => setNewActivity(false), 3000);
+    };
+
+    const handleStreamStatus = (state: {
+      status: string;
+      account: string | null;
+    }) => {
+      if (
+        state.status === "connected" &&
+        state.account &&
+        state.account !== lastStreamAccount.current
+      ) {
+        lastStreamAccount.current = state.account;
+        load();
+      }
+    };
+
+    const unsubscribeEvent = subscribeAccountStream(handleStreamActivity);
+    const unsubscribeStatus = subscribeAccountStreamStatus(handleStreamStatus);
+    startAccountStream();
+
+    return () => {
+      unsubscribeEvent();
+      unsubscribeStatus();
+      if (activityTimeout.current) clearTimeout(activityTimeout.current);
+    };
+  }, [load]);
+
   return (
     <div className="rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-sm p-6 space-y-5">
       {/* Widget header */}
@@ -178,6 +225,12 @@ export default function BalancesWidget() {
                 minute: "2-digit",
               })}
             </p>
+          )}
+          {newActivity && (
+            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#4ade80]/10 border border-[#4ade80]/20 text-[#4ade80] text-[9px] font-bold uppercase tracking-widest animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4ade80]" />
+              Live
+            </span>
           )}
           <button
             id="balances-refresh"
