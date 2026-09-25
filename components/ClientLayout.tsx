@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { OfflineProvider } from "@/components/offline/OfflineProvider";
 import OfflineBanner from "@/components/offline/OfflineBanner";
+import OfflineConflictHost from "@/components/offline/OfflineConflictHost";
 import QueuedActions from "@/components/offline/QueuedActions";
 import { useNotifications } from "@/context/NotificationContext";
 
@@ -49,6 +50,7 @@ export default function ClientLayout({
                 {children}
             </main>
             <QueuedActions />
+            <OfflineConflictHost />
         </OfflineProvider>
     );
 }

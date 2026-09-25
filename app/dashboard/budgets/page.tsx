@@ -163,7 +163,15 @@ export default function BudgetsPage() {
         if (!editingBudget) return;
         
         if (!isOnline) {
-            queueAction('UPDATE_BUDGET', `Update budget: ${budgetData.name}`, { id: editingBudget.id, ...budgetData });
+            // Capture the snapshot this edit is based on so replaying the queue
+            // can tell an overlapping edit from another device apart from a
+            // stale value that is safe to apply as-is.
+            queueAction('UPDATE_BUDGET', `Update budget: ${budgetData.name}`, {
+                id: editingBudget.id,
+                changes: { ...budgetData },
+                base: { ...editingBudget },
+                baseVersion: editingBudget.updatedAt,
+            });
             toast({
                 title: "Budget Update Queued",
                 description: "Offline: Your budget updates have been queued and will be saved when you reconnect.",

@@ -10,6 +10,8 @@ export interface Goal {
   deadline: string;
   recurrence: Recurrence;
   createdAt: Date;
+  /** Last-modified marker used to detect edits made on multiple devices. */
+  updatedAt?: string;
   schedule?: GoalSchedule;
   roundUpRule?: RoundUpRule;
 }

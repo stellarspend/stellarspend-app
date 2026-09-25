@@ -304,6 +304,7 @@ export function getMockGoalsFallback(): Goal[] {
       deadline: '2024-12-31',
       recurrence: 'once',
       createdAt: new Date(),
+      updatedAt: new Date().toISOString(),
     },
   ];
 }
@@ -316,6 +317,37 @@ export function setMockGoalsFallback(goals: Goal[]) {
   if (typeof window !== 'undefined') {
     localStorage.setItem(LOCAL_GOALS_KEY, JSON.stringify(goals));
   }
+}
+
+/**
+ * Applies an offline-resolved update to a goal in the local cache.
+ *
+ * Used by the offline sync layer (`components/offline/syncAdapter.ts`) when a
+ * queued goal edit is replayed after reconnecting. On-chain goal edits are not
+ * part of the deployed contract surface yet, so this updates the locally
+ * persisted copy that the UI reads from.
+ *
+ * @param goalId - The ID of the goal to update.
+ * @param changes - The goal fields to merge into the stored goal.
+ * @returns The updated goal, or null when no goal with that id exists.
+ */
+export function updateGoalLocal(
+  goalId: string,
+  changes: Partial<Pick<Goal, 'name' | 'targetAmount' | 'deadline' | 'recurrence'>>
+): Goal | null {
+  const goals = getMockGoalsFallback();
+  const index = goals.findIndex((g) => g.id === goalId);
+  if (index === -1) {
+    return null;
+  }
+
+  goals[index] = {
+    ...goals[index],
+    ...changes,
+    updatedAt: new Date().toISOString(),
+  };
+  setMockGoalsFallback(goals);
+  return goals[index];
 }
 
 /**
@@ -377,6 +409,7 @@ export async function createGoal(
       deadline: goalData.deadline,
       recurrence: goalData.recurrence,
       createdAt: new Date(),
+      updatedAt: new Date().toISOString(),
     };
     mockGoals.push(newGoal);
     setMockGoalsFallback(mockGoals);
@@ -406,6 +439,7 @@ export async function createGoal(
       deadline: goalData.deadline,
       recurrence: goalData.recurrence,
       createdAt: new Date(),
+      updatedAt: new Date().toISOString(),
     };
     return newGoal;
   } catch (e: unknown) {
@@ -433,6 +467,7 @@ export async function contributeToGoal(
     const index = mockGoals.findIndex((g) => g.id === goalId);
     if (index !== -1) {
       mockGoals[index].currentAmount += amount;
+      mockGoals[index].updatedAt = new Date().toISOString();
       setMockGoalsFallback(mockGoals);
     }
     return;
@@ -450,6 +485,7 @@ export async function contributeToGoal(
     const index = mockGoals.findIndex((g) => g.id === goalId);
     if (index !== -1) {
       mockGoals[index].currentAmount += amount;
+      mockGoals[index].updatedAt = new Date().toISOString();
       setMockGoalsFallback(mockGoals);
     }
   } catch (e: unknown) {
