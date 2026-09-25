@@ -46,6 +46,16 @@ export interface RemainingSpendingAllowance {
   limitId?: string;
 }
 
+export interface LimitCheckResult {
+  allowed: boolean;
+  asset: AssetCode;
+  amount: number;
+  limitAmount: number | null;
+  spentAmount: number | null;
+  remainingAmount: number | null;
+}
+
+
 const SPENDING_LIMITS_CONTRACT_ID = process.env.NEXT_PUBLIC_SPENDING_LIMITS_CONTRACT_ID || '';
 const LOCAL_SPENDING_LIMITS_KEY = 'stellarspend_local_spending_limits';
 
@@ -356,6 +366,44 @@ export async function getRemaining(
     period: limit.period,
     hasLimit: true,
     limitId: limit.id,
+  };
+}
+
+
+/**
+ * Checks whether a proposed spend amount is within the current remaining limit.
+ * @param publicKey - The Stellar public key of the limit owner.
+ * @param asset - The asset code to check (e.g. 'USDC', 'XLM').
+ * @param amount - The proposed spend amount.
+ * @returns A LimitCheckResult with `allowed: false` when the amount exceeds the remaining limit.
+ */
+export async function checkLimit(
+  publicKey: string,
+  asset: AssetCode,
+  amount: number
+): Promise<LimitCheckResult> {
+  const remaining = await getRemaining(publicKey, asset);
+
+  if (!remaining || !remaining.hasLimit) {
+    return {
+      allowed: true,
+      asset,
+      amount,
+      limitAmount: null,
+      spentAmount: null,
+      remainingAmount: null,
+    };
+  }
+
+  const allowed = amount <= remaining.remainingAmount;
+
+  return {
+    allowed,
+    asset,
+    amount,
+    limitAmount: remaining.limitAmount,
+    spentAmount: remaining.spentAmount,
+    remainingAmount: remaining.remainingAmount,
   };
 }
 
