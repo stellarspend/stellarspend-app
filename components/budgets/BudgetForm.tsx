@@ -414,8 +414,12 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                                                     addCoOwners();
                                                 }
                                             }}
-                                            aria-invalid={errors.coOwners ? 'true' : 'false'}
-                                            aria-describedby={errors.coOwners || coOwnerError ? 'co-owners-error' : undefined}
+                                            aria-invalid={errors.coOwners || coOwnerError ? 'true' : 'false'}
+                                            aria-describedby={
+                                                errors.coOwners || coOwnerError
+                                                    ? 'co-owners-help co-owners-error'
+                                                    : 'co-owners-help'
+                                            }
                                             placeholder="G... (comma or space separated)"
                                             className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.coOwners || coOwnerError ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                                                 }`}
@@ -429,6 +433,9 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                                             Add
                                         </button>
                                     </div>
+                                    <p id="co-owners-help" className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        56-character Stellar public key starting with G
+                                    </p>
                                     {(errors.coOwners || coOwnerError) && (
                                         <p id="co-owners-error" className="text-xs text-red-500 mt-1" role="alert">
                                             {errors.coOwners?.message || coOwnerError}
