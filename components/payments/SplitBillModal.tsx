@@ -174,6 +174,7 @@ export default function SplitBillModal({ publicKey, onClose, onCreated }: SplitB
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   disabled={status === "submitting"}
+                  aria-label="Split description"
                   className="w-full px-4 py-3.5 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-sm placeholder-[#7a8aaa]/40 focus:outline-none focus:ring-2 focus:ring-[#e8b84b]/30 focus:border-[#e8b84b]/40 transition-all disabled:opacity-50"
                 />
               </div>
