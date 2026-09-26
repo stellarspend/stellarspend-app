@@ -120,7 +120,7 @@ export default function SpendingLimitCard({
               disabled={isDeleting}
               className="p-2 rounded-xl text-[#7a8aaa] hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all active:scale-95 disabled:opacity-50"
               title="Delete spending limit"
-              aria-label={`Delete ${limit.asset} limit`}
+              aria-label="Delete spending limit"
             >
               <Trash2 className="w-4 h-4" />
             </button>
