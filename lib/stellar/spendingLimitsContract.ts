@@ -78,7 +78,9 @@ export function getPeriodDurationMs(period: SpendingPeriod): number {
 }
 
 /**
- * Check and reset period spent amount if the time window has elapsed
+ * Check and reset period spent amount if the time window has elapsed.
+ * @param limit - The SpendingLimit object to normalize.
+ * @returns The updated or unchanged SpendingLimit object.
  */
 export function normalizeLimit(limit: SpendingLimit): SpendingLimit {
   const durationMs = getPeriodDurationMs(limit.period);
@@ -152,6 +154,7 @@ export function getMockSpendingLimitsFallback(): SpendingLimit[] {
 /**
  * Persists spending limits to localStorage.
  * @param limits - The array of SpendingLimit objects to store.
+ * @returns Void.
  */
 export function setMockSpendingLimitsFallback(limits: SpendingLimit[]) {
   if (typeof window !== 'undefined') {
@@ -505,6 +508,7 @@ export async function setLimit(
  * @param publicKey - The Stellar public key of the limit owner (optional).
  * @param asset - The asset code being spent (defaults to 'USDC').
  * @param amount - The amount spent (defaults to 0).
+ * @returns A promise that resolves when the spend has been recorded.
  */
 export async function recordSpend(
   publicKey?: string,
@@ -559,6 +563,7 @@ export async function recordSpend(
  * @param publicKey - The Stellar public key of the limit owner (optional).
  * @param idOrAsset - The limit ID or asset code to delete.
  * @param statusCallback - Optional callback for progress updates.
+ * @returns A promise that resolves when the limit has been deleted.
  */
 export async function deleteLimit(
   publicKey?: string,
