@@ -46,6 +46,16 @@ export interface RemainingSpendingAllowance {
   limitId?: string;
 }
 
+export interface LimitCheckResult {
+  allowed: boolean;
+  asset: AssetCode;
+  amount: number;
+  limitAmount: number | null;
+  spentAmount: number | null;
+  remainingAmount: number | null;
+}
+
+
 const SPENDING_LIMITS_CONTRACT_ID = process.env.NEXT_PUBLIC_SPENDING_LIMITS_CONTRACT_ID || '';
 const LOCAL_SPENDING_LIMITS_KEY = 'stellarspend_local_spending_limits';
 
@@ -68,7 +78,9 @@ export function getPeriodDurationMs(period: SpendingPeriod): number {
 }
 
 /**
- * Check and reset period spent amount if the time window has elapsed
+ * Check and reset period spent amount if the time window has elapsed.
+ * @param limit - The SpendingLimit object to normalize.
+ * @returns The updated or unchanged SpendingLimit object.
  */
 export function normalizeLimit(limit: SpendingLimit): SpendingLimit {
   const durationMs = getPeriodDurationMs(limit.period);
@@ -142,6 +154,7 @@ export function getMockSpendingLimitsFallback(): SpendingLimit[] {
 /**
  * Persists spending limits to localStorage.
  * @param limits - The array of SpendingLimit objects to store.
+ * @returns Void.
  */
 export function setMockSpendingLimitsFallback(limits: SpendingLimit[]) {
   if (typeof window !== 'undefined') {
@@ -359,6 +372,44 @@ export async function getRemaining(
   };
 }
 
+
+/**
+ * Checks whether a proposed spend amount is within the current remaining limit.
+ * @param publicKey - The Stellar public key of the limit owner.
+ * @param asset - The asset code to check (e.g. 'USDC', 'XLM').
+ * @param amount - The proposed spend amount.
+ * @returns A LimitCheckResult with `allowed: false` when the amount exceeds the remaining limit.
+ */
+export async function checkLimit(
+  publicKey: string,
+  asset: AssetCode,
+  amount: number
+): Promise<LimitCheckResult> {
+  const remaining = await getRemaining(publicKey, asset);
+
+  if (!remaining || !remaining.hasLimit) {
+    return {
+      allowed: true,
+      asset,
+      amount,
+      limitAmount: null,
+      spentAmount: null,
+      remainingAmount: null,
+    };
+  }
+
+  const allowed = amount <= remaining.remainingAmount;
+
+  return {
+    allowed,
+    asset,
+    amount,
+    limitAmount: remaining.limitAmount,
+    spentAmount: remaining.spentAmount,
+    remainingAmount: remaining.remainingAmount,
+  };
+}
+
 /**
  * Creates or updates a spending limit for a given asset.
  * @param publicKey - The Stellar public key of the limit owner.
@@ -457,6 +508,7 @@ export async function setLimit(
  * @param publicKey - The Stellar public key of the limit owner (optional).
  * @param asset - The asset code being spent (defaults to 'USDC').
  * @param amount - The amount spent (defaults to 0).
+ * @returns A promise that resolves when the spend has been recorded.
  */
 export async function recordSpend(
   publicKey?: string,
@@ -511,6 +563,7 @@ export async function recordSpend(
  * @param publicKey - The Stellar public key of the limit owner (optional).
  * @param idOrAsset - The limit ID or asset code to delete.
  * @param statusCallback - Optional callback for progress updates.
+ * @returns A promise that resolves when the limit has been deleted.
  */
 export async function deleteLimit(
   publicKey?: string,

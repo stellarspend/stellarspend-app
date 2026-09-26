@@ -7,8 +7,8 @@
  * Usage: node scripts/generate-placeholders.js
  */
 
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
 const placeholders = [
   {
@@ -53,8 +53,8 @@ function generateSVG(width, height, text) {
   return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#e8b84b;stop-opacity:0.3" />
-      <stop offset="100%" style="stop-color:#4aa9e8;stop-opacity:0.3" />
+      <stop offset="0%" style="stop-color:#e8b84b;stop-opacity:0.3;" />
+      <stop offset="100%" style="stop-color:#4aa9e8;stop-opacity:0.3;" />
     </linearGradient>
   </defs>
   <rect width="${width}" height="${height}" fill="#1a1a2e"/>

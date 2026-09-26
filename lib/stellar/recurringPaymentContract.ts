@@ -107,6 +107,10 @@ function addDays(dateStr: string, days: number): string {
 
 /**
  * Creates a new recurring payment schedule on-chain (or locally).
+ * @param publicKey - The Stellar public key of the schedule owner.
+ * @param params - The recipient, amount, asset, frequency, dates, and execution limit for the schedule.
+ * @param statusCallback - Optional callback for transaction status updates.
+ * @returns The newly created recurring payment schedule.
  */
 export async function createRecurringPayment(
   publicKey: string,
@@ -192,6 +196,8 @@ export async function createRecurringPayment(
 
 /**
  * Fetches all recurring payment schedules for the given account.
+ * @param publicKey - The Stellar public key of the account whose schedules to fetch.
+ * @returns An array of recurring payment schedules owned by the account.
  */
 export async function fetchRecurringPayments(
   publicKey: string,
@@ -243,6 +249,10 @@ export async function fetchRecurringPayments(
 /**
  * Manually triggers execution of a due schedule (calls `execute_due`).
  * This is permissionless per the contract design.
+ * @param publicKey - The Stellar public key of the account submitting the transaction.
+ * @param scheduleId - The ID of the schedule to execute.
+ * @param statusCallback - Optional callback for transaction status updates.
+ * @returns The execution record for the attempted schedule execution.
  */
 export async function executeScheduleNow(
   publicKey: string,
@@ -324,6 +334,9 @@ export async function executeScheduleNow(
 
 /**
  * Pauses a recurring payment schedule.
+ * @param publicKey - The Stellar public key of the schedule owner.
+ * @param scheduleId - The ID of the schedule to pause.
+ * @returns Nothing; the schedule is updated when the operation completes.
  */
 export async function pauseSchedule(
   publicKey: string,
@@ -351,6 +364,9 @@ export async function pauseSchedule(
 
 /**
  * Resumes a paused recurring payment schedule.
+ * @param publicKey - The Stellar public key of the schedule owner.
+ * @param scheduleId - The ID of the schedule to resume.
+ * @returns Nothing; the schedule is updated when the operation completes.
  */
 export async function resumeSchedule(
   publicKey: string,
@@ -378,6 +394,9 @@ export async function resumeSchedule(
 
 /**
  * Cancels a recurring payment schedule.
+ * @param publicKey - The Stellar public key of the schedule owner.
+ * @param scheduleId - The ID of the schedule to cancel.
+ * @returns Nothing; the schedule is updated when the operation completes.
  */
 export async function cancelSchedule(
   publicKey: string,
@@ -405,6 +424,8 @@ export async function cancelSchedule(
 
 /**
  * Fetches execution history for a given schedule.
+ * @param scheduleId - The ID of the schedule whose execution history to fetch.
+ * @returns An array of execution records for the schedule.
  */
 export async function fetchExecutionHistory(
   scheduleId: string,

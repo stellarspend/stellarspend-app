@@ -7,6 +7,7 @@ import {
   deleteLimit,
   normalizeLimit,
   getPeriodDurationMs,
+  checkLimit,
   SpendingLimit,
 } from '../spendingLimitsContract';
 
@@ -97,5 +98,16 @@ describe('spendingLimitsContract', () => {
     const normalized = normalizeLimit(weeklyLimit);
     expect(normalized.spentAmount).toBe(0);
     expect(new Date(normalized.periodStart).getTime()).toBeGreaterThan(new Date(pastDate).getTime());
+  });
+
+  test('checkLimit returns allowed: false when amount exceeds the limit', async () => {
+    const user = 'GTEST_OVER_LIMIT';
+    await setLimit(user, 'USDC', 100, 'weekly');
+
+    const result = await checkLimit(user, 'USDC', 150);
+
+    expect(result.allowed).toBe(false);
+    expect(result.remainingAmount).toBe(100);
+    expect(result.limitAmount).toBe(100);
   });
 });

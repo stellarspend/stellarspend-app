@@ -2,6 +2,8 @@
 
 ## UI Components Library
 
+> Branch sync note: this documentation tweak is intentionally non-functional and only exists to create a visible diff for branch recognition.
+
 ### `Card`
 A flexible card component with support for header, body, and footer slots.
 

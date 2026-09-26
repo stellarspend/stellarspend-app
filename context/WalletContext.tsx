@@ -15,6 +15,7 @@ import {
   getProvider,
   type WalletProviderId,
 } from "../lib/wallet-providers";
+import { fetchBalancesForAddress } from "../lib/api/horizon";
 
 /**
  * Connection state for the active wallet provider (Freighter, Ledger, xBull,
@@ -44,6 +45,12 @@ export interface Wallet {
   };
   isDefault: boolean;
   createdAt: number;
+  /**
+   * True when this wallet is linked to a connected signing provider
+   * (e.g. Freighter) and can sign transactions. False/undefined means
+   * the wallet was added manually and is watch-only.
+   */
+  isFreighterLinked?: boolean;
 }
 /**
  * Represents the wallet context state and actions managed by WalletProvider.
@@ -188,6 +195,53 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
           isConnecting: false,
           walletError: null,
         });
+
+        // Link the connected public key to a real wallet entry so it shows
+        // up (and is selected) in the wallet switcher immediately, instead
+        // of leaving the connection stuck in local provider state.
+        const existing = wallets.find(
+          (w) => w.publicKey.toLowerCase() === publicKey.toLowerCase(),
+        );
+
+        const walletId = existing?.id ?? crypto.randomUUID();
+
+        if (existing) {
+          setWallets((prev) =>
+            prev.map((w) =>
+              w.id === existing.id ? { ...w, isFreighterLinked: true } : w,
+            ),
+          );
+        } else {
+          const newWallet: Wallet = {
+            id: walletId,
+            name: provider.getMeta().name,
+            address: publicKey,
+            publicKey,
+            balance: { xlm: "0.00", usdc: "0.00", eurc: "0.00" },
+            isDefault: wallets.length === 0,
+            isFreighterLinked: true,
+            createdAt: Date.now(),
+          };
+          setWallets((prev) => [...prev, newWallet]);
+        }
+
+        setSelectedWalletId(walletId);
+
+        // Replace the placeholder/mock balance with a real fetch.
+        try {
+          const result = await fetchBalancesForAddress(publicKey);
+          const balance: Wallet["balance"] = { xlm: "0.00" };
+          for (const b of result.balances) {
+            if (b.asset === "XLM") balance.xlm = b.balance;
+            if (b.asset === "USDC") balance.usdc = b.balance;
+            if (b.asset === "EURC") balance.eurc = b.balance;
+          }
+          setWallets((prev) =>
+            prev.map((w) => (w.id === walletId ? { ...w, balance } : w)),
+          );
+        } catch (balanceErr) {
+          console.error("Failed to fetch balance for linked wallet:", balanceErr);
+        }
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Failed to connect wallet.";
@@ -201,29 +255,41 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         });
       }
     },
-    [],
+    [wallets],
   );
 
   const disconnectWalletProvider = useCallback(() => {
-    setWalletProvider((current) => {
-      if (current.providerId) {
-        try {
-          getProvider(current.providerId).disconnect();
-        } catch {
-          // Ignore provider teardown failures; the connection state is cleared
-          // regardless.
-        }
+    if (walletProvider.providerId) {
+      try {
+        getProvider(walletProvider.providerId).disconnect();
+      } catch {
+        // Ignore provider teardown failures; the connection state is cleared
+        // regardless.
       }
-      return {
-        providerId: null,
-        isInstalled: false,
-        isConnected: false,
-        publicKey: null,
-        isConnecting: false,
-        walletError: null,
-      };
+    }
+
+    // Mark the linked wallet as no longer signable, but keep it in the list
+    // (watch-only) rather than removing it.
+    if (walletProvider.publicKey) {
+      const publicKey = walletProvider.publicKey;
+      setWallets((prev) =>
+        prev.map((w) =>
+          w.publicKey.toLowerCase() === publicKey.toLowerCase()
+            ? { ...w, isFreighterLinked: false }
+            : w,
+        ),
+      );
+    }
+
+    setWalletProvider({
+      providerId: null,
+      isInstalled: false,
+      isConnected: false,
+      publicKey: null,
+      isConnecting: false,
+      walletError: null,
     });
-  }, []);
+  }, [walletProvider.providerId, walletProvider.publicKey]);
 
   // Load wallets from localStorage on mount
   const loadWallets = useCallback(async (passphrase?: string) => {
@@ -504,7 +570,17 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const selectWallet = useCallback((id: string) => {
     setSelectedWalletId(id);
-  }, []);
+    // Keep the plaintext storage consumed by getConnectedPublicKey() in sync
+    // when no passphrase is configured (demo mode), so the live Horizon
+    // stream and widget fetches follow the switcher immediately.
+    if (!sessionPassphrase) {
+      try {
+        localStorage.setItem(SELECTED_WALLET_KEY, id);
+      } catch (err) {
+        console.error("Failed to persist selected wallet:", err);
+      }
+    }
+  }, [sessionPassphrase]);
 
   const updateWalletBalance = useCallback((id: string, balance: Wallet["balance"]) => {
     setWallets((prev) =>

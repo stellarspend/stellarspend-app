@@ -67,4 +67,13 @@ describe("buildPaymentTransaction", () => {
       buildPaymentTransaction({ ...baseOptions, memo: "a".repeat(29) }),
     ).toThrow(/28 bytes or fewer/);
   });
+
+  test("rejects an invalid recipient address", () => {
+    expect(() =>
+      buildPaymentTransaction({
+        ...baseOptions,
+        destination: "invalid-recipient-address",
+      }),
+    ).toThrow(/Destination must be a valid Stellar public key/);
+  });
 });

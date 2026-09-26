@@ -672,7 +672,7 @@ export async function sendPayment(
   // Create new transaction object
   const newTx: Transaction = {
     id: `tx_${Date.now()}`,
-    hash: Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+    hash: Array.from({ length: 64 }, () => Number(Math.floor(Math.random() * 16)).toString(16)).join(''),
     created_at: new Date().toISOString(),
     memo: proof ? 'ZK Spending Limit' : 'Direct Payment',
     successful: true,
