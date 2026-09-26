@@ -43,4 +43,35 @@ describe('SpendingLimitCard', () => {
 
     expect(onDelete).toHaveBeenCalledWith('limit_1');
   });
+
+  test('applies red status color at 90% utilization', () => {
+    const highUsageLimit: SpendingLimit = {
+      ...mockLimit,
+      limitAmount: 100,
+      spentAmount: 90,
+    };
+
+    const { container } = render(
+      <SpendingLimitCard limit={highUsageLimit} onDelete={jest.fn()} />,
+    );
+
+    const percentLabel = screen.getByText(/90%/);
+    expect(percentLabel).toHaveClass('text-red-400');
+    expect(
+      container.querySelector('.from-red-500'),
+    ).toBeInTheDocument();
+  });
+
+  test('shows confirmation UI before invoking onDelete', () => {
+    const onDelete = jest.fn();
+    render(<SpendingLimitCard limit={mockLimit} onDelete={onDelete} />);
+
+    const deleteBtn = screen.getByRole('button', { name: /Delete USDC limit/i });
+    fireEvent.click(deleteBtn);
+
+    expect(screen.getByText(/Delete this limit\?/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Confirm Delete/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Cancel/i })).toBeInTheDocument();
+    expect(onDelete).not.toHaveBeenCalled();
+  });
 });
