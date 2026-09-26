@@ -225,7 +225,7 @@ export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
                 <input
                   id="payment-recipient"
                   type="text"
-                  placeholder="G..."
+                  placeholder="G... Stellar public key"
                   value={recipient}
                   onChange={(event) => setRecipient(event.target.value.trimStart())}
                   autoComplete="off"

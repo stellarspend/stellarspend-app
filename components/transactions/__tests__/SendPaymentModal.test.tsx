@@ -60,7 +60,7 @@ describe('SendPaymentModal spending limit checks', () => {
 
     // Enter recipient (exact 56 chars starting with G)
     const validRecipient = 'G' + 'A'.repeat(55);
-    const recipientInput = screen.getByPlaceholderText('G...');
+    const recipientInput = screen.getByPlaceholderText('G... Stellar public key');
     fireEvent.change(recipientInput, {
       target: { value: validRecipient },
     });
