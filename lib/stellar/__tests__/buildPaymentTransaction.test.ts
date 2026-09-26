@@ -68,6 +68,18 @@ describe("buildPaymentTransaction", () => {
     ).toThrow(/28 bytes or fewer/);
   });
 
+  test("rejects a negative amount", () => {
+    expect(() =>
+      buildPaymentTransaction({ ...baseOptions, amount: "-1" }),
+    ).toThrow(/Amount must be greater than zero/);
+    expect(() =>
+      buildPaymentTransaction({ ...baseOptions, amount: "-1.2500000" }),
+    ).toThrow(/Amount must be greater than zero/);
+    expect(() =>
+      buildPaymentTransaction({ ...baseOptions, amount: "-0" }),
+    ).toThrow(/Amount must be greater than zero/);
+  });
+
   test("rejects an invalid recipient address", () => {
     expect(() =>
       buildPaymentTransaction({
