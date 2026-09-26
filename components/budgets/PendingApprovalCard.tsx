@@ -241,6 +241,7 @@ export default function PendingApprovalCard({
             type="button"
             onClick={() => onReject(change.id)}
             disabled={!isMember || hasSigned || isSubmitting}
+            aria-label={`Reject budget change: ${budget.name}`}
             className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-white dark:bg-gray-700 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 disabled:opacity-50 font-semibold rounded-lg transition-colors"
           >
             <X className="w-4 h-4" aria-hidden="true" />

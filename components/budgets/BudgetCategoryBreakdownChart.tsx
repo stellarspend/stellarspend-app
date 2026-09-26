@@ -101,6 +101,18 @@ export default function BudgetCategoryBreakdownChart({ budgets }: BudgetCategory
     color: getCategoryColor(item.category, idx),
   }));
 
+  // Text alternative for the chart, since the visual encodes every value by
+  // slice/bar length and color only.
+  const chartDescription = chartData
+    .map(
+      (item) =>
+        `${item.label} ${item.amount.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`
+    )
+    .join(", ");
+
   const totalAmount = chartData.reduce((sum, item) => sum + item.amount, 0);
 
   if (budgets.length === 0) {
@@ -192,7 +204,11 @@ export default function BudgetCategoryBreakdownChart({ budgets }: BudgetCategory
           No budget data found for {currentAsset}.
         </div>
       ) : (
-        <div className="w-full h-72 sm:h-80">
+        <div
+          role="img"
+          aria-label={`Budget category breakdown chart for ${currentAsset}: ${chartDescription}`}
+          className="w-full h-72 sm:h-80"
+        >
           <ResponsiveContainer width="100%" height="100%">
             {chartType === "pie" ? (
               <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
