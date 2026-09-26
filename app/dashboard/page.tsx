@@ -17,12 +17,20 @@ import {
   fetchGoals,
   contributeToGoal,
   getMockGoalsFallback,
+  setMockGoalsFallback,
   getContributionHistoryOnChain,
   setRoundUpRuleOnChain,
   pauseScheduleOnChain,
   resumeScheduleOnChain,
   cancelScheduleOnChain,
+  applyRoundUpOnChain,
 } from "@/lib/stellar/savingsGoalContract";
+import {
+  checkAndExecuteDueContributions,
+  applyRoundUpToGoals,
+  loadContributions as loadLocalContributions,
+} from "@/lib/savings/scheduler";
+import { PAYMENT_CONFIRMED_EVENT } from "@/lib/stellar/submitTransaction";
 import { fetchSplitsForUser } from "@/lib/stellar/escrowContract";
 
 export default function DashboardPage() {
@@ -103,6 +111,18 @@ export default function DashboardPage() {
     loadAllContributions();
   }, [goals, publicKey]);
 
+  // Load local (mock) contributions once on mount so manual/scheduled/
+  // round-up contributions made without a connected wallet are visible in
+  // the contribution history UI, matching what happens with a wallet.
+  useEffect(() => {
+    async function loadLocal() {
+      if (!publicKey) {
+        setContributions(loadLocalContributions());
+      }
+    }
+    loadLocal();
+  }, [publicKey]);
+
   const handleGoalCreated = (newGoal: Goal) => {
     setGoals(prev => [...prev, newGoal]);
   };
@@ -141,12 +161,16 @@ export default function DashboardPage() {
         });
       }
     } else {
-      // Fallback
+      // Local/mock fallback: persist through the same helper used by the
+      // wallet-connected path so a Contribution record is actually created
+      // (previously this branch only updated the in-memory goal amount).
+      await contributeToGoal("", goalId, amount, "manual");
       setGoals(prev => prev.map(goal =>
         goal.id === goalId
           ? { ...goal, currentAmount: goal.currentAmount + amount }
           : goal
       ));
+      setContributions(loadLocalContributions());
     }
   };
 
@@ -165,7 +189,24 @@ export default function DashboardPage() {
       } catch (e) {
         console.error("Failed to update schedule:", e);
       }
+      return;
     }
+
+    // Local/mock fallback — previously this function did nothing at all
+    // without a connected wallet, so pause/resume/cancel silently failed.
+    setGoals(prev => {
+      const updated = prev.map(goal =>
+        goal.id === goalId ? { ...goal, schedule } : goal
+      );
+      setMockGoalsFallback(updated);
+      return updated;
+    });
+    toast({
+      title: schedule ? (schedule.paused ? "Schedule Paused" : "Schedule Resumed") : "Schedule Cancelled",
+      description: schedule
+        ? `Recurring contributions ${schedule.paused ? "paused" : "resumed"}.`
+        : "Recurring contributions cancelled.",
+    });
   };
 
   const handleUpdateRoundUpRule = async (goalId: string, rule: RoundUpRule) => {
@@ -177,8 +218,97 @@ export default function DashboardPage() {
       } catch (e) {
         console.error("Failed to update round-up rule:", e);
       }
+      return;
+    }
+
+    // Local/mock fallback — same gap as handleUpdateSchedule above.
+    setGoals(prev => {
+      const updated = prev.map(goal =>
+        goal.id === goalId ? { ...goal, roundUpRule: rule } : goal
+      );
+      setMockGoalsFallback(updated);
+      return updated;
+    });
+  };
+
+  // Recurring contributions are not executed automatically in the
+  // background by this app — there is no server-side cron here, and this
+  // app has no visibility into whether the on-chain contract runs one
+  // either. This button is the honest, explicit "execute now" trigger:
+  // it checks every goal's schedule and runs any contribution that's
+  // actually due, rather than pretending due contributions happen on
+  // their own.
+  const handleCheckDueContributions = () => {
+    const { updatedGoals, executedContributions } = checkAndExecuteDueContributions(
+      goals,
+      availableBalance,
+    );
+    setGoals(updatedGoals);
+    if (!publicKey) {
+      setMockGoalsFallback(updatedGoals);
+    }
+    if (executedContributions.length > 0) {
+      setContributions(prev => [...prev, ...executedContributions]);
+      toast({
+        title: "Contributions Executed",
+        description: `${executedContributions.length} due contribution${executedContributions.length === 1 ? "" : "s"} executed.`,
+      });
+    } else {
+      toast({
+        title: "Nothing Due",
+        description: "No scheduled contributions are due right now.",
+      });
     }
   };
+
+  // Round-up savings: apply the spare change from a real confirmed payment
+  // to every goal with an active round-up rule. This listens for the same
+  // event the transaction list uses to show a payment go from pending to
+  // confirmed — the closest thing this app has to a live transaction feed.
+  useEffect(() => {
+    function handlePaymentConfirmed(event: Event) {
+      const payment = (event as CustomEvent<{ amount: string; hash: string }>).detail;
+      if (!payment) return;
+      const amount = parseFloat(payment.amount);
+      if (isNaN(amount) || amount <= 0) return;
+
+      setGoals(prevGoals => {
+        const { updatedGoals, appliedContributions } = applyRoundUpToGoals(
+          prevGoals,
+          amount,
+          payment.hash,
+        );
+
+        if (appliedContributions.length === 0) {
+          return prevGoals;
+        }
+
+        if (!publicKey) {
+          setMockGoalsFallback(updatedGoals);
+        } else {
+          // Best-effort mirror to the on-chain contract when one is
+          // configured and a wallet is connected. This repo has no
+          // visibility into the deployed contract's own round-up
+          // execution, if any — this call is a pass-through, not a
+          // guarantee it will be reflected until the next chain refresh.
+          appliedContributions.forEach((contribution) => {
+            applyRoundUpOnChain(
+              contribution.goalId,
+              contribution.transactionHash ?? payment.hash,
+              contribution.amount,
+              publicKey,
+            ).catch((e) => console.error("Failed to apply round-up on-chain:", e));
+          });
+        }
+
+        setContributions(prevContributions => [...prevContributions, ...appliedContributions]);
+        return updatedGoals;
+      });
+    }
+
+    window.addEventListener(PAYMENT_CONFIRMED_EVENT, handlePaymentConfirmed);
+    return () => window.removeEventListener(PAYMENT_CONFIRMED_EVENT, handlePaymentConfirmed);
+  }, [publicKey]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -238,12 +368,23 @@ export default function DashboardPage() {
       <div>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-white">Savings Goals</h2>
-          <button
-            onClick={() => setGoalModalOpen(true)}
-            className="px-4 py-2 bg-[#e8b84b] text-black rounded-lg hover:bg-[#e8b84b]/90 transition-colors"
-          >
-            Create Goal
-          </button>
+          <div className="flex gap-2">
+            {goals.some((g) => g.schedule && !g.schedule.paused) && (
+              <button
+                onClick={handleCheckDueContributions}
+                title="Recurring contributions aren't run automatically in the background — check and execute any that are due now."
+                className="px-4 py-2 border border-[#e8b84b]/40 text-[#e8b84b] rounded-lg hover:bg-[#e8b84b]/10 transition-colors text-sm"
+              >
+                Check Due Contributions
+              </button>
+            )}
+            <button
+              onClick={() => setGoalModalOpen(true)}
+              className="px-4 py-2 bg-[#e8b84b] text-black rounded-lg hover:bg-[#e8b84b]/90 transition-colors"
+            >
+              Create Goal
+            </button>
+          </div>
         </div>
         {goals.length === 0 ? (
           <div className="text-center py-8 text-[#7a8aaa]">

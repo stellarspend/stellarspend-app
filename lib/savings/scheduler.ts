@@ -8,6 +8,7 @@
  */
 
 import { Goal, GoalSchedule, Contribution } from '@/lib/types/savings';
+import { calculateRoundUpContribution } from '@/lib/savings/roundUp';
 
 const STORAGE_KEY = 'stellarspend_goals';
 const CONTRIBUTIONS_KEY = 'stellarspend_contributions';
@@ -213,4 +214,65 @@ export function checkAndExecuteDueContributions(
   }
 
   return { updatedGoals, executedContributions };
+}
+
+/**
+ * Applies round-up contributions to every goal with an active (enabled and
+ * not paused) round-up rule, given a single real transaction amount.
+ *
+ * This is the piece that makes round-up savings actually happen: it's meant
+ * to be called whenever a real payment is confirmed (see the app's
+ * `PAYMENT_CONFIRMED_EVENT`), using that transaction's amount as input.
+ * Goals without an enabled, unpaused rule are returned unchanged.
+ *
+ * @param goals - The current array of savings goals.
+ * @param transactionAmount - The amount of the transaction that just
+ *   happened, used to compute the round-up "spare change" for each goal.
+ * @param transactionHash - Optional hash of the originating transaction,
+ *   recorded on the resulting Contribution for traceability.
+ * @returns An object with the updated goals array and the round-up
+ *   contributions that were applied in this call.
+ */
+export function applyRoundUpToGoals(
+  goals: Goal[],
+  transactionAmount: number,
+  transactionHash?: string,
+): {
+  updatedGoals: Goal[];
+  appliedContributions: Contribution[];
+} {
+  const updatedGoals: Goal[] = [];
+  const appliedContributions: Contribution[] = [];
+
+  for (const goal of goals) {
+    const rule = goal.roundUpRule;
+    if (!rule || !rule.enabled || rule.paused) {
+      updatedGoals.push(goal);
+      continue;
+    }
+
+    const result = calculateRoundUpContribution(transactionAmount, rule.nearestUnit);
+    if (!result) {
+      updatedGoals.push(goal);
+      continue;
+    }
+
+    const contribution: Contribution = {
+      id: Math.random().toString(36).substring(2, 11),
+      goalId: goal.id,
+      amount: result.roundUpAmount,
+      source: 'round-up',
+      transactionHash,
+      createdAt: new Date(),
+    };
+
+    updatedGoals.push({
+      ...goal,
+      currentAmount: goal.currentAmount + result.roundUpAmount,
+    });
+    appliedContributions.push(contribution);
+    addContribution(contribution);
+  }
+
+  return { updatedGoals, appliedContributions };
 }
