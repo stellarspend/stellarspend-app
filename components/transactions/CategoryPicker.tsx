@@ -125,9 +125,10 @@ export default function CategoryPicker({
               <input
                 autoFocus
                 type="text"
+                aria-label="Search spending categories"
                 value={customValue}
                 onChange={(e) => setCustomValue(e.target.value)}
-                placeholder="e.g. Subscriptions"
+                placeholder="Search categories..."
                 maxLength={40}
                 className="flex-1 px-3 py-2 bg-white/[0.03] border border-white/10 rounded-lg text-sm text-white placeholder-[#7a8aaa]/50 outline-none focus:border-[#e8b84b]/50"
               />
