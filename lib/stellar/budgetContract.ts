@@ -25,6 +25,16 @@ const BUDGET_CONTRACT_ID = process.env.NEXT_PUBLIC_BUDGET_CONTRACT_ID || '';
 const LOCAL_BUDGETS_KEY = 'stellarspend_local_budgets';
 
 /**
+ * Reports whether a deployed budget contract is configured. When it is not, the
+ * CRUD helpers below use the localStorage fallback, which needs no connected
+ * wallet — callers should only require a wallet for the on-chain path.
+ * @returns True when NEXT_PUBLIC_BUDGET_CONTRACT_ID is set.
+ */
+export function isBudgetContractConfigured(): boolean {
+  return Boolean(BUDGET_CONTRACT_ID);
+}
+
+/**
  * Dispatches a custom DOM notification event for UI feedback.
  * @param type - The notification severity: 'success', 'error', or 'info'.
  * @param message - The human-readable message to display.
