@@ -56,6 +56,18 @@ describe('FeatureCard', () => {
     expect(screen.queryByRole('heading', { name: 'Real-time Transaction Tracking' })).not.toBeInTheDocument();
   });
 
+  test('renders the feature icon inside its container', () => {
+    render(<FeatureCard {...props} />);
+
+    // The feature icon (illustration) is rendered.
+    const icon = screen.getByAltText('Real-time transaction tracking dashboard');
+    expect(icon).toBeInTheDocument();
+
+    // The icon lives inside a dedicated container element.
+    const iconContainer = icon.parentElement;
+    expect(iconContainer).not.toBeNull();
+    expect(iconContainer).toBeInTheDocument();
+  });
   test('renders title and description props in the DOM', () => {
     render(
       <FeatureCard
