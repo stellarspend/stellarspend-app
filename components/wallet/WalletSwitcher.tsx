@@ -406,6 +406,15 @@ export default function WalletSwitcher({
                             {wallet.isDefault && (
                               <Star className="w-3 h-3 text-[#e8b84b] fill-[#e8b84b]" />
                             )}
+                            <span
+                              className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide ${
+                                wallet.isFreighterLinked
+                                  ? "bg-[#4ade80]/10 text-[#4ade80]"
+                                  : "bg-white/5 text-[#7a8aaa]"
+                              }`}
+                            >
+                              {wallet.isFreighterLinked ? "Linked" : "Watch-only"}
+                            </span>
                           </div>
                           <p className="text-xs text-[#7a8aaa]">
                             {formatAddress(wallet.address)} • {wallet.balance.xlm} XLM
