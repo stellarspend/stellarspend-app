@@ -14,6 +14,7 @@ import {
   Edit2,
 } from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
+import { startAccountStream } from "@/lib/stellar/accountStream";
 
 interface WalletSwitcherProps {
   className?: string;
@@ -48,6 +49,12 @@ export default function WalletSwitcher({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
+
+  // Keep the live Horizon stream in sync with the selected wallet. Switching
+  // wallets tears down the old account's stream and starts one for the new.
+  useEffect(() => {
+    startAccountStream(selectedWallet?.publicKey ?? null);
+  }, [selectedWallet?.publicKey]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

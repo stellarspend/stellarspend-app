@@ -68,4 +68,23 @@ describe('FeatureCard', () => {
     expect(iconContainer).not.toBeNull();
     expect(iconContainer).toBeInTheDocument();
   });
+  test('renders title and description props in the DOM', () => {
+    render(
+      <FeatureCard
+        title="Instant Cross-Border Payments"
+        description="Send XLM anywhere in the world within seconds at near-zero fees."
+        imageSrc="/images/features/payments.svg"
+        imageAlt="Cross-border payments illustration"
+        index={1}
+      />
+    );
+
+    expect(
+      screen.getByRole('heading', { name: 'Instant Cross-Border Payments' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Send XLM anywhere in the world within seconds at near-zero fees.')
+    ).toBeInTheDocument();
+  });
+
 });

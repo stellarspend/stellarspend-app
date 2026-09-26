@@ -504,7 +504,17 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const selectWallet = useCallback((id: string) => {
     setSelectedWalletId(id);
-  }, []);
+    // Keep the plaintext storage consumed by getConnectedPublicKey() in sync
+    // when no passphrase is configured (demo mode), so the live Horizon
+    // stream and widget fetches follow the switcher immediately.
+    if (!sessionPassphrase) {
+      try {
+        localStorage.setItem(SELECTED_WALLET_KEY, id);
+      } catch (err) {
+        console.error("Failed to persist selected wallet:", err);
+      }
+    }
+  }, [sessionPassphrase]);
 
   const updateWalletBalance = useCallback((id: string, balance: Wallet["balance"]) => {
     setWallets((prev) =>

@@ -9,6 +9,8 @@ import type { CarouselSlide } from "@/components/carousel/Carousel";
 const HOME_DESCRIPTION =
   "StellarSpend is a financial management platform for the unbanked and underbanked, built on the Stellar blockchain. Track spending, set budgets, and reach your savings goals.";
 
+// Branch sync note: no functional changes were made here intentionally.
+
 export const metadata: Metadata = {
   title: "StellarSpend — Track your Stellar transactions",
   description: HOME_DESCRIPTION,

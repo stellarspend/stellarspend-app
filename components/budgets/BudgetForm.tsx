@@ -175,7 +175,7 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
     };
     // Calculate budget progress percentage
     const budgetLimit = initialData?.amount || 0;
-    const spentPercentage = budgetLimit > 0 ? Math.min(100, (spent / budgetLimit) * 100) : 0;
+    const spentPercentage = Number(budgetLimit > 0 ? Math.min(100, (spent / budgetLimit) * 100) : 0);
     const progressColor = getProgressColor(spentPercentage);
     const progressTextColor = getProgressTextColor(spentPercentage);
 
@@ -266,7 +266,7 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                         aria-describedby={errors.amount ? 'amount-error' : undefined}
                         className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.amount ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                             }`}
-                        placeholder="0.00"
+                        placeholder="e.g. 500"
                     />
                     {errors.amount && (
                         <p id="amount-error" className="text-xs text-red-500 mt-1" role="alert">{errors.amount.message}</p>
@@ -348,30 +348,7 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
         <p id="period-error" className="text-xs text-red-500 mt-1" role="alert">{errors.period.message}</p>
     )}
 </div>
-{/* 
-                <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Period <span className="text-red-500" aria-label="required">*</span>
-                    </label>
-                    <div className="flex space-x-4">
-                        {(["daily", "monthly", "quarterly"] as const).map((p) => (
-                            <label key={p} className="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300">
-                                <input
-                                    type="radio"
-                                    value={p}
-                                    {...register('period')}
-                                    aria-invalid={errors.period ? 'true' : 'false'}
-                                    aria-describedby={errors.period ? 'period-error' : undefined}
-                                    className="text-blue-600 focus:ring-blue-500"
-                                />
-                                <span className="capitalize">{p}</span>
-                            </label>
-                        ))}
-                    </div>
-                    {errors.period && (
-                        <p id="period-error" className="text-xs text-red-500 mt-1" role="alert">{errors.period.message}</p>
-                    )}
-                </div> */}
+
 
                 <div className="space-y-1">
                     <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -437,8 +414,12 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                                                     addCoOwners();
                                                 }
                                             }}
-                                            aria-invalid={errors.coOwners ? 'true' : 'false'}
-                                            aria-describedby={errors.coOwners || coOwnerError ? 'co-owners-error' : undefined}
+                                            aria-invalid={errors.coOwners || coOwnerError ? 'true' : 'false'}
+                                            aria-describedby={
+                                                errors.coOwners || coOwnerError
+                                                    ? 'co-owners-help co-owners-error'
+                                                    : 'co-owners-help'
+                                            }
                                             placeholder="G... (comma or space separated)"
                                             className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-colors ${errors.coOwners || coOwnerError ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                                                 }`}
@@ -446,11 +427,15 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                                         <button
                                             type="button"
                                             onClick={addCoOwners}
+                                            aria-label="Add co-owner"
                                             className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-semibold rounded-lg transition-colors whitespace-nowrap"
                                         >
                                             Add
                                         </button>
                                     </div>
+                                    <p id="co-owners-help" className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        56-character Stellar public key starting with G
+                                    </p>
                                     {(errors.coOwners || coOwnerError) && (
                                         <p id="co-owners-error" className="text-xs text-red-500 mt-1" role="alert">
                                             {errors.coOwners?.message || coOwnerError}
@@ -469,6 +454,7 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                                                         type="button"
                                                         onClick={() => removeCoOwner(address)}
                                                         aria-label={`Remove co-owner ${address}`}
+                                                        title="Remove co-owner"
                                                         className="text-blue-500 hover:text-red-500"
                                                     >
                                                         ×

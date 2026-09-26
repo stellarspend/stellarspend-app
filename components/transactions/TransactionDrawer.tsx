@@ -294,6 +294,7 @@ export default function TransactionDrawer({
                       onClick={() => copyToClipboard(transaction.hash)}
                       className="p-3 bg-white/[0.02] border border-white/10 rounded-xl text-[var(--color-text-secondary)] hover:text-[#e8b84b] hover:border-[#e8b84b]/30 transition-all active:scale-95"
                       title="Copy Hash"
+                      aria-label="Copy transaction hash"
                     >
                       <Copy className="w-4 h-4" />
                     </button>

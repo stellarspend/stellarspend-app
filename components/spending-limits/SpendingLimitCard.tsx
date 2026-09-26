@@ -147,6 +147,7 @@ export default function SpendingLimitCard({
                 <button
                   onClick={handleDeleteClick}
                   disabled={isDeleting}
+                  aria-label="Confirm delete"
                   className="flex-1 py-1.5 px-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-all text-xs flex items-center justify-center gap-1.5"
                 >
                   {isDeleting ? (
