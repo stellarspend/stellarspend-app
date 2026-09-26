@@ -4,27 +4,113 @@ import { describe, expect, test, beforeEach, afterEach } from '@jest/globals';
 
 // @stellar/stellar-sdk ships ESM-only deps (e.g. @noble/hashes) that jest
 // cannot parse, so we mock the small surface the code under test uses.
+//
+// The mock mirrors real StrKey semantics closely enough to be worth testing
+// against: RFC4648 uppercase base32, the ed25519 public-key version byte, and
+// the CRC16-XModem checksum. A looser stand-in (length + prefix only) cannot
+// tell an address with a corrupted checksum from a valid one, which is exactly
+// the class of bug issue #401 asks us to guard.
 jest.mock('@stellar/stellar-sdk', () => {
   const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  const PUBLIC_KEY_VERSION = 6 << 3; // 48 — StrKey ed25519 public key
+
+  const crc16xmodem = (bytes: number[]): number => {
+    let crc = 0x0000;
+    for (const byte of bytes) {
+      crc ^= byte << 8;
+      for (let i = 0; i < 8; i += 1) {
+        crc = crc & 0x8000 ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
+      }
+    }
+    return crc;
+  };
+
+  const base32Encode = (bytes: number[]): string => {
+    let bits = 0;
+    let value = 0;
+    let out = '';
+    for (const byte of bytes) {
+      value = (value << 8) | byte;
+      bits += 8;
+      while (bits >= 5) {
+        out += ALPHABET[(value >>> (bits - 5)) & 31];
+        bits -= 5;
+      }
+    }
+    if (bits > 0) out += ALPHABET[(value << (5 - bits)) & 31];
+    return out;
+  };
+
+  const base32Decode = (text: string): number[] | null => {
+    let bits = 0;
+    let value = 0;
+    const out: number[] = [];
+    for (const char of text) {
+      const index = ALPHABET.indexOf(char);
+      if (index === -1) return null;
+      value = (value << 5) | index;
+      bits += 5;
+      if (bits >= 8) {
+        out.push((value >>> (bits - 8)) & 0xff);
+        bits -= 8;
+      }
+    }
+    return out;
+  };
+
+  const encodeStrKey = (versionByte: number, payload: number[]): string => {
+    const body = [versionByte, ...payload];
+    const checksum = crc16xmodem(body);
+    // StrKey appends the CRC little-endian.
+    return base32Encode([...body, checksum & 0xff, (checksum >> 8) & 0xff]);
+  };
+
+  // Deterministic-but-distinct key material: Keypair.random() must yield a
+  // genuinely checksum-valid address, otherwise every "valid" fixture below
+  // would be rejected by the checksum we are now verifying.
   let seq = 0;
+  const nextPayload = (): number[] => {
+    const payload = Array.from({ length: 32 }, (_, i) => (seq * 31 + i * 7 + 1) & 0xff);
+    seq += 1;
+    return payload;
+  };
+
   return {
     StrKey: {
-      isValidEd25519PublicKey: (value: unknown) =>
-        typeof value === 'string' &&
-        value.length === 56 &&
-        value.startsWith('G') &&
-        [...value].every((c) => ALPHABET.includes(c)),
+      isValidEd25519PublicKey: (value: unknown): boolean => {
+        if (typeof value !== 'string' || value.length !== 56) return false;
+        const raw = base32Decode(value);
+        if (!raw || raw.length !== 35) return false;
+        if (raw[0] !== PUBLIC_KEY_VERSION) return false;
+        const expected = crc16xmodem(raw.slice(0, 33));
+        return (expected & 0xff) === raw[33] && ((expected >> 8) & 0xff) === raw[34];
+      },
+      // Test-only fixture builders. The real StrKey has no such surface; they
+      // exist so the suite can craft addresses with a chosen version byte or a
+      // deliberately broken checksum.
+      __encodeStrKey: (versionByte: number, payload: number[]): string =>
+        encodeStrKey(versionByte, payload),
     },
     Keypair: {
       random: () => ({
-        publicKey: () =>
-          'G' + Array.from({ length: 55 }, (_, i) => ALPHABET[(i + seq++) % 32]).join(''),
+        publicKey: () => encodeStrKey(PUBLIC_KEY_VERSION, nextPayload()),
       }),
     },
   };
 });
 
-import { Keypair } from '@stellar/stellar-sdk';
+import { Keypair, StrKey } from '@stellar/stellar-sdk';
+
+const strkeyFixtures = StrKey as unknown as {
+  __encodeStrKey: (versionByte: number, payload: number[]) => string;
+};
+
+const SEED_VERSION_BYTE = 18 << 3; // 144 — ed25519 secret seed, not a public key
+
+function payload(seed: number): number[] {
+  return Array.from({ length: 32 }, (_, i) => (seed + i * 3) & 0xff);
+}
+
 import {
   createSharedBudget,
   fetchSharedBudgets,
@@ -80,6 +166,64 @@ describe('isValidStellarAddress', () => {
     expect(isValidStellarAddress('not-an-address')).toBe(false);
     expect(isValidStellarAddress('')).toBe(false);
     expect(isValidStellarAddress('G'.repeat(55))).toBe(false);
+  });
+
+  test('rejects an address whose checksum was tampered with', () => {
+    const valid = Keypair.random().publicKey();
+    // Replacing a character keeps the length and the alphabet intact, so only
+    // the CRC16 checksum can catch it — the case a length/prefix check misses.
+    const swap = valid[54] === 'A' ? 'B' : 'A';
+    const tampered = `${valid.slice(0, 54)}${swap}${valid.slice(55)}`;
+
+    expect(tampered).toHaveLength(56);
+    expect(isValidStellarAddress(tampered)).toBe(false);
+  });
+
+  test('rejects a StrKey with the wrong version byte', () => {
+    const seed = strkeyFixtures.__encodeStrKey(SEED_VERSION_BYTE, payload(9));
+
+    expect(seed).toHaveLength(56);
+    expect(isValidStellarAddress(seed)).toBe(false);
+  });
+
+  test('rejects addresses that are not exactly 56 characters', () => {
+    const valid = Keypair.random().publicKey();
+
+    expect(isValidStellarAddress(valid.slice(0, 55))).toBe(false); // truncated
+    expect(isValidStellarAddress(`${valid}A`)).toBe(false); // over-long
+    expect(isValidStellarAddress(`${valid} G`)).toBe(false);
+  });
+
+  test('rejects lowercase and mixed-case variants', () => {
+    const valid = Keypair.random().publicKey();
+
+    expect(isValidStellarAddress(valid.toLowerCase())).toBe(false);
+    expect(
+      isValidStellarAddress(valid[0] + valid.slice(1).toLowerCase())
+    ).toBe(false);
+  });
+
+  test('rejects whitespace-padded addresses', () => {
+    const valid = Keypair.random().publicKey();
+
+    expect(isValidStellarAddress(` ${valid}`)).toBe(false);
+    expect(isValidStellarAddress(`${valid} `)).toBe(false);
+    expect(isValidStellarAddress(`${valid}\n`)).toBe(false);
+  });
+
+  test('rejects characters outside the RFC4648 base32 alphabet', () => {
+    const valid = Keypair.random().publicKey();
+
+    for (const invalid of ['0', '1', '8', '9']) {
+      const candidate = `${valid.slice(0, 55)}${invalid}`;
+      expect(candidate).toHaveLength(56);
+      expect(isValidStellarAddress(candidate)).toBe(false);
+    }
+  });
+
+  test('rejects a 56-character string with no valid checksum', () => {
+    expect(isValidStellarAddress('G'.repeat(56))).toBe(false);
+    expect(isValidStellarAddress('A'.repeat(56))).toBe(false);
   });
 });
 
