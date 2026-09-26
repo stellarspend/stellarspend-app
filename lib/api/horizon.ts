@@ -33,7 +33,7 @@ const BASE_URL =
 /** Singleton Horizon REST client. */
 let _horizon: InstanceType<typeof Horizon.Server> | null = null;
 
-function getHorizon(): InstanceType<typeof Horizon.Server> {
+export function getHorizon(): InstanceType<typeof Horizon.Server> {
   if (!_horizon) _horizon = new Horizon.Server(BASE_URL);
   return _horizon;
 }
@@ -109,14 +109,14 @@ interface Transaction {
 // ── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Fetch real balances for the connected wallet from Horizon.
+ * Fetch real balances for an arbitrary Stellar address from Horizon.
  *
- * Returns an empty snapshot when no wallet is connected or the
- * request fails — the UI stays alive either way.
+ * Returns an empty snapshot when no address is given or the request
+ * fails — the UI stays alive either way.
  */
-export async function fetchBalances(): Promise<WalletBalances> {
-  const publicKey = getConnectedPublicKey();
-
+export async function fetchBalancesForAddress(
+  publicKey: string | null,
+): Promise<WalletBalances> {
   if (!publicKey) {
     return { balances: [], totalUsd: 0, updatedAt: new Date().toISOString() };
   }
@@ -158,6 +158,13 @@ export async function fetchBalances(): Promise<WalletBalances> {
     console.error("Horizon fetchBalances failed:", err);
     return { balances: [], totalUsd: 0, updatedAt: new Date().toISOString() };
   }
+}
+
+/**
+ * Fetch real balances for the currently connected (selected) wallet.
+ */
+export async function fetchBalances(): Promise<WalletBalances> {
+  return fetchBalancesForAddress(getConnectedPublicKey());
 }
 
 // ── Transaction mapping ──────────────────────────────────────────────────────

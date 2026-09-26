@@ -36,6 +36,9 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 # stellarspend-app
 Web application for tracking daily, monthly, and quarterly spending on Stellar blockchain
+
+Branch sync note: this repository update is only intended to refresh branch visibility and does not change product behavior.
+
 0verview
 StellarSpend is a comprehensive financial management platform designed specifically for the unbanked and underbanked populations worldwide. Built on the Stellar blockchain, it provides transparent, low-cost transaction tracking and budgeting tools that empower users to take control of their financial lives.
 Key Features

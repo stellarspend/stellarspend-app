@@ -79,4 +79,13 @@ describe("buildPaymentTransaction", () => {
       buildPaymentTransaction({ ...baseOptions, amount: "-0" }),
     ).toThrow(/Amount must be greater than zero/);
   });
+
+  test("rejects an invalid recipient address", () => {
+    expect(() =>
+      buildPaymentTransaction({
+        ...baseOptions,
+        destination: "invalid-recipient-address",
+      }),
+    ).toThrow(/Destination must be a valid Stellar public key/);
+  });
 });

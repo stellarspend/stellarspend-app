@@ -81,7 +81,10 @@ export default function CategoryPicker({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-[#0f1420] border border-white/10 rounded-xl shadow-2xl shadow-black/50 z-50 overflow-hidden">
+        <div
+          role="listbox"
+          className="absolute top-full left-0 right-0 mt-2 bg-[#0f1420] border border-white/10 rounded-xl shadow-2xl shadow-black/50 z-50 overflow-hidden"
+        >
           {!isCustomizing ? (
             <>
               {STANDARD_CATEGORIES.map((category) => {
