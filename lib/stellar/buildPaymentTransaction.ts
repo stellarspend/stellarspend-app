@@ -45,6 +45,14 @@ function validateAmount(amount: string) {
   }
 }
 
+/**
+ * Resolves a supported payment asset code to a Stellar SDK `Asset`.
+ *
+ * @param {PaymentAsset} assetCode - Asset to resolve: "XLM", "USDC" or "EURC".
+ * @param {PaymentAssetIssuers} [issuers=DEFAULT_ASSET_ISSUERS] - Issuer public keys for non-native assets; defaults to the `NEXT_PUBLIC_STELLAR_*_ISSUER` env values.
+ * @returns {Asset} The native asset for "XLM", otherwise an issued asset for the given code and issuer.
+ * @throws {Error} If the asset has no configured issuer, or the issuer is not a valid Stellar public key.
+ */
 export function getPaymentAsset(
   assetCode: PaymentAsset,
   issuers: PaymentAssetIssuers = DEFAULT_ASSET_ISSUERS,
@@ -64,7 +72,22 @@ export function getPaymentAsset(
 /**
  * Builds an unsigned Stellar payment transaction ready for Freighter signing.
  * The caller supplies the current source sequence and network fee from Horizon.
+ *
+ * @param {BuildPaymentTransactionOptions} options - Payment details.
+ * @param {string} options.source - Public key of the paying account.
+ * @param {string} options.destination - Public key of the recipient.
+ * @param {string} options.amount - Positive amount with at most 7 decimal places.
+ * @param {PaymentAsset} options.asset - Asset to send: "XLM", "USDC" or "EURC".
+ * @param {string} options.sequence - Current sequence number of the source account.
+ * @param {string} options.fee - Network fee in stroops, as a positive integer string.
+ * @param {string} [options.memo] - Optional text memo, at most 28 bytes.
+ * @param {string} options.networkPassphrase - Passphrase of the target Stellar network.
+ * @param {PaymentAssetIssuers} [options.assetIssuers=DEFAULT_ASSET_ISSUERS] - Issuer public keys for non-native assets.
+ * @param {number} [options.timeoutSeconds=180] - Seconds until the transaction expires.
+ * @returns {Transaction} The unsigned transaction containing a single payment operation.
+ * @throws {Error} If the source or destination key is invalid, the amount, sequence or fee is invalid, the memo exceeds 28 bytes, or the asset issuer is not configured.
  */
+export function buildPaymentTransaction({
 export function buildPaymentTransaction({
   source,
   destination,
