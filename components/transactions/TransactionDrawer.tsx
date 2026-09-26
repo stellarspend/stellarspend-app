@@ -459,6 +459,7 @@ export default function TransactionDrawer({
                 href={horizonUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="View on Stellar Expert"
                 className="flex-3 flex items-center justify-center gap-2.5 px-6 py-3.5 bg-[#e8b84b] hover:bg-[#f0c85a] text-[#1a0f00] text-sm font-bold rounded-2xl shadow-xl shadow-[#e8b84b]/10 transition-all hover:-translate-y-0.5 active:scale-[0.98] uppercase tracking-wider"
               >
                 <ExternalLink className="w-4 h-4" />
@@ -468,6 +469,7 @@ export default function TransactionDrawer({
                 onClick={exportJson}
                 className="flex-1 px-4 py-3.5 bg-white/5 border border-white/10 text-white/80 text-sm font-bold rounded-2xl hover:bg-white/[0.08] hover:border-white/20 transition-all flex items-center justify-center gap-2 active:scale-95 group"
                 title="Export JSON"
+                aria-label="Download transaction details"
               >
                 <Download className="w-4 h-4 text-[var(--color-text-secondary)] group-hover:text-white transition-colors" />
                 <span className="hidden sm:inline uppercase tracking-wider">
