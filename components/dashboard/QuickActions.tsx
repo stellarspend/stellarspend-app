@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Download, PieChart, Target, X } from "lucide-react";
+import { Send, Download, PieChart, Target, Users, X } from "lucide-react";
 import SendPaymentModal from "../transactions/SendPaymentModal";
 
 // ─── Mini Receive Modal ──────────────────────────────────────────────────────
@@ -222,7 +222,15 @@ const ACTIONS = [
   },
 ] as const;
 
-export default function QuickActions() {
+interface QuickActionsProps {
+  /**
+   * Opens the split-bill flow owned by the parent, so splits created from here
+   * keep flowing into the parent's single source of truth.
+   */
+  onSplitBill?: () => void;
+}
+
+export default function QuickActions({ onSplitBill }: QuickActionsProps) {
   const [openModal, setOpenModal] = useState<ModalId>(null);
 
   return (
@@ -261,6 +269,24 @@ export default function QuickActions() {
               </span>
             </motion.button>
           ))}
+          <motion.button
+            id="quick-action-split"
+            aria-label="Split a bill"
+            onClick={() => onSplitBill?.()}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: ACTIONS.length * 0.07 }}
+            whileHover={{ y: -3 }}
+            whileTap={{ scale: 0.96 }}
+            className="flex flex-col items-center gap-3 p-5 rounded-2xl border bg-[#fb7185]/10 border-[#fb7185]/20 hover:border-[#fb7185]/50 hover:bg-[#fb7185]/15 transition-all duration-200 group"
+          >
+            <div className="p-3 rounded-xl bg-[#fb7185]/10 border border-[#fb7185]/20">
+              <Users className="w-5 h-5" style={{ color: "#fb7185" }} />
+            </div>
+            <span className="text-xs font-bold text-[#e8edf8] uppercase tracking-wider group-hover:text-white transition-colors">
+              Split Bill
+            </span>
+          </motion.button>
         </div>
       </div>
 

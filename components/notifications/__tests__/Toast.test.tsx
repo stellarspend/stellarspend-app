@@ -33,9 +33,13 @@ describe('Toast', () => {
   });
 
   test('renders success toast with message', () => {
-    render(<ToastWithContext {...defaultProps} />);
+    const { container } = render(<ToastWithContext {...defaultProps} />);
     
     expect(screen.getByText('Operation successful')).toBeInTheDocument();
+    expect(screen.getByText('Operation successful').closest('[aria-live="polite"]')).toHaveClass(
+      'border-[#e8b84b]/30',
+    );
+    expect(container.querySelector('svg')).toBeInTheDocument();
   });
 
   test('renders error toast with correct styling', () => {

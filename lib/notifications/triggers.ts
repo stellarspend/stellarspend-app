@@ -134,7 +134,16 @@ function createEmptyState(walletId: string): WalletNotificationState {
 }
 
 /**
- * Check budget spending and generate threshold alerts
+ * Checks budget spending against the configured thresholds (80% and 100%) and
+ * generates a notification trigger for each threshold newly crossed.
+ *
+ * Thresholds already triggered for a budget are skipped via the persisted
+ * de-duplication state, which is updated along with the latest spending figures.
+ *
+ * @param walletId - Identifier of the wallet whose notification state is used for de-duplication.
+ * @param budgets - Budgets to evaluate, each providing a spending `limit` and name.
+ * @param spendingByBudget - Amount spent per budget, keyed by budget id.
+ * @returns The notification triggers for thresholds crossed since the previous check; empty if none were crossed.
  */
 export function checkBudgetThresholds(
   walletId: string,
@@ -189,7 +198,16 @@ export function checkBudgetThresholds(
 }
 
 /**
- * Check goal progress and generate milestone notifications
+ * Checks savings goal progress against the milestone percentages (25%, 50%,
+ * 75% and 100%) and generates a notification trigger for each milestone newly
+ * reached.
+ *
+ * Milestones already triggered for a goal are skipped via the persisted
+ * de-duplication state, which is updated along with the latest progress.
+ *
+ * @param walletId - Identifier of the wallet whose notification state is used for de-duplication.
+ * @param goals - Savings goals to evaluate, each providing `currentAmount` and `targetAmount`.
+ * @returns The notification triggers for milestones reached since the previous check; empty if none were reached.
  */
 export function checkGoalMilestones(
   walletId: string,
@@ -243,7 +261,17 @@ export function checkGoalMilestones(
 }
 
 /**
- * Check for large or unusual payments
+ * Checks transactions for large payment operations involving the given wallet.
+ *
+ * A payment qualifies when its amount is at least 1000 for XLM (or an asset
+ * with no code) or at least 500 for other assets. Only incoming and outgoing
+ * operations relative to `publicKey` produce triggers, and events already
+ * triggered are skipped via the persisted de-duplication state.
+ *
+ * @param walletId - Identifier of the wallet whose notification state is used for de-duplication.
+ * @param transactions - Transactions to scan, including their payment operations.
+ * @param publicKey - Stellar public key of the wallet, used to determine payment direction.
+ * @returns The notification triggers for qualifying payments not previously triggered; empty if none qualified.
  */
 export function checkLargePayments(
   walletId: string,
@@ -309,7 +337,12 @@ function truncateAddress(address: string): string {
 }
 
 /**
- * Clear all notification state for a wallet (useful for testing/reset)
+ * Clears all persisted notification state for a wallet, including its budget
+ * and goal progress and the set of triggered events (useful for testing or a
+ * full reset). This is a no-op when `window` is unavailable (server-side).
+ *
+ * @param walletId - Identifier of the wallet whose notification state is removed.
+ * @returns Nothing.
  */
 export function clearWalletNotificationState(walletId: string): void {
   if (typeof window === "undefined") return;
@@ -318,8 +351,14 @@ export function clearWalletNotificationState(walletId: string): void {
 }
 
 /**
- * Reset triggered events for a specific category (allows re-triggering)
- * Useful when budget is reset or goal is modified
+ * Removes previously triggered event keys for a category so the corresponding
+ * notifications can fire again (useful when a budget is reset or a goal is
+ * modified). This is a no-op when `window` is unavailable (server-side).
+ *
+ * @param walletId - Identifier of the wallet whose triggered events are reset.
+ * @param prefix - Event category to reset (`"budget"`, `"goal"` or `"large_payment"`).
+ * @param entityId - Optional entity id (budget or goal) to limit the reset to a single entity; when omitted, all events for the category are removed.
+ * @returns Nothing.
  */
 export function resetTriggeredEvents(
   walletId: string,
@@ -342,8 +381,17 @@ export function resetTriggeredEvents(
 }
 
 /**
- * Main trigger checker - runs all checks and returns combined notifications
- * This should be called periodically or after data updates
+ * Runs every trigger check (budget thresholds, goal milestones and large
+ * payments) and returns the combined result. Intended to be called
+ * periodically or after data updates.
+ *
+ * @param walletId - Identifier of the wallet whose notification state is used for de-duplication.
+ * @param publicKey - Stellar public key of the wallet, used to determine payment direction.
+ * @param budgets - Budgets to evaluate for threshold alerts.
+ * @param spendingByBudget - Amount spent per budget, keyed by budget id.
+ * @param goals - Savings goals to evaluate for milestone notifications.
+ * @param recentTransactions - Recent transactions to scan for large payments.
+ * @returns All notification triggers produced by the individual checks, in budget, goal, then payment order.
  */
 export function checkAllTriggers(
   walletId: string,
@@ -379,7 +427,12 @@ export function checkAllTriggers(
 }
 
 /**
- * Hook adapter - dispatches triggers to the notification context
+ * Dispatches each trigger to the notification context via the supplied
+ * callback, forwarding the trigger's type and message.
+ *
+ * @param triggers - Notification triggers to dispatch.
+ * @param addNotification - Callback that adds a single notification for a given type and message.
+ * @returns Nothing.
  */
 export function dispatchTriggers(
   triggers: NotificationTrigger[],

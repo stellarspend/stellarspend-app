@@ -157,7 +157,7 @@ export default function SplitBillModal({ publicKey, onClose, onCreated }: SplitB
             </div>
 
             {formError && (
-              <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex gap-3 text-red-400 text-sm">
+              <div role="alert" className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex gap-3 text-red-400 text-sm">
                 <ShieldAlert className="w-5 h-5 shrink-0" />
                 <span className="font-semibold">{formError}</span>
               </div>
@@ -170,10 +170,11 @@ export default function SplitBillModal({ publicKey, onClose, onCreated }: SplitB
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Weekly groceries"
+                  placeholder="e.g. Dinner at restaurant"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   disabled={status === "submitting"}
+                  aria-label="Split description"
                   className="w-full px-4 py-3.5 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-sm placeholder-[#7a8aaa]/40 focus:outline-none focus:ring-2 focus:ring-[#e8b84b]/30 focus:border-[#e8b84b]/40 transition-all disabled:opacity-50"
                 />
               </div>
@@ -250,6 +251,7 @@ export default function SplitBillModal({ publicKey, onClose, onCreated }: SplitB
                     type="button"
                     onClick={addParticipant}
                     disabled={status === "submitting"}
+                    aria-label="Add participant"
                     className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#e8b84b] hover:text-[#f0c85a] transition-colors disabled:opacity-50"
                   >
                     <Plus className="w-3.5 h-3.5" /> Add
@@ -284,6 +286,7 @@ export default function SplitBillModal({ publicKey, onClose, onCreated }: SplitB
                       <button
                         type="button"
                         onClick={() => removeParticipant(i)}
+                        aria-label="Remove participant"
                         disabled={status === "submitting" || participants.length <= 2}
                         className="p-3 rounded-xl bg-white/[0.03] border border-white/10 text-[#7a8aaa] hover:text-red-400 hover:border-red-500/30 transition-all disabled:opacity-30"
                       >

@@ -26,6 +26,7 @@ const STORAGE_KEYS = {
 /**
  * Generates a cryptographically secure random salt for key derivation.
  * Uses the WebCrypto API to generate 16 bytes of random data.
+ * Note: This salt is used with PBKDF2 and AES-256-GCM for encryption.
  * @returns A hex-encoded string representing the random salt.
  */
 export function generateSalt(): string {
@@ -137,6 +138,7 @@ export async function decryptData<T>(encryptedData: string, passphrase: string):
 /**
  * Encrypts data and stores it in the browser's localStorage.
  * Uses {@link encryptData} to encrypt before storage.
+ * Note: Encryption uses AES-256-GCM with PBKDF2 for key derivation.
  * @param key - The storage key under which the encrypted data will be saved.
  * @param data - The data to encrypt and store. Will be JSON-serialized.
  * @param passphrase - The passphrase used to derive the encryption key.
@@ -152,6 +154,7 @@ export async function saveEncrypted(key: string, data: unknown, passphrase: stri
 /**
  * Loads and decrypts data from localStorage.
  * Retrieves the base64-encoded encrypted string and decrypts it using {@link decryptData}.
+ * Note: Decryption uses AES-256-GCM with PBKDF2 for key derivation.
  * @template T - The expected type of the decrypted data.
  * @param key - The storage key from which to load the encrypted data.
  * @param passphrase - The passphrase used to derive the decryption key.
@@ -172,6 +175,7 @@ export async function loadEncrypted<T>(key: string, passphrase: string): Promise
 /**
  * Checks whether data stored under the given key is encrypted.
  * Identifies encrypted data by verifying it's a valid base64 string longer than 50 characters.
+ * Note: Related encryption uses AES-256-GCM with PBKDF2 for key derivation.
  * @param key - The localStorage key to inspect.
  * @returns True if the data appears to be encrypted (base64-encoded), false otherwise.
  */
@@ -187,8 +191,10 @@ export function isEncrypted(key: string): boolean {
 /**
  * Saves plaintext data to localStorage (migration helper).
  * Stores data as JSON without encryption. Intended for legacy data migration only.
+ * Note: Data saved here is not encrypted with AES-256-GCM.
  * @param key - The localStorage key under which to store the data.
  * @param data - The data to store. Will be JSON-serialized.
+ * @returns void
  */
 export function savePlaintext(key: string, data: unknown): void {
   if (typeof window === 'undefined') return;
@@ -199,6 +205,7 @@ export function savePlaintext(key: string, data: unknown): void {
 /**
  * Loads plaintext data from localStorage (migration helper).
  * Retrieves and parses JSON data without decryption. Intended for legacy data migration only.
+ * Note: Data loaded here was not encrypted with AES-256-GCM.
  * @template T - The expected type of the stored data.
  * @param key - The localStorage key from which to load the data.
  * @returns The parsed data of type T, or null if not found or parsing fails.
@@ -218,7 +225,9 @@ export function loadPlaintext<T>(key: string): T | null {
 /**
  * Removes stored data from localStorage.
  * Deletes both the plaintext and encrypted versions of the data for the given key.
+ * Note: Used for data whether encrypted with AES-256-GCM or plaintext.
  * @param key - The storage key identifying the data to remove.
+ * @returns void
  */
 export function removeStoredData(key: string): void {
   if (typeof window === 'undefined') return;
@@ -230,6 +239,7 @@ export function removeStoredData(key: string): void {
 /**
  * Checks whether an encryption passphrase has been configured.
  * Reads the passphrase-set flag from localStorage.
+ * Note: Passphrase is used with PBKDF2 and AES-256-GCM for encryption.
  * @returns True if the passphrase has been set, false otherwise.
  */
 export function isPassphraseSet(): boolean {
@@ -241,6 +251,8 @@ export function isPassphraseSet(): boolean {
 /**
  * Sets the passphrase-configured flag in localStorage.
  * Called after the user successfully sets or verifies their encryption passphrase.
+ * Note: Passphrase is used with PBKDF2 and AES-256-GCM for encryption.
+ * @returns void
  */
 export function setPassphraseSet(): void {
   if (typeof window === 'undefined') return;
@@ -252,6 +264,8 @@ export function setPassphraseSet(): void {
  * Resets all encryption state for the application (forgot-passphrase recovery).
  * Removes all encrypted data entries, the stored salt, and the passphrase-set flag from localStorage.
  * This action is irreversible—encrypted data cannot be recovered without the passphrase.
+ * Note: Removes data encrypted with AES-256-GCM.
+ * @returns void
  */
 export function resetEncryption(): void {
   if (typeof window === 'undefined') return;
@@ -274,6 +288,7 @@ export function resetEncryption(): void {
  * Detects whether data under the given key is stored as plaintext (not encrypted).
  * Uses heuristic checks: if the data parses as valid JSON and doesn't start with a base64 pattern,
  * it's considered plaintext. Encrypted data will be a long base64 string.
+ * Note: Verifies absence of AES-256-GCM encryption.
  * @param key - The localStorage key to inspect.
  * @returns True if the data appears to be plaintext, false otherwise.
  */

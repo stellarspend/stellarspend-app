@@ -8,7 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 
 export const NotificationsCenter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { notifications, markAsRead, markAllAsRead, clearAll } =
+  const { notifications, markAsRead, markAllAsRead, removeNotification, clearAll } =
       useNotifications();
   const unreadCount = notifications.filter((n) => !n.read).length;
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -150,9 +150,23 @@ export const NotificationsCenter: React.FC = () => {
                         >
                           {n.message}
                         </span>
-                        {!n.read && (
-                          <div className="mt-1.5 h-2 w-2 rounded-full bg-[#e8b84b] shadow-[0_0_10px_rgba(232,184,75,0.5)] shrink-0" />
-                        )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {!n.read && (
+                            <div className="mt-1.5 h-2 w-2 rounded-full bg-[#e8b84b] shadow-[0_0_10px_rgba(232,184,75,0.5)]" />
+                          )}
+                          <button
+                            type="button"
+                            aria-label="Dismiss notification"
+                            title="Dismiss notification"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              removeNotification(n.id);
+                            }}
+                            className="rounded-lg p-1 text-[var(--color-text-secondary)] transition-colors hover:bg-white/10 hover:text-white"
+                          >
+                            <X className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                        </div>
                       </div>
                       <span className="text-[10px] text-[var(--color-text-secondary)] font-mono tracking-tighter">
                         {formatDistanceToNow(n.timestamp, { addSuffix: true })}

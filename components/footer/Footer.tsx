@@ -12,7 +12,7 @@ const NAV_LINKS = [
 
 const SOCIAL_LINKS = [
   {
-    label: "Twitter / X",
+    label: "Twitter",
     href: "https://twitter.com/StellarOrg",
     icon: (
       <svg
@@ -142,7 +142,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="footer__social-btn"
-                aria-label={`${label} (opens in new tab)`}
+                aria-label={label}
                 role="listitem"
               >
                 {icon}

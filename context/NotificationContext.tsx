@@ -30,6 +30,7 @@ interface NotificationContextType {
   addNotification: (type: NotificationType, message: string) => void;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
+  removeNotification: (id: string) => void;
   removeToast: (id: string) => void;
   clearAll: () => void;
   preferences: NotificationPreferences;
@@ -44,6 +45,7 @@ interface NotificationContextType {
   addNotification: (type: NotificationType, message: string) => void;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
+  removeNotification: (id: string) => void;
   removeToast: (id: string) => void;
   clearAll: () => void;
   preferences: NotificationPreferences;
@@ -192,6 +194,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   }, []);
 
+  const removeNotification = useCallback((id: string) => {
+    setNotifications((prev) =>
+      prev.filter((notification) => notification.id !== id),
+    );
+  }, []);
+
   const clearAll = useCallback(() => {
     setNotifications([]);
   }, []);
@@ -211,6 +219,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         addNotification,
         markAsRead,
         markAllAsRead,
+        removeNotification,
         removeToast,
         clearAll,
         preferences,
