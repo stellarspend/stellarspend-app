@@ -230,6 +230,7 @@ export default function RecentTransactions() {
         <Link
           href="/dashboard/transactions"
           id="view-all-transactions"
+          aria-label="View all transactions"
           className="flex items-center gap-1 text-xs text-[#e8b84b] font-bold uppercase tracking-widest hover:text-white transition-colors group"
         >
           View all
