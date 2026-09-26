@@ -157,7 +157,7 @@ export default function SplitBillModal({ publicKey, onClose, onCreated }: SplitB
             </div>
 
             {formError && (
-              <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex gap-3 text-red-400 text-sm">
+              <div role="alert" className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex gap-3 text-red-400 text-sm">
                 <ShieldAlert className="w-5 h-5 shrink-0" />
                 <span className="font-semibold">{formError}</span>
               </div>
