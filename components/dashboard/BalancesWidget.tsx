@@ -48,6 +48,7 @@ function AssetCard({ asset, index }: { asset: AssetBalance; index: number }) {
 
   return (
     <motion.div
+      data-testid="balance-card"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08, duration: 0.45, ease: "easeOut" }}
@@ -101,7 +102,10 @@ function AssetCard({ asset, index }: { asset: AssetBalance; index: number }) {
 
 function SkeletonCard() {
   return (
-    <div className="flex flex-col gap-4 p-5 rounded-2xl border border-white/10 bg-white/[0.025] animate-pulse">
+    <div
+      data-testid="balance-skeleton"
+      className="flex flex-col gap-4 p-5 rounded-2xl border border-white/10 bg-white/[0.025] animate-pulse"
+    >
       {/* Header row - matches AssetCard header */}
       <div className="flex items-center justify-between">
         <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10" />
@@ -137,6 +141,10 @@ export default function BalancesWidget() {
     try {
       const result = await fetchBalances();
       setData(result);
+    } catch {
+      // A failed refresh must not clear the balances we already have; when
+      // there is nothing to show the skeleton contract keeps the loading
+      // placeholders in the grid (see data-testid="balance-skeleton").
     } finally {
       if (manual) {
         setLoading(false);
@@ -155,6 +163,9 @@ export default function BalancesWidget() {
         if (mounted) {
           setData(result);
         }
+      } catch {
+        // Swallow so the initial fetch cannot surface as an unhandled
+        // rejection; `data` stays null and the skeletons remain rendered.
       } finally {
         if (mounted) {
           setLoading(false);
@@ -236,6 +247,7 @@ export default function BalancesWidget() {
             id="balances-refresh"
             onClick={() => load(true)}
             disabled={spinning}
+            aria-label="Refresh balances"
             className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all"
           >
             <RefreshCw
@@ -268,11 +280,18 @@ export default function BalancesWidget() {
           </span>
         </motion.div>
       ) : (
-        <div className="px-5 py-4 rounded-2xl bg-white/5 border border-white/10 animate-pulse h-[72px]" />
+        <div
+          data-testid="balances-total-skeleton"
+          className="px-5 py-4 rounded-2xl bg-white/5 border border-white/10 animate-pulse h-[72px]"
+        />
       )}
 
       {/* Asset cards grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div
+        data-testid="balances-grid"
+        aria-busy={loading || !data}
+        className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+      >
         {loading || !data
           ? [0, 1, 2].map((i) => <SkeletonCard key={i} />)
           : data.balances.map((asset, i) => (
