@@ -7,7 +7,7 @@ import SendPaymentModal from "../transactions/SendPaymentModal";
 import useWallet from "@/hooks/useWallet";
 import { useOffline } from "@/components/offline/OfflineProvider";
 import { useNotifications } from "@/context/NotificationContext";
-import { createBudget } from "@/lib/stellar/budgetContract";
+import { createBudget, isBudgetContractConfigured } from "@/lib/stellar/budgetContract";
 import type { Budget } from "@/lib/api/client";
 
 // ─── Mini Receive Modal ──────────────────────────────────────────────────────
@@ -125,14 +125,16 @@ function BudgetModal({ onClose }: { onClose: () => void }) {
       return;
     }
 
-    if (!publicKey) {
+    // Without a deployed budget contract, createBudget falls back to the
+    // localStorage data layer, so a wallet is only needed for the on-chain path.
+    if (isBudgetContractConfigured() && !publicKey) {
       setFormError("Connect your Freighter wallet to persist this budget on-chain.");
       return;
     }
 
     try {
       setSubmitting(true);
-      await createBudget(publicKey, budgetData, (status) => setTxStatus(status));
+      await createBudget(publicKey ?? "", budgetData, (status) => setTxStatus(status));
       addNotification(
         "success",
         `Budget "${budgetData.name}" created successfully. (${parsedLimit} ${asset} / month)`

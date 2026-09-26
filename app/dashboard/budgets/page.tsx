@@ -16,6 +16,7 @@ import {
   createBudget as createOnChainBudget,
   updateBudget as updateOnChainBudget,
   deleteBudget as deleteOnChainBudget,
+  isBudgetContractConfigured,
   getMockBudgetsFallback,
 } from "@/lib/stellar/budgetContract";
 import {
@@ -85,6 +86,11 @@ function toOwnedBudgetData(data: BudgetFormData): Omit<Budget, "id" | "createdAt
 export default function BudgetsPage() {
   const { freighter } = useWallet();
   const publicKey = freighter.publicKey;
+  // The contract helpers fall back to the localStorage data layer when no
+  // budget contract is deployed, so a connected wallet is only required for
+  // the on-chain path.
+  const requiresWallet = isBudgetContractConfigured();
+  const ownerKey = publicKey ?? "";
   const { isOnline, queueAction } = useOffline();
   const { addNotification } = useNotifications();
 
@@ -195,7 +201,7 @@ export default function BudgetsPage() {
       return;
     }
 
-    if (!publicKey) {
+    if (requiresWallet && !publicKey) {
       addNotification('error', 'Connect your wallet to persist this budget on-chain.');
       return;
     }
@@ -203,7 +209,7 @@ export default function BudgetsPage() {
     try {
       setTxStatus('Initializing transaction...');
       const newBudget = await createOnChainBudget(
-        publicKey,
+        ownerKey,
         toOwnedBudgetData(budgetData),
         (status) => setTxStatus(status)
       );
@@ -231,14 +237,14 @@ export default function BudgetsPage() {
       return;
     }
 
-    if (!publicKey) {
+    if (requiresWallet && !publicKey) {
       addNotification('error', 'Connect your wallet to update this budget.');
       return;
     }
 
     try {
       const updatedBudget = await updateOnChainBudget(
-        publicKey,
+        ownerKey,
         editingBudget.id,
         toOwnedBudgetData(budgetData)
       );
@@ -264,13 +270,13 @@ export default function BudgetsPage() {
       return;
     }
 
-    if (!publicKey) {
+    if (requiresWallet && !publicKey) {
       addNotification('error', 'Connect your wallet to update this budget.');
       return;
     }
 
     try {
-      const updatedBudget = await updateOnChainBudget(publicKey, id, {
+      const updatedBudget = await updateOnChainBudget(ownerKey, id, {
         name: target.name,
         amount,
         category: target.category,
@@ -294,13 +300,13 @@ export default function BudgetsPage() {
       return;
     }
 
-    if (!publicKey) {
+    if (requiresWallet && !publicKey) {
       addNotification('error', 'Connect your wallet to delete this budget.');
       return;
     }
 
     try {
-      await deleteOnChainBudget(publicKey, budget.id);
+      await deleteOnChainBudget(ownerKey, budget.id);
       setBudgets(prev => prev.filter(b => b.id !== budget.id));
       addNotification('success', `Budget "${budget.name}" deleted successfully.`);
     } catch (err) {
