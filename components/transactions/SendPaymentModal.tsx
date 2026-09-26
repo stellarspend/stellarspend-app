@@ -9,7 +9,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { getRemaining, recordSpend } from "@/lib/stellar/spendingLimitsContract";
 import {
   fetchPaymentFee,
-  PAYMENT_CONFIRMED_EVENT,
   PAYMENT_SUBMITTED_EVENT,
   type PaymentStatus,
   type PendingPayment,
