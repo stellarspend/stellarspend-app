@@ -8,12 +8,19 @@ import { QueuedAction, useOffline } from "./OfflineProvider";
  * QueuedActions displays a collapsible panel of actions that were queued
  * while the user was offline. It shows the count of pending actions and
  * provides buttons to retry syncing or clear the queue entirely.
+ *
+ * Retrying replays the queue with version checks, so an action that clashes
+ * with an edit made on another device is flagged here until the user decides.
  */
 export default function QueuedActions() {
-  const { queuedActions, retryQueuedActions, clearQueue } = useOffline();
+  const { queuedActions, retryQueuedActions, clearQueue, pendingConflicts } =
+    useOffline();
   const [isOpen, setIsOpen] = useState(false);
 
   const queuedActionCount = queuedActions.length;
+  const conflictedActionIds = new Set(
+    (pendingConflicts ?? []).map((conflict) => conflict.actionId),
+  );
 
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
@@ -80,7 +87,9 @@ export default function QueuedActions() {
                 </div>
 
                 <div className="text-xs text-gray-400">
-                  Pending sync
+                  {conflictedActionIds.has(action.id)
+                    ? "Needs your decision before it can be saved"
+                    : "Pending sync"}
                 </div>
               </div>
             ))

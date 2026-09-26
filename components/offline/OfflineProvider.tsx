@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import {
   saveEncrypted,
   loadEncrypted,
@@ -8,6 +8,13 @@ import {
   migrateToEncrypted,
   detectPlaintextData,
 } from "../../lib/crypto/localEncryption";
+import {
+  applyConflictResolution,
+  replayQueuedActions,
+  type ConflictPrompt,
+  type ConflictResolution,
+} from "./actionHandlers";
+import { createSyncAdapter } from "./syncAdapter";
 
 /**
  * Represents a pending action that was queued while offline.
@@ -29,6 +36,18 @@ interface OfflineContextType {
   clearQueue: () => void;
   isUnlocked: boolean;
   unlockQueue: (passphrase: string) => Promise<boolean>;
+  /**
+   * Queued edits that another device changed at the same time. Each one needs
+   * the user to choose which values to keep before it can be applied.
+   */
+  pendingConflicts: ConflictPrompt[];
+  /** Applies the user's decision and removes the action from the queue. */
+  resolveConflict: (
+    actionId: string,
+    resolution: ConflictResolution,
+  ) => Promise<void>;
+  /** Hides a conflict dialog without deciding; the action stays queued. */
+  dismissConflict: (actionId: string) => void;
 }
 
 const OfflineContext = createContext<OfflineContextType | undefined>(undefined);
@@ -98,6 +117,11 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   // `saveQueue` effect from clobbering already-persisted data with an empty
   // array before the async load completes (a race that could wipe the queue).
   const [hasLoaded, setHasLoaded] = useState(false);
+  // Edits that clash with another device, plus the ones the user has hidden for
+  // now (the action stays in the queue until they decide).
+  const [pendingConflicts, setPendingConflicts] = useState<ConflictPrompt[]>([]);
+  const [dismissedConflictIds, setDismissedConflictIds] = useState<string[]>([]);
+  const syncAdapter = useMemo(() => createSyncAdapter(), []);
 
   const loadQueue = useCallback(async () => {
     const data = await loadQueueData(sharedPassphrase || undefined);
@@ -115,6 +139,42 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     };
     init();
   }, [loadQueue]);
+
+  /**
+   * Replays the queue with version checks. Applied actions leave the queue;
+   * conflicting ones are surfaced for the user to decide.
+   */
+  const syncQueue = useCallback(async () => {
+    if (queuedActions.length === 0) {
+      return;
+    }
+
+    const outcome = await replayQueuedActions(queuedActions, syncAdapter);
+
+    if (outcome.appliedIds.length > 0) {
+      const applied = new Set(outcome.appliedIds);
+      setQueuedActions((prev) => prev.filter((action) => !applied.has(action.id)));
+    }
+
+    if (outcome.conflictPrompts.length > 0) {
+      setPendingConflicts((prev) => {
+        const known = new Set(prev.map((conflict) => conflict.actionId));
+        return [
+          ...prev,
+          ...outcome.conflictPrompts.filter(
+            (conflict) => !known.has(conflict.actionId),
+          ),
+        ];
+      });
+    }
+  }, [queuedActions, syncAdapter]);
+
+  // Reconnect flow: replay whatever was queued while the device was offline.
+  useEffect(() => {
+    if (!isOnline || !hasLoaded) return;
+    void syncQueue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnline, hasLoaded]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -168,11 +228,49 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     if (queuedActions.length === 0) {
       return;
     }
-    setQueuedActions((prev) => [...prev]);
-  }, [queuedActions]);
+    void syncQueue();
+  }, [queuedActions, syncQueue]);
+
+  const resolveConflict = useCallback(
+    async (actionId: string, resolution: ConflictResolution) => {
+      const conflict = pendingConflicts.find(
+        (candidate) => candidate.actionId === actionId,
+      );
+      if (!conflict) {
+        return;
+      }
+
+      await applyConflictResolution(conflict, resolution, syncAdapter, {
+        updatedAt: new Date().toISOString(),
+      });
+
+      setPendingConflicts((prev) =>
+        prev.filter((candidate) => candidate.actionId !== actionId),
+      );
+      setQueuedActions((prev) =>
+        prev.filter((action) => action.id !== actionId),
+      );
+    },
+    [pendingConflicts, syncAdapter],
+  );
+
+  const dismissConflict = useCallback((actionId: string) => {
+    setDismissedConflictIds((prev) =>
+      prev.includes(actionId) ? prev : [...prev, actionId],
+    );
+  }, []);
+
+  const visibleConflicts = useMemo(
+    () =>
+      pendingConflicts.filter(
+        (conflict) => !dismissedConflictIds.includes(conflict.actionId),
+      ),
+    [pendingConflicts, dismissedConflictIds],
+  );
 
   const clearQueue = useCallback(() => {
     setQueuedActions([]);
+    setPendingConflicts([]);
     localStorage.removeItem(QUEUE_STORAGE_KEY);
   }, []);
 
@@ -187,6 +285,9 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
         clearQueue,
         isUnlocked,
         unlockQueue,
+        pendingConflicts: visibleConflicts,
+        resolveConflict,
+        dismissConflict,
       }}
     >
       {children}
@@ -201,4 +302,3 @@ export function useOffline() {
   }
   return context;
 }
-
