@@ -454,6 +454,7 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                                                         type="button"
                                                         onClick={() => removeCoOwner(address)}
                                                         aria-label={`Remove co-owner ${address}`}
+                                                        title="Remove co-owner"
                                                         className="text-blue-500 hover:text-red-500"
                                                     >
                                                         ×
