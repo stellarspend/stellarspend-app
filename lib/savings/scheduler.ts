@@ -13,10 +13,10 @@ const STORAGE_KEY = 'stellarspend_goals';
 const CONTRIBUTIONS_KEY = 'stellarspend_contributions';
 
 /**
- * Loads all goals from localStorage.
- * @returns {Goal[]} Array of goals, or empty array if none exist or on server.
  * Loads all savings goals from localStorage.
- * @returns An array of Goal objects, or an empty array if none are stored or on server-side.
+ *
+ * @returns An array of Goal objects, or an empty array if none are stored,
+ *   the stored value cannot be parsed, or the code is running on the server.
  */
 export function loadGoals(): Goal[] {
   if (typeof window === 'undefined') return [];
@@ -30,10 +30,11 @@ export function loadGoals(): Goal[] {
 }
 
 /**
- * Saves goals to localStorage.
- * @param {Goal[]} goals - Array of goals to persist.
- * Persists the given savings goals to localStorage.
+ * Persists the given savings goals to localStorage, replacing any stored goals.
+ * Does nothing when running on the server.
+ *
  * @param goals - The array of Goal objects to save.
+ * @returns Nothing.
  */
 export function saveGoals(goals: Goal[]): void {
   if (typeof window === 'undefined') return;
@@ -41,10 +42,11 @@ export function saveGoals(goals: Goal[]): void {
 }
 
 /**
- * Loads all contributions from localStorage.
- * @returns {Contribution[]} Array of contributions, or empty array if none exist or on server.
  * Loads all contribution records from localStorage.
- * @returns An array of Contribution objects, or an empty array if none are stored or on server-side.
+ *
+ * @returns An array of Contribution objects, or an empty array if none are
+ *   stored, the stored value cannot be parsed, or the code is running on the
+ *   server.
  */
 export function loadContributions(): Contribution[] {
   if (typeof window === 'undefined') return [];
@@ -58,10 +60,11 @@ export function loadContributions(): Contribution[] {
 }
 
 /**
- * Saves contributions to localStorage.
- * @param {Contribution[]} contributions - Array of contributions to persist.
- * Persists contribution records to localStorage.
+ * Persists contribution records to localStorage, replacing any stored records.
+ * Does nothing when running on the server.
+ *
  * @param contributions - The array of Contribution objects to save.
+ * @returns Nothing.
  */
 export function saveContributions(contributions: Contribution[]): void {
   if (typeof window === 'undefined') return;
@@ -69,10 +72,10 @@ export function saveContributions(contributions: Contribution[]): void {
 }
 
 /**
- * Adds a contribution and persists it.
- * @param {Contribution} contribution - Contribution to add.
  * Appends a single contribution to the persisted contribution list.
+ *
  * @param contribution - The Contribution to record.
+ * @returns Nothing.
  */
 export function addContribution(contribution: Contribution): void {
   const existing = loadContributions();
@@ -81,11 +84,9 @@ export function addContribution(contribution: Contribution): void {
 }
 
 /**
- * Creates a new goal schedule.
- * @param {'monthly' | 'yearly'} recurrence - How often the contribution recurs.
- * @param {number} amount - Contribution amount per period.
- * @returns {GoalSchedule} The created schedule.
- * Creates a new contribution schedule with the next due date calculated from today.
+ * Creates a new, unpaused contribution schedule with the next due date
+ * calculated from today (one month or one year ahead).
+ *
  * @param recurrence - How often contributions should occur ('monthly' or 'yearly').
  * @param amount - The contribution amount for each scheduled period.
  * @returns A new GoalSchedule with the computed next due date.
@@ -111,10 +112,8 @@ export function createSchedule(
 }
 
 /**
- * Returns the next due date for a schedule.
- * @param {GoalSchedule} schedule - The schedule to inspect.
- * @returns {Date} The next due date.
  * Returns the next due date for a given schedule.
+ *
  * @param schedule - The GoalSchedule to inspect.
  * @returns A Date object representing when the next contribution is due.
  */
@@ -123,11 +122,10 @@ export function getNextDueDate(schedule: GoalSchedule): Date {
 }
 
 /**
- * Advances a schedule to the next period.
- * @param {GoalSchedule} schedule - The current schedule.
- * @returns {GoalSchedule} The advanced schedule.
  * Advances a schedule to the next period after the current due date.
+ *
  * Rolls the due date forward by one month and records the execution timestamp.
+ *
  * @param schedule - The GoalSchedule to advance.
  * @returns A new GoalSchedule with the updated next due date and lastExecutedAt.
  */
@@ -153,16 +151,18 @@ export function advanceSchedule(schedule: GoalSchedule): GoalSchedule {
 }
 
 /**
- * Checks goals for due contributions and executes them if funds are available.
- * @param {Goal[]} goals - Goals to evaluate.
- * @param {number} availableBalance - Currently available balance.
- * @returns {{ updatedGoals: Goal[]; executedContributions: Contribution[] }} Updated goals and contributions executed in this run.
  * Iterates through goals and executes any contributions whose schedules are due.
+ *
  * Skips paused goals, goals that have reached their target, and goals whose
- * scheduled amount exceeds the available balance.
+ * scheduled amount exceeds the remaining available balance. Each executed
+ * contribution is persisted via {@link addContribution} and deducted from the
+ * balance before the next goal is evaluated.
+ *
  * @param goals - The current array of savings goals.
  * @param availableBalance - The user's available balance to fund contributions.
- * @returns An object with the updated goals array and an array of executed contributions.
+ * @returns An object with `updatedGoals` (every input goal, with executed ones
+ *   carrying an increased `currentAmount` and an advanced schedule) and
+ *   `executedContributions` (the contributions made in this run).
  */
 export function checkAndExecuteDueContributions(
   goals: Goal[],
