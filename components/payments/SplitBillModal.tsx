@@ -170,7 +170,7 @@ export default function SplitBillModal({ publicKey, onClose, onCreated }: SplitB
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Weekly groceries"
+                  placeholder="e.g. Dinner at restaurant"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   disabled={status === "submitting"}
