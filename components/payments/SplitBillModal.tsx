@@ -251,6 +251,7 @@ export default function SplitBillModal({ publicKey, onClose, onCreated }: SplitB
                     type="button"
                     onClick={addParticipant}
                     disabled={status === "submitting"}
+                    aria-label="Add participant"
                     className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#e8b84b] hover:text-[#f0c85a] transition-colors disabled:opacity-50"
                   >
                     <Plus className="w-3.5 h-3.5" /> Add
