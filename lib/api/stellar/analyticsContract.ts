@@ -107,12 +107,32 @@ import {
     year: 'month',
   };
   
+  /**
+   * Resolves a {@link TimeRange} into a concrete unix-seconds window.
+   *
+   * The window is a trailing window anchored at `now`, so "week" always means
+   * "the last 7 days from now" rather than a fixed calendar week.
+   *
+   * @param range - The time range to resolve (e.g. 'week', 'month', 'quarter', 'year').
+   * @param now - The instant to anchor the trailing window to. Defaults to the
+   *   current time; injectable so callers can build deterministic windows.
+   * @returns A {@link TimeWindow} with inclusive `startUnix`/`endUnix` bounds.
+   */
   export function getTimeWindow(range: TimeRange, now: Date = new Date()): TimeWindow {
     const endUnix = Math.floor(now.getTime() / 1000);
     const startUnix = endUnix - RANGE_TO_SECONDS[range];
     return { startUnix, endUnix };
   }
   
+  /**
+   * Picks the trend bucket size for a given time range.
+   *
+   * Larger ranges use coarser buckets so a "year" view does not try to plot
+   * 365 daily points.
+   *
+   * @param range - The time range the trend query will cover.
+   * @returns The {@link Granularity} to bucket the trend by.
+   */
   export function getGranularity(range: TimeRange): Granularity {
     return RANGE_TO_GRANULARITY[range];
   }
@@ -130,6 +150,10 @@ import {
    *   use as the simulation's source account (sequence number source only;
    *   nothing is ever signed or submitted). Typically the connected wallet's
    *   public key.
+   * @param method - The on-chain contract method to invoke (e.g. 'get_spending_trend').
+   * @param args - Positional arguments for the method, encoded to ScVal via
+   *   {@link toScVal}.
+   * @returns The decoded return value cast to `T`.
    */
   async function callAnalyticsContract<T>(
     method: string,
@@ -203,6 +227,11 @@ import {
    * Windowed spending-over-time series, bucketed by the contract itself.
    * Returns one entry per (bucket, asset) — assets are NEVER pre-summed
    * together, since XLM/USDC/EURC are different units of value.
+   *
+   * @param params - Query parameters: the account to scope to, the
+   *   {@link TimeWindow} to cover, and the bucket {@link Granularity}.
+   * @returns One {@link SpendingTrendPoint} per (bucket, asset) pair in the
+   *   window, with `totalSpent` in the asset's smallest unit as a string.
    */
   export async function getSpendingTrend(
     params: AnalyticsQueryParams & { granularity: Granularity },
@@ -227,7 +256,14 @@ import {
     }));
   }
   
-  /** Category breakdown for the window, per asset (not blended). */
+  /**
+   * Category breakdown for the window, per asset (not blended).
+   *
+   * @param params - Query parameters: the account to scope to and the
+   *   {@link TimeWindow} to cover.
+   * @returns One {@link CategoryBreakdownEntry} per (category, asset) pair,
+   *   with `totalSpent` in the asset's smallest unit as a string.
+   */
   export async function getCategoryBreakdown(
     params: AnalyticsQueryParams,
   ): Promise<CategoryBreakdownEntry[]> {
@@ -254,7 +290,15 @@ import {
     }));
   }
   
-  /** Budget-vs-actual for every active budget overlapping the window, per asset. */
+  /**
+   * Budget-vs-actual for every active budget overlapping the window, per asset.
+   *
+   * @param params - Query parameters: the account to scope to and the
+   *   {@link TimeWindow} to cover.
+   * @returns One {@link BudgetVsActualEntry} per budget overlapping the
+   *   window, with `budgetedAmount` and `actualSpent` in the asset's smallest
+   *   unit as strings.
+   */
   export async function getBudgetVsActual(
     params: AnalyticsQueryParams,
   ): Promise<BudgetVsActualEntry[]> {

@@ -177,12 +177,23 @@ export default function SpendingLimitCard({
             <span className="text-[#7a8aaa] font-medium uppercase tracking-wider text-[10px]">
               Period Utilization
             </span>
-            <span className={`font-mono font-bold ${getStatusColor()}`}>
+            <span
+              aria-live="polite"
+              aria-atomic="true"
+              className={`font-mono font-bold ${getStatusColor()}`}
+            >
               {percentUsed}% ({formatAmount(limit.spentAmount)} / {formatAmount(limit.limitAmount)} {limit.asset})
             </span>
           </div>
 
-          <div className="w-full h-3 bg-white/5 border border-white/10 rounded-full overflow-hidden p-[2px]">
+          <div
+            role="progressbar"
+            aria-valuenow={percentUsed}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`${limit.asset} ${limit.period} limit utilization`}
+            className="w-full h-3 bg-white/5 border border-white/10 rounded-full overflow-hidden p-[2px]"
+          >
             <motion.div
               className={`h-full rounded-full bg-gradient-to-r ${getProgressBarGradient()}`}
               initial={{ width: "0%" }}
