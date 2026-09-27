@@ -22,6 +22,7 @@ import BudgetForm, { BudgetFormMode } from "@/components/budgets/BudgetForm";
 import PendingApprovalCard from "@/components/budgets/PendingApprovalCard";
 import BudgetCategoryBreakdownChart from "@/components/budgets/BudgetCategoryBreakdownChart";
 import { useOffline } from "@/components/offline/OfflineProvider";
+import { buildUpdatePayload } from "@/components/offline/actionHandlers";
 import { useToast } from "@/components/ui/use-toast";
 
 interface BudgetFormData {
@@ -163,7 +164,18 @@ export default function BudgetsPageClient() {
         if (!editingBudget) return;
         
         if (!isOnline) {
-            queueAction('UPDATE_BUDGET', `Update budget: ${budgetData.name}`, { id: editingBudget.id, ...budgetData });
+            queueAction(
+                'UPDATE_BUDGET',
+                `Update budget: ${budgetData.name}`,
+                buildUpdatePayload(editingBudget, {
+                    name: budgetData.name,
+                    amount: budgetData.amount,
+                    category: budgetData.category,
+                    asset: budgetData.asset,
+                    startDate: budgetData.startDate,
+                    endDate: budgetData.endDate,
+                }),
+            );
             toast({
                 title: "Budget Update Queued",
                 description: "Offline: Your budget updates have been queued and will be saved when you reconnect.",
@@ -230,7 +242,18 @@ export default function BudgetsPageClient() {
         if (!editingBudget) return;
 
         if (!isOnline) {
-            queueAction('PROPOSE_BUDGET_CHANGE', `Propose change: ${budgetData.name}`, { id: editingBudget.id, ...budgetData });
+            queueAction(
+                'UPDATE_SHARED_BUDGET',
+                `Propose change: ${budgetData.name}`,
+                buildUpdatePayload(editingBudget, {
+                    name: budgetData.name,
+                    amount: budgetData.amount,
+                    category: budgetData.category,
+                    asset: budgetData.asset,
+                    startDate: budgetData.startDate,
+                    endDate: budgetData.endDate,
+                }),
+            );
             alert('You are offline. Your proposed change has been queued.');
             setEditingBudget(null);
             setShowForm(false);

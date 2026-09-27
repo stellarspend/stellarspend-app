@@ -120,6 +120,21 @@ export function isSharedBudgetMember(
   return budget.ownerAddress === address || budget.coOwners.includes(address);
 }
 
+/**
+ * Last-modified marker for a shared budget (Issue #115).
+ *
+ * Co-owned budgets are edited by more than one person, so the offline queue
+ * reads this marker to detect that another member changed the budget while an
+ * edit was waiting to be synced.
+ * @param budget - The shared budget to read the marker from.
+ * @returns The shared budget's `updatedAt` marker.
+ */
+export function getSharedBudgetVersion(
+  budget: Pick<SharedBudget, 'updatedAt'>
+): string {
+  return budget.updatedAt;
+}
+
 const BUDGET_FIELD_LABELS: Record<string, string> = {
   name: 'Name',
   amount: 'Amount',

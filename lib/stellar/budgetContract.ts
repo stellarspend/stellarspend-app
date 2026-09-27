@@ -65,6 +65,35 @@ export function setMockBudgetsFallback(budgets: Budget[]): void {
   }
 }
 
+/**
+ * Last-modified marker for a budget (Issue #115).
+ *
+ * The offline queue stores this alongside an edit so that, when it is replayed,
+ * the app can tell whether the budget also changed on another device.
+ * @param budget - The budget to read the marker from.
+ * @returns The budget's `updatedAt` marker.
+ */
+export function getBudgetVersion(budget: Pick<Budget, 'updatedAt'>): string {
+  return budget.updatedAt;
+}
+
+/**
+ * Snapshot of the fields a budget edit can change, used as the "base" of a
+ * three-way comparison when an offline edit is replayed.
+ * @param budget - The budget as this device last saw it.
+ * @returns A plain object of the versioned budget fields.
+ */
+export function budgetBaseSnapshot(budget: Budget): Record<string, unknown> {
+  return {
+    name: budget.name,
+    amount: budget.amount,
+    category: budget.category,
+    asset: budget.asset,
+    startDate: budget.startDate,
+    endDate: budget.endDate,
+  };
+}
+
 function toScVal(value: unknown): xdr.ScVal {
   if (typeof value === 'string' && value.startsWith('G') && value.length === 56) {
     return new Address(value).toScVal();

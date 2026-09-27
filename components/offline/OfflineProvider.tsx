@@ -8,6 +8,14 @@ import {
   migrateToEncrypted,
   detectPlaintextData,
 } from "../../lib/crypto/localEncryption";
+import {
+  applyConflictChoice,
+  replayQueuedUpdates,
+  type ConflictPrompt,
+  type ConflictResolution,
+} from "./actionHandlers";
+import { createSyncAdapter } from "./syncAdapter";
+import ConflictResolutionModal from "./ConflictResolutionModal";
 
 /**
  * Represents a pending action that was queued while offline.
@@ -25,10 +33,19 @@ interface OfflineContextType {
   queuedActions: QueuedAction[];
   queueAction: (type: string, description: string, data: unknown) => void;
   removeAction: (id: string) => void;
-  retryQueuedActions: () => void;
+  /** Replays the queue, auto-merging safe edits and surfacing conflicts. */
+  retryQueuedActions: () => Promise<void>;
   clearQueue: () => void;
   isUnlocked: boolean;
   unlockQueue: (passphrase: string) => Promise<boolean>;
+  /** Updates that need the user to choose which value to keep. */
+  conflicts: ConflictPrompt[];
+  /** True while the queue is being replayed. */
+  isSyncing: boolean;
+  /** Applies the user's choice for one conflict and clears its queued action. */
+  resolveConflict: (actionId: string, resolution: ConflictResolution) => Promise<void>;
+  /** Leaves a conflict unresolved so the user can decide later. */
+  dismissConflict: (actionId: string) => void;
 }
 
 const OfflineContext = createContext<OfflineContextType | undefined>(undefined);
@@ -98,6 +115,10 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   // `saveQueue` effect from clobbering already-persisted data with an empty
   // array before the async load completes (a race that could wipe the queue).
   const [hasLoaded, setHasLoaded] = useState(false);
+  // Updates whose base version no longer matches what is persisted now. They
+  // are held out of the queue until the user picks which value to keep.
+  const [conflicts, setConflicts] = useState<ConflictPrompt[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const loadQueue = useCallback(async () => {
     const data = await loadQueueData(sharedPassphrase || undefined);
@@ -164,17 +185,73 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     setQueuedActions((prev) => prev.filter((action) => action.id !== id));
   }, []);
 
-  const retryQueuedActions = useCallback(() => {
+  const retryQueuedActions = useCallback(async () => {
     if (queuedActions.length === 0) {
       return;
     }
-    setQueuedActions((prev) => [...prev]);
+
+    setIsSyncing(true);
+    try {
+      const result = await replayQueuedUpdates(queuedActions, createSyncAdapter());
+
+      if (result.appliedIds.length > 0) {
+        const applied = new Set(result.appliedIds);
+        setQueuedActions((prev) => prev.filter((action) => !applied.has(action.id)));
+      }
+
+      if (result.prompts.length > 0) {
+        setConflicts((prev) => {
+          const known = new Set(prev.map((prompt) => prompt.actionId));
+          return [...prev, ...result.prompts.filter((prompt) => !known.has(prompt.actionId))];
+        });
+      }
+
+      if (result.failures.length > 0) {
+        console.warn(
+          "Some queued actions could not be synced:",
+          result.failures.map((failure) => `${failure.actionId}: ${failure.reason}`),
+        );
+      }
+    } finally {
+      setIsSyncing(false);
+    }
   }, [queuedActions]);
+
+  const resolveConflict = useCallback(
+    async (actionId: string, resolution: ConflictResolution) => {
+      const prompt = conflicts.find((candidate) => candidate.actionId === actionId);
+      if (!prompt) {
+        return;
+      }
+
+      setIsSyncing(true);
+      try {
+        await applyConflictChoice(
+          prompt,
+          resolution,
+          createSyncAdapter(),
+          new Date().toISOString(),
+        );
+        setConflicts((prev) => prev.filter((candidate) => candidate.actionId !== actionId));
+        removeAction(actionId);
+      } finally {
+        setIsSyncing(false);
+      }
+    },
+    [conflicts, removeAction],
+  );
+
+  const dismissConflict = useCallback((actionId: string) => {
+    setConflicts((prev) => prev.filter((candidate) => candidate.actionId !== actionId));
+  }, []);
 
   const clearQueue = useCallback(() => {
     setQueuedActions([]);
+    setConflicts([]);
     localStorage.removeItem(QUEUE_STORAGE_KEY);
   }, []);
+
+  const activeConflict = conflicts.length > 0 ? conflicts[0] : null;
 
   return (
     <OfflineContext.Provider
@@ -187,9 +264,21 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
         clearQueue,
         isUnlocked,
         unlockQueue,
+        conflicts,
+        isSyncing,
+        resolveConflict,
+        dismissConflict,
       }}
     >
       {children}
+      {activeConflict && (
+        <ConflictResolutionModal
+          prompt={activeConflict}
+          isSubmitting={isSyncing}
+          onResolve={(resolution) => resolveConflict(activeConflict.actionId, resolution)}
+          onDismiss={() => dismissConflict(activeConflict.actionId)}
+        />
+      )}
     </OfflineContext.Provider>
   );
 }

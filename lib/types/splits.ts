@@ -24,6 +24,8 @@ export interface SplitBill {
   status: SplitStatus;
   escrowAccount?: string;
   createdAt: string;
+  /** Last-modified marker used to detect edits made on multiple devices. */
+  updatedAt?: string;
   releasedAt?: string;
   releaseTransactionHash?: string;
 }

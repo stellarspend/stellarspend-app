@@ -40,6 +40,39 @@ function setMockSplits(splits: SplitBill[]) {
   window.dispatchEvent(new CustomEvent('stellarspend_split_update'));
 }
 
+/**
+ * Last-modified marker for a split bill (Issue #115).
+ * Falls back to the creation time for splits saved before the marker existed.
+ * @param split - The split bill to read the marker from.
+ * @returns An ISO timestamp identifying the split's current revision.
+ */
+export function getSplitVersion(split: Pick<SplitBill, 'updatedAt' | 'createdAt'>): string {
+  return split.updatedAt ?? split.createdAt;
+}
+
+/**
+ * Applies a partial update to a locally-cached split bill and stamps its
+ * last-modified marker, so a replaying offline edit can be compared against it.
+ * @param splitId - The ID of the split bill to update.
+ * @param changes - The split fields to change.
+ * @returns The updated split bill, or null when no split has that ID.
+ */
+export function updateSplitLocal(
+  splitId: string,
+  changes: Partial<SplitBill>,
+): SplitBill | null {
+  const splits = getMockSplits();
+  const index = splits.findIndex((s) => s.id === splitId);
+  if (index === -1) return null;
+  splits[index] = {
+    ...splits[index],
+    ...changes,
+    updatedAt: new Date().toISOString(),
+  };
+  setMockSplits(splits);
+  return splits[index];
+}
+
 function buildShares(input: CreateSplitInput): SplitShare[] {
   if (input.method === 'even') {
     const evenAmount = Math.round((input.totalAmount / input.participants.length) * 100) / 100;
@@ -87,6 +120,7 @@ export async function createSplit(
       shares,
       status: 'collecting',
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
     const splits = getMockSplits();
     splits.push(split);
@@ -122,6 +156,7 @@ export async function createSplit(
       status: 'collecting',
       escrowAccount: escrowAccount ?? undefined,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     // Mirror into local cache so fetchSplit/subscribeToSplit have a fast
@@ -184,6 +219,7 @@ export async function paySplitShare(
   share.status = 'paid';
   share.paidAt = new Date().toISOString();
   share.transactionHash = txHash;
+  split.updatedAt = new Date().toISOString();
 
   if (isFullyCollected(split)) {
     await releaseSplitFunds(split, statusCallback);
@@ -226,6 +262,7 @@ async function releaseSplitFunds(
 
   split.status = 'released';
   split.releasedAt = new Date().toISOString();
+  split.updatedAt = new Date().toISOString();
   triggerNotification('success', `Split "${split.description}" fully collected — funds released to requester.`);
 }
 
@@ -272,6 +309,7 @@ export async function disputeSplitShare(
   share.status = 'disputed';
   share.disputeReason = reason;
   split.status = 'disputed';
+  split.updatedAt = new Date().toISOString();
 
   splits[index] = split;
   setMockSplits(splits);
