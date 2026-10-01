@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { z } from "zod";
+import { motion, useReducedMotion } from "framer-motion";
 import { useForm } from "@/hooks/useForm";
 import { useOffline } from "@/components/offline/OfflineProvider";
 import useWallet from "@/hooks/useWallet";
@@ -115,6 +116,22 @@ export default function GoalForm({
     });
 
     const recurrence = watch('recurrence');
+    const targetAmount = watch('targetAmount');
+    const scheduleAmount = watch('scheduleAmount');
+
+    const goalProgress = React.useMemo(() => {
+        const target = Number(targetAmount) || 0;
+        if (target <= 0) return 0;
+        const contributed = recurrence === 'once' ? target : Number(scheduleAmount) || 0;
+        return Math.min(100, Math.round((contributed / target) * 100));
+    }, [targetAmount, scheduleAmount, recurrence]);
+
+    useEffect(() => {
+        if (goalProgress >= 100 && !hasCelebratedRef.current) {
+            hasCelebratedRef.current = true;
+            setShowCompletion(true);
+        }
+    }, [goalProgress]);
 
     const onSubmit = async (data: GoalFormData) => {
         if (!isOnline) {
@@ -355,12 +372,11 @@ export default function GoalForm({
                     {recurrence !== 'once' && (
                         <div className="space-y-1">
                             <label htmlFor="scheduleAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Amount per {recurrence === 'monthly' ? 'month' : 'year'} (XLM)
+                                Contribution per period (XLM)
                             </label>
                             <input
                                 id="scheduleAmount"
                                 type="number"
-                                aria-required="true"
                                 {...register('scheduleAmount')}
                                 className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-500 outline-none transition-all ${errors.scheduleAmount ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
                                     }`}
@@ -372,31 +388,24 @@ export default function GoalForm({
                         </div>
                     )}
 
-                    <div className="flex justify-end gap-2 pt-4">
-                        {txStatus && (
-                            <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1.5 mr-auto">
-                                <svg className="animate-spin h-3.5 w-3.5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                </svg>
-                                <span className="font-medium">{txStatus}</span>
-                            </div>
-                        )}
+                    {txStatus && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{txStatus}</p>
+                    )}
+
+                    <div className="flex justify-end space-x-2 pt-2">
                         <button
                             type="button"
                             onClick={() => onOpenChange(false)}
-                            disabled={!!txStatus}
-                            className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md disabled:opacity-50"
+                            className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            aria-label="Create savings goal"
-                            disabled={!isValid || isSubmitting || !!txStatus}
-                            className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold rounded-lg shadow-md transition-colors duration-200"
+                            disabled={!isValid || isSubmitting}
+                            className="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                            {txStatus ? 'Processing...' : 'Create Goal'}
+                            {isSubmitting ? 'Creating...' : 'Create Goal'}
                         </button>
                     </div>
                 </form>
