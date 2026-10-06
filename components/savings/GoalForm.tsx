@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { z } from "zod";
 import { useForm } from "@/hooks/useForm";
 import { useOffline } from "@/components/offline/OfflineProvider";
@@ -56,6 +57,17 @@ export default function GoalForm({
   const { toast } = useToast();
   const publicKey = freighter.publicKey;
   const [txStatus, setTxStatus] = useState<string | null>(null);
+  const [hasCelebrated, setHasCelebrated] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mql.addEventListener?.("change", handler);
+    return () => mql.removeEventListener?.("change", handler);
+  }, []);
 
   const {
     register,
@@ -183,8 +195,8 @@ export default function GoalForm({
         description: `Your savings goal "${data.title}" has been created.`,
       });
       onGoalCreated(newGoal);
+      setHasCelebrated(true);
       reset();
-      onOpenChange(false);
     } catch (error: unknown) {
       console.error(error);
       const errMessage = error instanceof Error ? error.message : String(error);
@@ -206,6 +218,89 @@ export default function GoalForm({
         className="absolute inset-0 bg-black bg-opacity-50"
         onClick={() => onOpenChange(false)}
       ></div>
+      <AnimatePresence>
+        {hasCelebrated && (
+          <motion.div
+            key="celebration"
+            className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onAnimationComplete={() => {
+              setTimeout(() => {
+                setHasCelebrated(false);
+                onOpenChange(false);
+              }, prefersReducedMotion ? 0 : 1200);
+            }}
+          >
+            {prefersReducedMotion ? (
+              <div className="flex flex-col items-center gap-2">
+                <svg
+                  className="w-16 h-16 text-green-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                <span className="text-green-600 dark:text-green-400 font-semibold">
+                  Goal Created!
+                </span>
+              </div>
+            ) : (
+              <div className="relative flex flex-col items-center gap-2">
+                <motion.svg
+                  className="w-20 h-20 text-green-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  initial={{ scale: 0, rotate: -45 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </motion.svg>
+                <motion.span
+                  className="text-green-600 dark:text-green-400 font-semibold"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  Goal Created!
+                </motion.span>
+                {Array.from({ length: 12 }).map((_, i) => {
+                  const angle = (i / 12) * Math.PI * 2;
+                  const distance = 80;
+                  return (
+                    <motion.span
+                      key={i}
+                      className="absolute w-2 h-2 rounded-full bg-green-400"
+                      initial={{ opacity: 0, x: 0, y: 0, scale: 0 }}
+                      animate={{
+                        opacity: [0, 1, 0],
+                        x: Math.cos(angle) * distance,
+                        y: Math.sin(angle) * distance,
+                        scale: [0, 1, 0.5],
+                      }}
+                      transition={{ duration: 1, delay: 0.1 }}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="relative w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
         <div className="flex items-center space-x-2 mb-6">
           <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
@@ -399,7 +494,7 @@ export default function GoalForm({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              disabled={!!txStatus}
+              disabled={!!txStatus || hasCelebrated}
               className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md disabled:opacity-50"
             >
               Cancel
@@ -407,7 +502,7 @@ export default function GoalForm({
             <button
               type="submit"
               aria-label="Create savings goal"
-              disabled={!isValid || isSubmitting || !!txStatus}
+              disabled={!isValid || isSubmitting || !!txStatus || hasCelebrated}
               className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold rounded-lg shadow-md transition-colors duration-200"
             >
               {txStatus ? "Processing..." : "Create Goal"}
