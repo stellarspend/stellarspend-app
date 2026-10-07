@@ -45,8 +45,11 @@ function parseAmount(value: string): string {
   return Number(value.replace(/\s/g, "")).toFixed(2);
 }
 
-/** Approximate USD conversion rates. Production should use Stellar DEX / CoinGecko. */
-const USD_RATES: Record<string, number> = { XLM: 0.15, USDC: 1.0, EURC: 1.08 };
+import {
+  fetchOracleRates,
+  convertToUsd,
+  BASELINE_RATES,
+} from "@/lib/stellar/priceOracle";
 
 const SUPPORTED_ASSETS = new Set(["USDC", "EURC"]);
 
@@ -125,14 +128,16 @@ export async function fetchBalancesForAddress(
     const account = await getHorizon().loadAccount(publicKey);
     const balances: WalletBalances["balances"] = [];
 
+    const oracle = await fetchOracleRates();
+
     for (const line of account.balances as BalanceLine[]) {
       if (line.asset_type === "native") {
         const xlm = parseAmount(line.balance);
         balances.push({
           asset: "XLM",
           balance: xlm,
-          usdValue: +(parseFloat(xlm) * USD_RATES.XLM).toFixed(2),
-          change24h: 0,
+          usdValue: convertToUsd(parseFloat(xlm), "XLM", oracle.rates),
+          change24h: oracle.change24h.XLM ?? 0,
         });
       } else if (
         "asset_code" in line &&
@@ -143,16 +148,18 @@ export async function fetchBalancesForAddress(
         balances.push({
           asset,
           balance: bal,
-          usdValue: +(parseFloat(bal) * USD_RATES[asset]).toFixed(2),
-          change24h: 0,
+          usdValue: convertToUsd(parseFloat(bal), asset, oracle.rates),
+          change24h: oracle.change24h[asset] ?? 0,
         });
       }
     }
 
     return {
       balances,
-      totalUsd: balances.reduce((s, b) => s + b.usdValue, 0),
+      totalUsd: +(balances.reduce((s, b) => s + b.usdValue, 0)).toFixed(2),
       updatedAt: new Date().toISOString(),
+      isStale: oracle.isStale,
+      ratesSource: oracle.source,
     };
   } catch (err) {
     console.error("Horizon fetchBalances failed:", err);

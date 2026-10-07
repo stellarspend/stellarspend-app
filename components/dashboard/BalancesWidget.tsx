@@ -105,8 +105,7 @@ function SkeletonCard() {
   return (
     <div
       data-testid="balance-skeleton"
-      role="status"
-      aria-label="Loading balance"
+      aria-hidden="true"
       className="flex flex-col gap-4 p-5 rounded-2xl border border-white/10 bg-white/[0.025] animate-pulse"
     >
       {/* Header row - matches AssetCard header */}
@@ -239,6 +238,16 @@ export default function BalancesWidget() {
                 minute: "2-digit",
               })}
             </p>
+          )}
+          {data?.isStale && (
+            <span
+              data-testid="oracle-staleness-warning"
+              aria-label="Rates may be delayed"
+              className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[9px] font-bold uppercase tracking-widest"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              Rates delayed
+            </span>
           )}
           {newActivity && (
             <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#4ade80]/10 border border-[#4ade80]/20 text-[#4ade80] text-[9px] font-bold uppercase tracking-widest animate-pulse">
