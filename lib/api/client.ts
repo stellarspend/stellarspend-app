@@ -66,6 +66,17 @@ export function getConnectedPublicKey(): string | null {
 }
 
 
+import {
+  fetchOracleRates,
+  convertToUsd,
+  convertAsset,
+  BASELINE_RATES,
+  type SupportedAsset,
+} from '@/lib/stellar/priceOracle';
+
+export type { SupportedAsset };
+export { fetchOracleRates, convertToUsd, convertAsset };
+
 export interface AssetBalance {
   asset: "XLM" | "USDC" | "EURC";
   balance: string;
@@ -77,6 +88,8 @@ export interface WalletBalances {
   balances: AssetBalance[];
   totalUsd: number;
   updatedAt: string;
+  isStale?: boolean;
+  ratesSource?: 'contract' | 'fallback';
 }
 
 export interface Transaction {
@@ -663,10 +676,11 @@ export async function sendPayment(
       maximumFractionDigits: 2,
     }).replace(/,/g, ' '); // Match space format
     
-    // Update usdValue
-    const conversionRates = { XLM: 0.15, USDC: 1.0, EURC: 1.08 };
-    MOCK_BALANCES.balances[balIndex].usdValue = nextVal * conversionRates[asset];
-    MOCK_BALANCES.totalUsd = MOCK_BALANCES.balances.reduce((acc, curr) => acc + curr.usdValue, 0);
+    // Update usdValue using oracle conversion rates
+    MOCK_BALANCES.balances[balIndex].usdValue = convertToUsd(nextVal, asset);
+    MOCK_BALANCES.totalUsd = Number(
+      MOCK_BALANCES.balances.reduce((acc, curr) => acc + curr.usdValue, 0).toFixed(2)
+    );
   }
 
   // Create new transaction object

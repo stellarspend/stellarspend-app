@@ -5,6 +5,11 @@ import { z } from "zod";
 import { useForm } from "@/hooks/useForm";
 import { Budget } from "@/lib/api/client";
 import { isValidStellarAddress } from "@/lib/stellar/sharedBudgetContract";
+import {
+  convertToUsd,
+  convertAsset,
+  type SupportedAsset,
+} from "@/lib/stellar/priceOracle";
 
 const budgetSchema = z
   .object({
@@ -146,6 +151,8 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
     const coOwners = watch('coOwners') ?? [];
     const approvalThreshold = watch('approvalThreshold') ?? 2;
     const totalMembers = coOwners.length + 1;
+    const currentAsset = (watch('asset') ?? 'XLM') as SupportedAsset;
+    const currentAmount = Number(watch('amount') ?? 0);
 
     const addCoOwners = () => {
         const candidates = coOwnerInput
@@ -253,7 +260,7 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
 
                 <div className="space-y-1">
                     <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Amount (XLM) <span className="text-red-500" aria-label="required">*</span>
+                        Amount ({currentAsset}) <span className="text-red-500" aria-label="required">*</span>
                     </label>
                     <input
                         id="amount"
@@ -268,6 +275,20 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                             }`}
                         placeholder="e.g. 500"
                     />
+                    {currentAmount > 0 && !errors.amount && (
+                        <div
+                            data-testid="cross-asset-conversion-preview"
+                            className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex flex-wrap gap-2"
+                        >
+                            <span>≈ ${convertToUsd(currentAmount, currentAsset).toFixed(2)} USD</span>
+                            {currentAsset !== 'USDC' && (
+                                <span>• {convertAsset(currentAmount, currentAsset, 'USDC').toFixed(2)} USDC</span>
+                            )}
+                            {currentAsset !== 'XLM' && (
+                                <span>• {convertAsset(currentAmount, currentAsset, 'XLM').toFixed(2)} XLM</span>
+                            )}
+                        </div>
+                    )}
                     {errors.amount && (
                         <p id="amount-error" className="text-xs text-red-500 mt-1" role="alert">{errors.amount.message}</p>
                     )}

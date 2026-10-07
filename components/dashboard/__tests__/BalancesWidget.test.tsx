@@ -58,4 +58,26 @@ describe("BalancesWidget", () => {
 
     expect(screen.queryByRole("status")).toBeNull();
   });
+
+  it("displays rates delayed warning when oracle data is stale", async () => {
+    mockedFetchBalances.mockResolvedValue({
+      totalUsd: 1234.56,
+      updatedAt: "2024-05-20T14:30:00Z",
+      isStale: true,
+      balances: [
+        {
+          asset: "XLM",
+          balance: "1000.0000000",
+          usdValue: 1234.56,
+          change24h: 1.25,
+        },
+      ],
+    });
+
+    render(<BalancesWidget />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("oracle-staleness-warning")).toBeTruthy();
+    });
+  });
 });
