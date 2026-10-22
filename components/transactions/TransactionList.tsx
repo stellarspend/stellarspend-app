@@ -31,6 +31,17 @@ interface TransactionListProps {
   categoryMap?: Record<string, string>;
 }
 
+/**
+ * TransactionList renders a searchable, paginated list of transactions for the
+ * current filters and keeps in-flight Stellar payments visible in the list by
+ * listening for payment-submitted/confirmed events.
+ *
+ * @param props - Component props for the transaction list.
+ * @param props.filters - Filter params used to fetch transactions (e.g. type, status, date range).
+ * @param props.onOpenDrawer - Callback invoked with a transaction when the user opens its detail drawer.
+ * @param props.categoryMap - Optional map of category ids to verified display names; defaults to an empty map.
+ * @returns The rendered paginated transaction list UI.
+ */
 export default function TransactionList({
   filters,
   onOpenDrawer,
