@@ -28,6 +28,14 @@ import type {
  * contract/wallet dependencies and can be unit tested in isolation.
  */
 
+/**
+ * Strips server-managed metadata from a versioned record so only user-
+ * writable fields are sent back to the API or contract.
+ *
+ * @param record - The versioned record to extract writable fields from.
+ * @returns A record containing the record's fields minus `id`, `updatedAt",
+ * and `createdAt`.
+ */
 function writableFields(record: VersionedRecord): Record<string, unknown> {
   const fields: Record<string, unknown> = {
     ...(record as unknown as Record<string, unknown>),
@@ -38,6 +46,13 @@ function writableFields(record: VersionedRecord): Record<string, unknown> {
   return fields;
 }
 
+/**
+ * Loads the current server state for a given update type so the conflict
+ * resolution can compare it against queued offline edits.
+ *
+ * @param type - The kind of record to fetch (budget, goal, or shared budget).
+ * @returns A promise resolving to the currently stored records for that type.
+ */
 async function fetchRecords(
   type: VersionedUpdateType,
 ): Promise<VersionedRecord[]> {
