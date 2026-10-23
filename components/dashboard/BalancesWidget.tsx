@@ -117,8 +117,7 @@ function SkeletonCard() {
   return (
     <div
       data-testid="balance-skeleton"
-      role="status"
-      aria-label="Loading balance"
+      aria-hidden="true"
       className="flex flex-col gap-4 p-5 rounded-2xl border border-white/10 bg-white/[0.025] animate-pulse"
     >
       {/* Header row - matches AssetCard header */}

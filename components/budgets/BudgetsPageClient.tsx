@@ -381,12 +381,6 @@ export default function BudgetsPageClient() {
     }
   };
 
-  const handleEditBudget = (budget: Budget) => {
-    setEditingBudget(budget);
-    setFormMode('edit');
-    setShowForm(true);
-  };
-
   const handleProposeBudget = (budget: Budget) => {
     setEditingBudget(budget);
     setFormMode('propose');

@@ -2,10 +2,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: {
-    default: 'Settings | StellarSpend',
-    template: '%s | Settings | StellarSpend',
-  },
+  title: 'Settings | StellarSpend',
   description:
     'Manage your StellarSpend account, preferences, security, and application settings.',
   robots: {

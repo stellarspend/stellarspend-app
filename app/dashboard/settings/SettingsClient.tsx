@@ -207,7 +207,7 @@ const SettingsClient = () => {
           </div>
 
           <div className="p-8">
-            <LanguageSelector variant="list" />
+            <LanguageSelector variant="list" listTestId="language-list-settings" />
           </div>
 
           <div className="p-8 bg-white/[0.01] border-t border-white/5 flex justify-end">

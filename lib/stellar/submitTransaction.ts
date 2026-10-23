@@ -68,6 +68,10 @@ export interface SubmittedPayment extends PendingPayment {
  *   Horizon URL when omitted.
  * @returns A Horizon server instance for querying and submitting transactions.
  */
+function createHorizonServer(url = HORIZON_URL): Horizon.Server {
+  return new Horizon.Server(url);
+}
+
 /**
  * Converts a submitted or pending payment into the transaction record format
  * used by the application, including its payment operation details.

@@ -2,10 +2,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: {
-    default: 'Spending Limits | StellarSpend',
-    template: '%s | Spending Limits | StellarSpend',
-  },
+  title: 'Spending Limits | StellarSpend',
   description:
     'Manage and configure your StellarSpend spending limits and transaction controls.',
   robots: {

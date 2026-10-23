@@ -184,6 +184,18 @@ export interface FilterParams {
   search?: string;
 }
 
+/**
+ * A generic wrapper returned by paginated API endpoints, carrying one page of
+ * results together with the metadata needed to fetch further pages.
+ *
+ * @typeParam T - The type of each item in the result set (e.g. {@link Transaction}).
+ *
+ * @property data - The array of items for the current page.
+ * @property total - Total number of items across all pages.
+ * @property page - The 1-based index of the current page.
+ * @property limit - Maximum number of items that can appear in a single page.
+ * @property hasMore - `true` when at least one additional page of results exists beyond the current page.
+ */
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
@@ -691,6 +703,14 @@ export async function deleteBudget(id: string): Promise<void> {
 
 // ── Send path (still mock — out of scope for issue #97) ───────────────────
 
+/**
+ * Returns a promise that resolves after a specified number of milliseconds,
+ * providing a lightweight async sleep for simulating network latency in mock
+ * API functions.
+ *
+ * @param ms - Duration to wait, in milliseconds.
+ * @returns A promise that resolves with `undefined` once the timeout elapses.
+ */
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
