@@ -266,6 +266,12 @@ function BudgetModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+/**
+ * Displays the placeholder new-goal dialog with savings target inputs.
+ *
+ * @param onClose - Callback that closes the goal dialog.
+ * @returns The new-goal modal.
+ */
 function GoalModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -374,6 +380,15 @@ interface QuickActionsProps {
   onSplitBill?: () => void;
 }
 
+/**
+ * Renders the dashboard quick-actions grid (Send, Receive, New Budget, New
+ * Goal, Split Bill) and manages which modal is currently open.
+ *
+ * @param props - Component props; see {@link QuickActionsProps}.
+ * @param props.onSplitBill - Optional callback that opens the parent-owned
+ * split-bill flow instead of a local modal.
+ * @returns The quick-actions card with its animated modal overlays.
+ */
 export default function QuickActions({ onSplitBill }: QuickActionsProps) {
   const [openModal, setOpenModal] = useState<ModalId>(null);
 

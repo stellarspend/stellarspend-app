@@ -46,23 +46,6 @@ interface GoalFormProps {
   onGoalCreated: (goal: Goal) => void;
 }
 
-/**
- * Modal form for creating a new savings goal.
- *
- * Validates the title, target amount, deadline and recurrence schedule with
- * Zod. When online, the goal is created on-chain via the savings goal
- * contract using the connected Freighter wallet, with transaction progress
- * shown inline. When offline, the goal is queued and saved once the
- * connection returns.
- *
- * @param props - Component props.
- * @param props.open - Whether the modal is visible.
- * @param props.onOpenChange - Called with the new visibility, e.g. `false`
- * when the backdrop is clicked or the goal is submitted.
- * @param props.onGoalCreated - Called with the created `Goal` after the
- * on-chain transaction succeeds. Not called for queued offline goals.
- * @returns The goal creation modal.
- */
 export default function GoalForm({
   open,
   onOpenChange,

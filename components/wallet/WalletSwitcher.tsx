@@ -16,59 +16,12 @@ import {
 import { useWallet } from "@/hooks/useWallet";
 import { startAccountStream } from "@/lib/stellar/accountStream";
 
-/**
- * Props for the {@link WalletSwitcher} component.
- */
 interface WalletSwitcherProps {
-  /** Additional CSS class names to apply to the root element. */
   className?: string;
-  /** Whether to display the XLM balance beneath the wallet address. Defaults to `true`. */
   showBalance?: boolean;
-  /**
-   * Visual style variant.
-   * - `"default"` – full-size card trigger with a dropdown list.
-   * - `"compact"` – smaller trigger suitable for sidebars or tight layouts.
-   * - `"minimal"` – a bare icon-and-address button, no dropdown chrome.
-   * @defaultValue "default"
-   */
   variant?: "default" | "compact" | "minimal";
 }
 
-/**
- * `WalletSwitcher` is a client-side dropdown component that lets users select,
- * rename, and manage multiple Stellar wallets linked to their account.
- *
- * It consumes the `useWallet` hook for wallet state and exposes controls for:
- * - Switching the active wallet (with live Horizon account-stream updates via
- *   {@link startAccountStream}).
- * - Inline renaming of wallet display names.
- * - Setting a wallet as the default.
- * - Removing a wallet (guarded so the last wallet cannot be deleted).
- * - Adding a new watch-only wallet by public key.
- * - Refreshing balances on demand.
- *
- * Keyboard navigation follows the ARIA `menu` / `menuitemradio` pattern:
- * `ArrowDown` / `ArrowUp` move focus between items, `Enter` / `Space` select,
- * and `Escape` closes the dropdown and returns focus to the trigger button.
- *
- * @param props - {@link WalletSwitcherProps}
- * @param props.className - Extra CSS classes forwarded to the wrapper element.
- * @param props.showBalance - Show the XLM balance in the trigger and list items.
- * @param props.variant - Layout variant: `"default"`, `"compact"`, or `"minimal"`.
- * @returns A React element containing the wallet switcher trigger and animated dropdown.
- *
- * @example
- * ```tsx
- * // Full-size variant in the sidebar
- * <WalletSwitcher showBalance variant="default" />
- *
- * // Compact variant in the top nav
- * <WalletSwitcher variant="compact" className="ml-auto" />
- *
- * // Minimal — just address + chevron, no balance
- * <WalletSwitcher variant="minimal" showBalance={false} />
- * ```
- */
 export default function WalletSwitcher({
   className = "",
   showBalance = true,

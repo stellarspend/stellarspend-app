@@ -167,6 +167,13 @@ export function describeBudgetChanges(
   return parts.length > 0 ? parts.join('; ') : 'Budget update';
 }
 
+/**
+ * Applies the fields from a pending change to a shared budget.
+ * Only the allowed budget fields are merged; the `updatedAt` timestamp is
+ * automatically refreshed to reflect the modification.
+ * @param budget - The shared budget to mutate in-place.
+ * @param change - The pending change containing the fields to apply.
+ */
 function applyPendingChange(budget: SharedBudget, change: PendingBudgetChange) {
   const allowedKeys = ['name', 'amount', 'category', 'asset', 'startDate', 'endDate'];
   for (const key of allowedKeys) {
@@ -249,6 +256,12 @@ export function subscribeToSharedBudgets(
 
 // ─── Data access ──────────────────────────────────────────────────────────
 
+/**
+ * Normalizes a raw on-chain shared budget record into a `SharedBudget`.
+ * Accepts both snake_case and camelCase keys and fills in defaults for missing fields.
+ * @param raw - The raw record returned by the contract or storage.
+ * @returns The normalized shared budget, or `null` if the record has no string `id`.
+ */
 function normalizeSharedBudget(raw: Record<string, unknown>): SharedBudget | null {
   const id = raw.id;
   if (typeof id !== 'string') return null;

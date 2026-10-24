@@ -25,8 +25,35 @@ const GOAL_MILESTONES = [25, 50, 75, 100] as const;
 const LARGE_PAYMENT_THRESHOLD_XLM = 1000;
 const LARGE_PAYMENT_THRESHOLD_USD = 500;
 
+/**
+ * Severity level of a notification trigger.
+ *
+ * @remarks
+ * Determines the visual style of the resulting toast or notification entry
+ * and controls user preference filtering.
+ *
+ * - `"success"` — a positive outcome, e.g. a goal milestone reached or a
+ *   large payment received.
+ * - `"error"` — a critical alert, e.g. a budget fully exhausted (100%).
+ * - `"info"` — a neutral informational alert, e.g. a budget at 80% or a
+ *   mid-progress goal milestone.
+ */
 export type NotificationType = "success" | "error" | "info";
 
+/**
+ * Describes a single notification event produced by a trigger check.
+ *
+ * Trigger objects are short-lived value objects created by functions such as
+ * {@link checkBudgetThresholds}, {@link checkGoalMilestones} and
+ * {@link checkLargePayments}, then forwarded to the notification context via
+ * {@link dispatchTriggers}.
+ *
+ * @property type - Severity level used to style the resulting notification.
+ * @property message - Human-readable description of the event shown to the user.
+ * @property eventKey - Unique, stable key used for de-duplication; prevents the
+ *   same event from producing more than one notification across checks.
+ * @property timestamp - Unix timestamp (ms) recording when the trigger was created.
+ */
 export interface NotificationTrigger {
   type: NotificationType;
   message: string;

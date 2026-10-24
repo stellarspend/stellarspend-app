@@ -1,49 +1,55 @@
 /* ── Footer ──────────────────────────────────────────────── */
+/* Outer footer bar: dark background with a faint gold line on top */
 .footer {
-  background-color: #080b18;
-  border-top: 1px solid rgba(232, 184, 75, 0.15);
-  padding: 3rem 1.5rem 0;
-  font-family: var(--font-sans);
-  color: #94a3b8;
+  background-color: #080b18; /* very dark navy */
+  border-top: 1px solid rgba(232, 184, 75, 0.15); /* subtle gold divider */
+  padding: 3rem 1.5rem 0; /* no bottom padding, the bottom bar adds its own */
+  font-family: var(--font-sans); /* font comes from a global CSS variable */
+  color: #94a3b8; /* default muted text color */
   font-size: 0.875rem;
 }
 
+/* Centered content grid holding brand, nav, social and newsletter columns */
 .footer__inner {
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 1200px; /* caps width on large screens */
+  margin: 0 auto; /* horizontally center */
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2.5rem 3rem;
+  grid-template-columns: 1fr 1fr; /* default: two columns (overridden in the media queries below) */
+  gap: 2.5rem 3rem; /* row gap, then column gap */
   padding-bottom: 2.5rem;
 }
 
 /* Brand */
+/* Logo and tagline stacked vertically */
 .footer__brand {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
+/* Logo row: icon and site name side by side */
 .footer__logo {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   font-size: 1.1rem;
   font-weight: 700;
-  color: #f1f5f9;
-  letter-spacing: -0.02em;
+  color: #f1f5f9; /* near-white so it stands out */
+  letter-spacing: -0.02em; /* slightly tighter for a bolder look */
 }
 
+/* Short line of text under the logo */
 .footer__tagline {
   color: #64748b;
   font-size: 0.8rem;
   line-height: 1.5;
-  margin: 0;
+  margin: 0; /* removes default paragraph margin */
 }
 
 /* Nav */
+/* Link list: strips bullets and stacks the links vertically */
 .footer__nav ul {
-  list-style: none;
+  list-style: none; /* removes bullet points */
   margin: 0;
   padding: 0;
   display: flex;
@@ -51,54 +57,62 @@
   gap: 0.6rem;
 }
 
+/* Individual footer link */
 .footer__link {
   color: #94a3b8;
-  text-decoration: none;
+  text-decoration: none; /* removes underline */
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  transition: color 0.15s ease;
-  border-radius: 3px;
+  gap: 0.3rem; /* space for the external-link icon */
+  transition: color 0.15s ease; /* smooth hover color change */
+  border-radius: 3px; /* softens the focus ring corners */
   padding: 1px 2px;
 }
 
+/* Hover: gold accent used across the site */
 .footer__link:hover {
   color: #e8b84b;
 }
 
+/* Keyboard focus ring (only shows for keyboard users, not mouse clicks) */
 .footer__link:focus-visible {
   outline: 2px solid #e8b84b;
   outline-offset: 3px;
   color: #e8b84b;
 }
 
+/* Small arrow icon shown on links that open an external site */
 .footer__ext-icon {
   font-size: 0.7rem;
-  opacity: 0.6;
+  opacity: 0.6; /* softened so it doesn't compete with the link text */
 }
 
 /* Social */
+/* Label and icon row stacked vertically */
 .footer__social {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
+/* Small uppercase heading shared by the social and newsletter blocks */
 .footer__social-label,
 .footer__newsletter-label {
   font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.1em; /* spaced-out caps are easier to read */
   color: #475569;
   font-weight: 600;
   margin: 0;
 }
 
+/* Row of social icon buttons */
 .footer__social-icons {
   display: flex;
   gap: 0.5rem;
 }
 
+/* Square icon button for each social link */
 .footer__social-btn {
   display: inline-flex;
   align-items: center;
@@ -106,22 +120,24 @@
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.04); /* subtle glass-like fill */
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: #94a3b8;
   text-decoration: none;
   transition:
     background 0.15s ease,
     color 0.15s ease,
-    border-color 0.15s ease;
+    border-color 0.15s ease; /* smooth hover animation */
 }
 
+/* Hover: gold highlight */
 .footer__social-btn:hover {
   background: rgba(232, 184, 75, 0.1);
   border-color: rgba(232, 184, 75, 0.3);
   color: #e8b84b;
 }
 
+/* Keyboard focus ring for accessibility */
 .footer__social-btn:focus-visible {
   outline: 2px solid #e8b84b;
   outline-offset: 3px;
@@ -129,60 +145,69 @@
 }
 
 /* Newsletter */
+/* Newsletter block: label above the form */
 .footer__newsletter {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
+/* Form: input row on top, error/success message below */
 .footer__newsletter-form {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
+/* Email input and submit button side by side */
 .footer__input-row {
   display: flex;
   gap: 0.5rem;
 }
 
+/* Email input field */
 .footer__input {
-  flex: 1;
+  flex: 1; /* takes all the space the button doesn't need */
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 0.55rem 0.85rem;
   font-size: 0.85rem;
   color: #f1f5f9;
-  font-family: var(--font-sans);
-  outline: none;
+  font-family: var(--font-sans); /* inputs don't inherit the font by default */
+  outline: none; /* default outline removed; a custom focus style is defined below */
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
-  min-width: 0;
+  min-width: 0; /* lets the input shrink inside a flex row instead of overflowing */
 }
 
+/* Placeholder text color */
 .footer__input::placeholder {
   color: #475569;
 }
 
+/* Focus: gold border plus a soft glow ring */
 .footer__input:focus {
   border-color: rgba(232, 184, 75, 0.5);
   box-shadow: 0 0 0 3px rgba(232, 184, 75, 0.12);
 }
 
+/* Error state: red border (class added when validation fails) */
 .footer__input--error {
   border-color: rgba(239, 68, 68, 0.6);
 }
 
+/* Error + focus: stronger red border and a red glow */
 .footer__input--error:focus {
   border-color: rgba(239, 68, 68, 0.8);
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
 }
 
+/* Subscribe button (solid gold) */
 .footer__submit {
   background: #e8b84b;
-  color: #1a0f00;
+  color: #1a0f00; /* dark brown text for contrast on gold */
   border: none;
   border-radius: 8px;
   padding: 0.55rem 1rem;
@@ -190,44 +215,50 @@
   font-weight: 700;
   font-family: var(--font-sans);
   cursor: pointer;
-  white-space: nowrap;
+  white-space: nowrap; /* keeps the label on one line */
   transition:
     background 0.15s ease,
     opacity 0.15s ease;
   letter-spacing: 0.01em;
 }
 
+/* Hover: lighter gold (skipped while the button is disabled) */
 .footer__submit:hover:not(:disabled) {
   background: #f0c75a;
 }
 
+/* Keyboard focus: outline plus a wider glow */
 .footer__submit:focus-visible {
   outline: 2px solid #e8b84b;
   outline-offset: 3px;
   box-shadow: 0 0 0 4px rgba(232, 184, 75, 0.25);
 }
 
+/* Disabled (e.g. while submitting): faded and not clickable */
 .footer__submit:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 
+/* Error message under the form */
 .footer__error {
-  color: #f87171;
+  color: #f87171; /* soft red */
   font-size: 0.78rem;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.3rem; /* space for an optional icon */
 }
 
+/* Success message under the form, fades in when it appears */
 .footer__success {
-  color: #4ade80;
+  color: #4ade80; /* soft green */
   font-size: 0.78rem;
   margin: 0;
   animation: footer-fade-in 0.2s ease;
 }
 
+/* Fade in while sliding down 4px into place */
 @keyframes footer-fade-in {
   from {
     opacity: 0;
@@ -240,36 +271,41 @@
 }
 
 /* Bottom bar */
+/* Copyright strip at the very bottom, separated by a thin line */
 .footer__bottom {
   max-width: 1200px;
   margin: 0 auto;
   padding: 1rem 0 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
-  color: #334155;
+  color: #334155; /* intentionally dim */
   font-size: 0.78rem;
 }
 
 .footer__bottom p {
-  margin: 0;
+  margin: 0; /* removes default paragraph margin */
 }
 
 /* ── Responsive ──────────────────────────────────────────── */
+/* Tablets and larger (768px and up): four columns */
 @media (min-width: 768px) {
   .footer__inner {
-    grid-template-columns: 1.5fr 1fr 1fr 1.8fr;
+    grid-template-columns: 1.5fr 1fr 1fr 1.8fr; /* brand, nav, social, newsletter; newsletter gets the most room */
   }
 }
 
+/* Phones (767px or less): everything stacks in one column */
 @media (max-width: 767px) {
   .footer__inner {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
 
+  /* Input and button stack so each gets full width */
   .footer__input-row {
     flex-direction: column;
   }
 
+  /* Full-width button is easier to tap on a phone */
   .footer__submit {
     width: 100%;
     padding: 0.65rem;

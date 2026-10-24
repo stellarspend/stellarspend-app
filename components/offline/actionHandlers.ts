@@ -350,8 +350,25 @@ export const VERSIONED_UPDATE_TYPES = [
   "UPDATE_SPLIT_BILL",
 ] as const;
 
+/**
+ * Union of the action types whose payloads update an existing, versioned
+ * record and therefore take part in three-way conflict detection.
+ *
+ * Derived from {@link VERSIONED_UPDATE_TYPES} so the runtime list and the
+ * compile-time type can never drift apart.
+ */
 export type VersionedUpdateType = (typeof VERSIONED_UPDATE_TYPES)[number];
 
+/**
+ * Narrows an arbitrary action type string to a {@link VersionedUpdateType}.
+ *
+ * Used by the replay loop to decide whether an action should go through
+ * versioned conflict detection or be skipped.
+ *
+ * @param type - The action type string to test.
+ * @returns `true` (and narrows the type) when `type` is a versioned update
+ *   action, `false` otherwise.
+ */
 export function isVersionedUpdateType(type: string): type is VersionedUpdateType {
   return (VERSIONED_UPDATE_TYPES as readonly string[]).includes(type);
 }
