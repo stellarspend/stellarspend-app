@@ -16,6 +16,13 @@ function formatDate(unixSeconds: number): string {
   return date.toISOString().split('T')[0];
 }
 
+/**
+ * Exports analytics data to a CSV file and triggers a browser download.
+ *
+ * @param data - The analytics data to export, including trend and category breakdown.
+ * @param filename - The target CSV filename for download.
+ * @returns void
+ */
 export function exportToCsv(data: AnalyticsExportData, filename: string): void {
   const rows: string[] = [];
 
