@@ -56,21 +56,6 @@ interface NotificationContextType {
   preferences: NotificationPreferences;
   updatePreferences: (prefs: Partial<NotificationPreferences>) => void;
 }
-
-
-
-interface NotificationContextType {
-  notifications: Notification[];
-  toasts: Notification[];
-  addNotification: (type: NotificationType, message: string) => void;
-  markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
-  removeNotification: (id: string) => void;
-  removeToast: (id: string) => void;
-  clearAll: () => void;
-  preferences: NotificationPreferences;
-  updatePreferences: (prefs: Partial<NotificationPreferences>) => void;
-}
 /**
  * React context that manages in-app notifications and toast messages.
  *
@@ -112,6 +97,16 @@ function loadNotifications(): Notification[] {
   }
 }
 
+/**
+ * Loads the user's notification preferences from localStorage.
+ *
+ * Returns the stored preferences when available and parsable.
+ * If running outside the browser, no saved preferences exist, or
+ * parsing fails, it falls back to enabling all notification types.
+ *
+ * @returns The resolved notification preferences with `success`, `error`,
+ *   and `info` flags.
+ */
 function loadPreferences(): NotificationPreferences {
   if (typeof window === "undefined") {
     return {
