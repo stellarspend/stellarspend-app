@@ -65,6 +65,19 @@ interface PendingApprovalCardProps {
   isSubmitting?: boolean;
 }
 
+/**
+ * Renders a pending budget change card with approval progress, co-owner
+ * signatures, and approve/reject controls for eligible members.
+ *
+ * @param props - Component props.
+ * @param props.change - The pending budget change to display.
+ * @param props.budget - The shared budget the change belongs to.
+ * @param props.currentUser - The connected wallet address, or null when disconnected.
+ * @param props.onApprove - Callback invoked with the change id when approving.
+ * @param props.onReject - Callback invoked with the change id when rejecting.
+ * @param props.isSubmitting - Whether an approval or rejection is in flight.
+ * @returns The rendered pending approval card.
+ */
 export default function PendingApprovalCard({
   change,
   budget,
@@ -279,6 +292,13 @@ export default function PendingApprovalCard({
   );
 }
 
+/**
+ * Determines whether an address is a member (owner or co-owner) of a budget.
+ *
+ * @param budget - The shared budget to check membership against.
+ * @param address - The wallet address to look up.
+ * @returns True when the address is the owner or a co-owner of the budget.
+ */
 function isMemberOf(budget: SharedBudget, address: string): boolean {
   return budget.ownerAddress === address || budget.coOwners.includes(address);
 }
