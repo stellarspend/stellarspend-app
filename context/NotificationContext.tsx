@@ -56,21 +56,6 @@ interface NotificationContextType {
   preferences: NotificationPreferences;
   updatePreferences: (prefs: Partial<NotificationPreferences>) => void;
 }
-
-
-
-interface NotificationContextType {
-  notifications: Notification[];
-  toasts: Notification[];
-  addNotification: (type: NotificationType, message: string) => void;
-  markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
-  removeNotification: (id: string) => void;
-  removeToast: (id: string) => void;
-  clearAll: () => void;
-  preferences: NotificationPreferences;
-  updatePreferences: (prefs: Partial<NotificationPreferences>) => void;
-}
 /**
  * React context that manages in-app notifications and toast messages.
  *
@@ -112,6 +97,26 @@ function loadNotifications(): Notification[] {
   }
 }
 
+/**
+ * Loads the user's notification preferences from localStorage.
+ *
+ * Reads the value stored under the `stellarspend_notification_preferences`
+ * key and parses it as JSON. Returns the stored preferences when available
+ * and parsable.
+ *
+ * Fallback behavior: if running outside the browser (no `window`), if no
+ * saved preferences exist, or if parsing fails, it falls back to enabling
+ * all notification types (`success`, `error`, and `info` all `true`).
+ *
+ * Note: the parsed value is trusted as-is after `JSON.parse`; it is not
+ * validated field-by-field, so missing keys in a stored object will be
+ * `undefined` at read time.
+ *
+ * @returns The resolved notification preferences with `success`, `error`,
+ *   and `info` flags. Falls back to all types enabled when running outside
+ *   the browser, when no preferences are stored, or when stored data cannot
+ *   be parsed.
+ */
 function loadPreferences(): NotificationPreferences {
   if (typeof window === "undefined") {
     return {
