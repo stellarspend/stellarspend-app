@@ -41,6 +41,11 @@ import {
   fetchTransactions as horizonFetchTransactions,
   fetchRecentTransactions as horizonFetchRecentTransactions,
 } from './horizon';
+import {
+  convertCurrency,
+  fetchAssetPrice,
+  getFallbackOracleQuotes,
+} from '@/lib/stellar/priceOracle';
 
 interface LocalWallet {
   id: string;
@@ -91,6 +96,8 @@ export interface AssetBalance {
   balance: string;
   usdValue: number;
   change24h: number; // percent
+  isStale?: boolean;
+  rateUpdatedAt?: string;
 }
 
 /**
@@ -99,11 +106,13 @@ export interface AssetBalance {
  * @property balances - Per-asset balance entries (XLM, USDC, EURC) with USD valuations.
  * @property totalUsd - Combined portfolio value across all assets, in USD.
  * @property updatedAt - ISO-8601 timestamp of when the snapshot was last refreshed.
+ * @property oracleStale - True when one or more oracle rates are older than the staleness threshold.
  */
 export interface WalletBalances {
   balances: AssetBalance[];
   totalUsd: number;
   updatedAt: string;
+  oracleStale?: boolean;
 }
 
 /**
@@ -245,14 +254,38 @@ export const fetchRecentTransactions: (
 
 // ─── Mock Data ─────────────────────────────────────────────────────────────
 
+const INITIAL_ORACLE_QUOTES = getFallbackOracleQuotes();
+
 const MOCK_BALANCES: WalletBalances = {
   balances: [
-    { asset: "XLM", balance: "4 210.50", usdValue: 631.58, change24h: +2.4 },
-    { asset: "USDC", balance: "1 085.20", usdValue: 1085.2, change24h: +0.01 },
-    { asset: "EURC", balance: "320.00", usdValue: 347.2, change24h: -0.31 },
+    {
+      asset: "XLM",
+      balance: "4 210.50",
+      usdValue: convertCurrency("4 210.50", "XLM", "USDC", INITIAL_ORACLE_QUOTES),
+      change24h: INITIAL_ORACLE_QUOTES.XLM.change24h,
+      isStale: INITIAL_ORACLE_QUOTES.XLM.isStale,
+      rateUpdatedAt: INITIAL_ORACLE_QUOTES.XLM.updatedAt,
+    },
+    {
+      asset: "USDC",
+      balance: "1 085.20",
+      usdValue: convertCurrency("1 085.20", "USDC", "USDC", INITIAL_ORACLE_QUOTES),
+      change24h: INITIAL_ORACLE_QUOTES.USDC.change24h,
+      isStale: INITIAL_ORACLE_QUOTES.USDC.isStale,
+      rateUpdatedAt: INITIAL_ORACLE_QUOTES.USDC.updatedAt,
+    },
+    {
+      asset: "EURC",
+      balance: "320.00",
+      usdValue: convertCurrency("320.00", "EURC", "USDC", INITIAL_ORACLE_QUOTES),
+      change24h: INITIAL_ORACLE_QUOTES.EURC.change24h,
+      isStale: INITIAL_ORACLE_QUOTES.EURC.isStale,
+      rateUpdatedAt: INITIAL_ORACLE_QUOTES.EURC.updatedAt,
+    },
   ],
   totalUsd: 2063.98,
   updatedAt: new Date().toISOString(),
+  oracleStale: false,
 };
 
 export const MOCK_TRANSACTIONS: Transaction[] = [
@@ -758,10 +791,18 @@ export async function sendPayment(
       maximumFractionDigits: 2,
     }).replace(/,/g, ' '); // Match space format
     
-    // Update usdValue
-    const conversionRates = { XLM: 0.15, USDC: 1.0, EURC: 1.08 };
-    MOCK_BALANCES.balances[balIndex].usdValue = nextVal * conversionRates[asset];
-    MOCK_BALANCES.totalUsd = MOCK_BALANCES.balances.reduce((acc, curr) => acc + curr.usdValue, 0);
+    // Update usdValue via oracle quote
+    const quote = await fetchAssetPrice(asset);
+    MOCK_BALANCES.balances[balIndex].usdValue = Number(
+      (nextVal * quote.priceUsd).toFixed(2)
+    );
+    MOCK_BALANCES.balances[balIndex].change24h = quote.change24h;
+    MOCK_BALANCES.balances[balIndex].isStale = quote.isStale;
+    MOCK_BALANCES.balances[balIndex].rateUpdatedAt = quote.updatedAt;
+    MOCK_BALANCES.totalUsd = Number(
+      MOCK_BALANCES.balances.reduce((acc, curr) => acc + curr.usdValue, 0).toFixed(2)
+    );
+    MOCK_BALANCES.oracleStale = MOCK_BALANCES.balances.some((b) => Boolean(b.isStale));
   }
 
   // Create new transaction object

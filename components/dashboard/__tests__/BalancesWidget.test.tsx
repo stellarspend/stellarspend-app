@@ -57,5 +57,34 @@ describe("BalancesWidget", () => {
     });
 
     expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByTestId("oracle-stale-banner")).toBeNull();
+  });
+
+  it("displays a staleness warning banner and badge when oracle rates are delayed", async () => {
+    mockedFetchBalances.mockResolvedValue({
+      totalUsd: 150,
+      updatedAt: "2024-05-20T14:30:00Z",
+      oracleStale: true,
+      balances: [
+        {
+          asset: "XLM",
+          balance: "1000.00",
+          usdValue: 150,
+          change24h: -1.5,
+          isStale: true,
+        },
+      ],
+    });
+
+    render(<BalancesWidget />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("oracle-stale-banner")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("oracle-stale-banner")).toHaveTextContent(
+      /rates may be delayed/i
+    );
+    expect(screen.getByTestId("asset-stale-badge")).toHaveTextContent("Delayed");
   });
 });

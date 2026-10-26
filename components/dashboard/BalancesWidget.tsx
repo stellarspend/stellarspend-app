@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { RefreshCw, TrendingUp, TrendingDown } from "lucide-react";
+import { RefreshCw, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
 import {
   fetchBalances,
   type AssetBalance,
@@ -97,9 +97,19 @@ function AssetCard({ asset, index }: { asset: AssetBalance; index: number }) {
         <p className="text-white text-xl font-black leading-tight">
           {asset.balance}
         </p>
-        <p className="text-[#7a8aaa] text-xs mt-0.5">
-          ≈ $
-          {asset.usdValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+        <p className="text-[#7a8aaa] text-xs mt-0.5 flex items-center gap-1.5">
+          <span>
+            ≈ $
+            {asset.usdValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </span>
+          {asset.isStale && (
+            <span
+              data-testid="asset-stale-badge"
+              className="px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[9px] font-bold uppercase tracking-wider"
+            >
+              Delayed
+            </span>
+          )}
         </p>
       </div>
     </motion.div>
@@ -280,6 +290,16 @@ export default function BalancesWidget() {
       </div>
 
       {/* Total banner */}
+      {data && (data.oracleStale || data.balances.some((b) => b.isStale)) && (
+        <div
+          data-testid="oracle-stale-banner"
+          role="alert"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold"
+        >
+          <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+          <span>Rates may be delayed — oracle price feed exceeds staleness threshold.</span>
+        </div>
+      )}
       {data ? (
         <motion.div
           initial={{ opacity: 0 }}

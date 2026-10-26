@@ -14,6 +14,7 @@
 
 import { Horizon } from "@stellar/stellar-sdk";
 import { getConnectedPublicKey, type WalletBalances } from "./client";
+import { fetchAllAssetPrices } from "@/lib/stellar/priceOracle";
 
 // ── Network configuration ────────────────────────────────────────────────────
 
@@ -44,9 +45,6 @@ export function getHorizon(): InstanceType<typeof Horizon.Server> {
 function parseAmount(value: string): string {
   return Number(value.replace(/\s/g, "")).toFixed(2);
 }
-
-/** Approximate USD conversion rates. Production should use Stellar DEX / CoinGecko. */
-const USD_RATES: Record<string, number> = { XLM: 0.15, USDC: 1.0, EURC: 1.08 };
 
 const SUPPORTED_ASSETS = new Set(["USDC", "EURC"]);
 
@@ -122,17 +120,23 @@ export async function fetchBalancesForAddress(
   }
 
   try {
-    const account = await getHorizon().loadAccount(publicKey);
+    const [account, oracleQuotes] = await Promise.all([
+      getHorizon().loadAccount(publicKey),
+      fetchAllAssetPrices({ readerPublicKey: publicKey }),
+    ]);
     const balances: WalletBalances["balances"] = [];
 
     for (const line of account.balances as BalanceLine[]) {
       if (line.asset_type === "native") {
         const xlm = parseAmount(line.balance);
+        const quote = oracleQuotes.XLM;
         balances.push({
           asset: "XLM",
           balance: xlm,
-          usdValue: +(parseFloat(xlm) * USD_RATES.XLM).toFixed(2),
-          change24h: 0,
+          usdValue: +(parseFloat(xlm) * quote.priceUsd).toFixed(2),
+          change24h: quote.change24h,
+          isStale: quote.isStale,
+          rateUpdatedAt: quote.updatedAt,
         });
       } else if (
         "asset_code" in line &&
@@ -140,19 +144,25 @@ export async function fetchBalancesForAddress(
       ) {
         const asset = line.asset_code as "USDC" | "EURC";
         const bal = parseAmount(line.balance);
+        const quote = oracleQuotes[asset];
         balances.push({
           asset,
           balance: bal,
-          usdValue: +(parseFloat(bal) * USD_RATES[asset]).toFixed(2),
-          change24h: 0,
+          usdValue: +(parseFloat(bal) * quote.priceUsd).toFixed(2),
+          change24h: quote.change24h,
+          isStale: quote.isStale,
+          rateUpdatedAt: quote.updatedAt,
         });
       }
     }
 
+    const oracleStale = balances.some((b) => Boolean(b.isStale));
+
     return {
       balances,
-      totalUsd: balances.reduce((s, b) => s + b.usdValue, 0),
+      totalUsd: +balances.reduce((s, b) => s + b.usdValue, 0).toFixed(2),
       updatedAt: new Date().toISOString(),
+      oracleStale,
     };
   } catch (err) {
     console.error("Horizon fetchBalances failed:", err);
