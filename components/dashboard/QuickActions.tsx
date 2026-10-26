@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Download, PieChart, Target, Users, X, Loader2, AlertCircle } from "lucide-react";
 import SendPaymentModal from "../transactions/SendPaymentModal";
@@ -334,6 +334,7 @@ const ACTIONS = [
     id: "send",
     label: "Send",
     ariaLabel: "Send payment",
+    shortcut: "S",
     icon: Send,
     color: "#e8b84b",
     bg: "bg-[#e8b84b]/10",
@@ -344,6 +345,7 @@ const ACTIONS = [
     id: "receive",
     label: "Receive",
     ariaLabel: "Receive payment",
+    shortcut: "R",
     icon: Download,
     color: "#4ade80",
     bg: "bg-[#4ade80]/10",
@@ -354,6 +356,7 @@ const ACTIONS = [
     id: "budget",
     label: "New Budget",
     ariaLabel: "Create new budget",
+    shortcut: "B",
     icon: PieChart,
     color: "#4aa9e8",
     bg: "bg-[#4aa9e8]/10",
@@ -364,6 +367,7 @@ const ACTIONS = [
     id: "goal",
     label: "New Goal",
     ariaLabel: "Create new savings goal",
+    shortcut: "G",
     icon: Target,
     color: "#a78bfa",
     bg: "bg-[#a78bfa]/10",
@@ -371,6 +375,15 @@ const ACTIONS = [
     hover: "hover:border-[#a78bfa]/50 hover:bg-[#a78bfa]/15",
   },
 ] as const;
+
+const SPLIT_SHORTCUT = "X";
+
+function isEditableElement(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  const tagName = target.tagName.toUpperCase();
+  return tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT";
+}
 
 interface QuickActionsProps {
   /**
@@ -391,15 +404,62 @@ interface QuickActionsProps {
  */
 export default function QuickActions({ onSplitBill }: QuickActionsProps) {
   const [openModal, setOpenModal] = useState<ModalId>(null);
+  const openModalRef = useRef<ModalId>(null);
+
+  const changeModal = useCallback((next: ModalId) => {
+    openModalRef.current = next;
+    setOpenModal(next);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Never intercept browser modifier shortcuts (Ctrl+R, Cmd+S, Alt+..., etc.)
+      if (event.metaKey || event.ctrlKey || event.altKey || event.repeat) {
+        return;
+      }
+
+      if (event.key === "Escape" && openModalRef.current !== null) {
+        event.preventDefault();
+        changeModal(null);
+        return;
+      }
+
+      // Do not trigger quick actions while typing in inputs or when a modal is already open
+      if (openModalRef.current !== null || isEditableElement(event.target)) {
+        return;
+      }
+
+      const key = event.key.toUpperCase();
+      const matched = ACTIONS.find((action) => action.shortcut === key);
+      if (matched) {
+        event.preventDefault();
+        changeModal(matched.id as ModalId);
+        return;
+      }
+
+      if (key === SPLIT_SHORTCUT && onSplitBill) {
+        event.preventDefault();
+        onSplitBill();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [changeModal, onSplitBill]);
 
   return (
     <>
       <div className="rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-sm p-6">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-1 h-5 rounded-full bg-[#e8b84b]" />
-          <h2 className="text-sm font-black text-white uppercase tracking-[0.15em]">
-            Quick Actions
-          </h2>
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-5 rounded-full bg-[#e8b84b]" />
+            <h2 className="text-sm font-black text-white uppercase tracking-[0.15em]">
+              Quick Actions
+            </h2>
+          </div>
+          <span className="text-[10px] font-mono text-[#7a8aaa] hidden sm:inline">
+            Shortcuts: S · R · B · G · X
+          </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {ACTIONS.map((action, i) => (
@@ -407,14 +467,22 @@ export default function QuickActions({ onSplitBill }: QuickActionsProps) {
               key={action.id}
               id={`quick-action-${action.id}`}
               aria-label={action.ariaLabel}
-              onClick={() => setOpenModal(action.id as ModalId)}
+              aria-keyshortcuts={action.shortcut}
+              onClick={() => changeModal(action.id as ModalId)}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.07 }}
               whileHover={{ y: -3 }}
               whileTap={{ scale: 0.96 }}
-              className={`flex flex-col items-center gap-3 p-5 rounded-2xl border ${action.bg} ${action.border} ${action.hover} transition-all duration-200 group`}
+              className={`relative flex flex-col items-center gap-3 p-5 rounded-2xl border ${action.bg} ${action.border} ${action.hover} transition-all duration-200 group`}
             >
+              <kbd
+                data-testid={`shortcut-hint-${action.id}`}
+                aria-hidden="true"
+                className="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-mono font-bold text-[#7a8aaa] group-hover:text-white group-hover:border-white/25 transition-colors"
+              >
+                {action.shortcut}
+              </kbd>
               <div
                 className={`p-3 rounded-xl ${action.bg} border ${action.border}`}
               >
@@ -431,14 +499,22 @@ export default function QuickActions({ onSplitBill }: QuickActionsProps) {
           <motion.button
             id="quick-action-split"
             aria-label="Split a bill"
+            aria-keyshortcuts={SPLIT_SHORTCUT}
             onClick={() => onSplitBill?.()}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: ACTIONS.length * 0.07 }}
             whileHover={{ y: -3 }}
             whileTap={{ scale: 0.96 }}
-            className="flex flex-col items-center gap-3 p-5 rounded-2xl border bg-[#fb7185]/10 border-[#fb7185]/20 hover:border-[#fb7185]/50 hover:bg-[#fb7185]/15 transition-all duration-200 group"
+            className="relative flex flex-col items-center gap-3 p-5 rounded-2xl border bg-[#fb7185]/10 border-[#fb7185]/20 hover:border-[#fb7185]/50 hover:bg-[#fb7185]/15 transition-all duration-200 group"
           >
+            <kbd
+              data-testid="shortcut-hint-split"
+              aria-hidden="true"
+              className="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-mono font-bold text-[#7a8aaa] group-hover:text-white group-hover:border-white/25 transition-colors"
+            >
+              {SPLIT_SHORTCUT}
+            </kbd>
             <div className="p-3 rounded-xl bg-[#fb7185]/10 border border-[#fb7185]/20">
               <Users className="w-5 h-5" style={{ color: "#fb7185" }} />
             </div>
@@ -451,16 +527,16 @@ export default function QuickActions({ onSplitBill }: QuickActionsProps) {
 
       <AnimatePresence>
         {openModal === "send" && (
-          <SendPaymentModal onClose={() => setOpenModal(null)} />
+          <SendPaymentModal key="send" onClose={() => changeModal(null)} />
         )}
         {openModal === "receive" && (
-          <ReceiveModal onClose={() => setOpenModal(null)} />
+          <ReceiveModal key="receive" onClose={() => changeModal(null)} />
         )}
         {openModal === "budget" && (
-          <BudgetModal onClose={() => setOpenModal(null)} />
+          <BudgetModal key="budget" onClose={() => changeModal(null)} />
         )}
         {openModal === "goal" && (
-          <GoalModal onClose={() => setOpenModal(null)} />
+          <GoalModal key="goal" onClose={() => changeModal(null)} />
         )}
       </AnimatePresence>
     </>
