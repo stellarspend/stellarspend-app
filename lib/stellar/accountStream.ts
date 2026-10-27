@@ -102,11 +102,20 @@ export type AccountStreamEvent =
   | AccountStreamOperationEvent
   | AccountStreamPaymentEvent;
 
+/**
+ * Snapshot of the Horizon account stream connection state.
+ * @property status - Current lifecycle status of the stream (`"idle"`, `"connecting"`, `"connected"`, `"reconnecting"`, `"disconnected"`, or `"error"`).
+ * @property account - Stellar public key currently being watched, or `null` when no stream is active.
+ */
 export interface AccountStreamState {
   status: AccountStreamStatus;
   account: string | null;
 }
 
+/**
+ * Callback invoked whenever the account stream emits an operation or payment event.
+ * @param event - The streamed operation or payment event payload.
+ */
 export type AccountStreamListener = (event: AccountStreamEvent) => void;
 /**
  * Callback invoked with the latest stream state whenever the account stream
