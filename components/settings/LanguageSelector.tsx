@@ -23,11 +23,32 @@ const languages: LanguageOption[] = [
 interface LanguageSelectorProps {
   variant?: "dropdown" | "list";
   className?: string;
+  /** Overrides the default `data-testid` on the list wrapper ("language-list"). */
+  listTestId?: string;
 }
 
+/**
+ * A UI component that allows users to select their preferred interface language.
+ *
+ * Supports two display variants:
+ * - `"dropdown"` (default): a compact `<select>` element with a globe icon, suitable
+ *   for navigation bars or toolbars.
+ * - `"list"`: a grid of animated buttons, one per supported language, with the
+ *   currently active language highlighted. Intended for settings pages.
+ *
+ * The selected language is read from and persisted via the {@link useI18n} context.
+ * Right-to-left layout is applied automatically when Arabic is selected.
+ *
+ * @param props - Component props.
+ * @param props.variant - Display style: `"dropdown"` for a compact select, or `"list"`
+ *   for an expanded button grid. Defaults to `"dropdown"`.
+ * @param props.className - Optional additional CSS class names to apply to the root element.
+ * @returns A React element rendering the language selector in the requested variant.
+ */
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   variant = "dropdown",
   className = "",
+  listTestId = "language-list",
 }) => {
   const { language, changeLanguage, isRTL } = useI18n();
 
@@ -41,7 +62,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   if (variant === "list") {
     return (
-      <div className={`space-y-2 ${className}`}>
+      <div className={`space-y-2 ${className}`} data-testid={listTestId}>
         <div className="flex items-center gap-2 text-[#e8b84b] mb-4">
           <Globe className="w-5 h-5" />
           <h3 className="text-lg font-semibold">Language Preferences</h3>
@@ -55,9 +76,11 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             <motion.button
               key={lang.code}
               onClick={() => handleLanguageChange(lang.code)}
+              aria-current={language === lang.code ? "true" : undefined}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               lang={lang.code}
+              data-testid={`language-btn-${lang.code}`}
               dir={lang.code === "ar" ? "rtl" : "ltr"}
               className={`relative inline-flex items-center gap-3 p-4 rounded-xl border transition-all duration-200 ${
                 language === lang.code

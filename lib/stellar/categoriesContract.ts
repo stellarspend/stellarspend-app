@@ -32,6 +32,7 @@ export const STANDARD_CATEGORIES = [
   'Other',
 ] as const;
 
+/** A category label from the standard category picker list. */
 export type StandardCategory = (typeof STANDARD_CATEGORIES)[number];
 
 /** Deterministic badge color per category, keyed by lowercase label so custom
@@ -48,6 +49,12 @@ export const CATEGORY_COLORS: Record<string, { bg: string; text: string; border:
   default: { bg: 'bg-[#f97316]/10', text: 'text-[#f97316]', border: 'border-[#f97316]/20' },
 };
 
+/**
+ * Resolve the badge colors for a category label.
+ *
+ * @param category - The category label; matched case-insensitively.
+ * @returns The themed `{ bg, text, border }` classes, or `CATEGORY_COLORS.default` when unmatched.
+ */
 export function getCategoryColor(category: string) {
   return CATEGORY_COLORS[category.toLowerCase()] ?? CATEGORY_COLORS.default;
 }
@@ -56,6 +63,10 @@ export function getCategoryColor(category: string) {
 // localStorage fallback (used when the contract isn't deployed yet)
 // ---------------------------------------------------------------------------
 
+/**
+ * Reads locally stored transaction categories for the offline/mock fallback.
+ * @returns A map of transaction ID to category label, or an empty object when none are stored.
+ */
 function getLocalCategories(): Record<string, string> {
   if (typeof window === 'undefined') return {};
   const stored = localStorage.getItem(LOCAL_CATEGORIES_KEY);
@@ -68,6 +79,11 @@ function getLocalCategories(): Record<string, string> {
   }
 }
 
+/**
+ * Stores a transaction's category in localStorage for the offline/mock fallback.
+ * @param transactionId - The transaction to tag.
+ * @param category - The category label to assign.
+ */
 function setLocalCategory(transactionId: string, category: string) {
   if (typeof window === 'undefined') return;
   const all = getLocalCategories();
@@ -79,7 +95,13 @@ function setLocalCategory(transactionId: string, category: string) {
 // Public API
 // ---------------------------------------------------------------------------
 
-/** Fetches the category currently assigned to a transaction, or null if unset. */
+/**
+ * Fetches the category currently assigned to a transaction, or null if unset.
+ *
+ * @param publicKey - The Stellar public key used to simulate the contract read.
+ * @param transactionId - The transaction whose category is requested.
+ * @returns The stored category label, or `null` when none is assigned.
+ */
 export async function getCategory(
   publicKey: string,
   transactionId: string,
@@ -101,7 +123,13 @@ export async function getCategory(
   }
 }
 
-/** Fetches categories for multiple transactions at once (used to render list badges). */
+/**
+ * Fetches categories for multiple transactions at once (used to render list badges).
+ *
+ * @param publicKey - The Stellar public key used to simulate the contract reads.
+ * @param transactionIds - The transactions to look up.
+ * @returns A map of transaction id to category, omitting transactions that have none.
+ */
 export async function getCategoriesForTransactions(
   publicKey: string,
   transactionIds: string[],
@@ -132,7 +160,14 @@ export async function getCategoriesForTransactions(
   }, {});
 }
 
-/** Assigns (or reassigns) a spending category to a transaction. */
+/**
+ * Assigns (or reassigns) a spending category to a transaction.
+ *
+ * @param publicKey - The Stellar public key that signs the contract write.
+ * @param transactionId - The transaction to tag.
+ * @param category - The category label to store.
+ * @returns A promise that resolves once the contract write (or the local fallback) completes.
+ */
 export async function setCategory(
   publicKey: string,
   transactionId: string,

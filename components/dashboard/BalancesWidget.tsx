@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { RefreshCw, TrendingUp, TrendingDown } from "lucide-react";
+import { RefreshCw, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
 import {
   fetchBalances,
   type AssetBalance,
@@ -42,6 +42,13 @@ const ASSET_CONFIG: Record<
 
 // ─── Single asset card ────────────────────────────────────────────────────
 
+/**
+ * Renders an animated balance card for a single wallet asset.
+ *
+ * @param asset The asset balance and its 24-hour change and USD value.
+ * @param index The card's position, used to stagger its entrance animation.
+ * @returns The animated asset balance card.
+ */
 function AssetCard({ asset, index }: { asset: AssetBalance; index: number }) {
   const cfg = ASSET_CONFIG[asset.asset] ?? ASSET_CONFIG.XLM;
   const isUp = asset.change24h >= 0;
@@ -69,6 +76,7 @@ function AssetCard({ asset, index }: { asset: AssetBalance; index: number }) {
           {cfg.symbol}
         </div>
         <span
+          aria-label={`24h change: ${isUp ? "+" : ""}${asset.change24h.toFixed(2)}%`}
           className={`flex items-center gap-1 text-xs font-bold ${isUp ? "text-[#4ade80]" : "text-red-400"}`}
         >
           {isUp ? (
@@ -89,9 +97,19 @@ function AssetCard({ asset, index }: { asset: AssetBalance; index: number }) {
         <p className="text-white text-xl font-black leading-tight">
           {asset.balance}
         </p>
-        <p className="text-[#7a8aaa] text-xs mt-0.5">
-          ≈ $
-          {asset.usdValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+        <p className="text-[#7a8aaa] text-xs mt-0.5 flex items-center gap-1.5">
+          <span>
+            ≈ $
+            {asset.usdValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </span>
+          {asset.isStale && (
+            <span
+              data-testid="asset-stale-badge"
+              className="px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[9px] font-bold uppercase tracking-wider"
+            >
+              Delayed
+            </span>
+          )}
         </p>
       </div>
     </motion.div>
@@ -100,10 +118,16 @@ function AssetCard({ asset, index }: { asset: AssetBalance; index: number }) {
 
 // ─── Skeleton loader ──────────────────────────────────────────────────────
 
+/**
+ * Renders a pulsing placeholder while an asset balance is loading.
+ *
+ * @returns The loading skeleton for an asset balance card.
+ */
 function SkeletonCard() {
   return (
     <div
       data-testid="balance-skeleton"
+      aria-hidden="true"
       className="flex flex-col gap-4 p-5 rounded-2xl border border-white/10 bg-white/[0.025] animate-pulse"
     >
       {/* Header row - matches AssetCard header */}
@@ -124,6 +148,14 @@ function SkeletonCard() {
 
 // ─── Balances Widget ──────────────────────────────────────────────────────
 
+/**
+ * Displays the wallet's total portfolio value and individual asset balances.
+ *
+ * Fetches balances on mount, supports manual refresh, and refreshes in response
+ * to account-stream activity while showing loading placeholders and live status.
+ *
+ * @returns The wallet balances dashboard widget.
+ */
 export default function BalancesWidget() {
   const [data, setData] = useState<WalletBalances | null>(null);
   const [loading, setLoading] = useState(true);
@@ -258,6 +290,16 @@ export default function BalancesWidget() {
       </div>
 
       {/* Total banner */}
+      {data && (data.oracleStale || data.balances.some((b) => b.isStale)) && (
+        <div
+          data-testid="oracle-stale-banner"
+          role="alert"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold"
+        >
+          <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+          <span>Rates may be delayed — oracle price feed exceeds staleness threshold.</span>
+        </div>
+      )}
       {data ? (
         <motion.div
           initial={{ opacity: 0 }}

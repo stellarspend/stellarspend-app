@@ -13,6 +13,12 @@ interface CardErrorBoundaryState {
   error: Error | null;
 }
 
+/**
+ * Catches rendering errors within a dashboard card and displays a recoverable
+ * fallback instead of allowing the error to break the surrounding dashboard.
+ *
+ * @param props The card content and optional title shown in the fallback.
+ */
 export default class CardErrorBoundary extends React.Component<
   CardErrorBoundaryProps,
   CardErrorBoundaryState
@@ -22,6 +28,12 @@ export default class CardErrorBoundary extends React.Component<
     this.state = { hasError: false, error: null };
   }
 
+  /**
+   * Updates the boundary state when a descendant throws during rendering.
+   *
+   * @param error The error thrown by the descendant component.
+   * @returns The error state used to render the fallback UI.
+   */
   static getDerivedStateFromError(error: Error): CardErrorBoundaryState {
     return { hasError: true, error };
   }

@@ -8,13 +8,16 @@ import {
   TransactionBuilder,
 } from "@stellar/stellar-sdk";
 
+/** Asset codes supported for payments. */
 export type PaymentAsset = "XLM" | "USDC" | "EURC";
 
+/** Issuer public keys for the non-native payment assets. */
 export interface PaymentAssetIssuers {
   USDC?: string;
   EURC?: string;
 }
 
+/** Options for building a Stellar payment transaction. */
 export interface BuildPaymentTransactionOptions {
   source: string;
   destination: string;
@@ -33,12 +36,23 @@ const DEFAULT_ASSET_ISSUERS: PaymentAssetIssuers = {
   EURC: process.env.NEXT_PUBLIC_STELLAR_EURC_ISSUER,
 };
 
+/**
+ * Validates that an address is a Stellar Ed25519 public key.
+ * @param address - The address to validate.
+ * @param label - Human-readable field name used in the error message.
+ * @throws {Error} If the address is not a valid Stellar public key.
+ */
 function validatePublicKey(address: string, label: string) {
   if (!StrKey.isValidEd25519PublicKey(address)) {
     throw new Error(`${label} must be a valid Stellar public key.`);
   }
 }
 
+/**
+ * Validates that a payment amount is positive and has at most 7 decimal places.
+ * @param amount - The amount to validate.
+ * @throws {Error} If the amount is non-positive or has more than 7 decimal places.
+ */
 function validateAmount(amount: string) {
   if (!/^(?:0|[1-9]\d*)(?:\.\d{1,7})?$/.test(amount) || Number(amount) <= 0) {
     throw new Error("Amount must be greater than zero with no more than 7 decimal places.");
@@ -87,7 +101,6 @@ export function getPaymentAsset(
  * @returns {Transaction} The unsigned transaction containing a single payment operation.
  * @throws {Error} If the source or destination key is invalid, the amount, sequence or fee is invalid, the memo exceeds 28 bytes, or the asset issuer is not configured.
  */
-export function buildPaymentTransaction({
 export function buildPaymentTransaction({
   source,
   destination,

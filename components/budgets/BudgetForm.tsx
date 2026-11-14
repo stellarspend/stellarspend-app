@@ -5,6 +5,12 @@ import { z } from "zod";
 import { useForm } from "@/hooks/useForm";
 import { Budget } from "@/lib/api/client";
 import { isValidStellarAddress } from "@/lib/stellar/sharedBudgetContract";
+import {
+  calculateCrossAssetBudgetSpend,
+  type CrossAssetSpendItem,
+  type HistoricalRateResolver,
+  type SupportedAsset,
+} from "@/lib/stellar/priceOracle";
 
 const budgetSchema = z
   .object({
@@ -83,6 +89,10 @@ interface BudgetFormProps {
     mode?: BudgetFormMode;
     budgetCount?: number;
     spent?: number;
+    /** Cross-currency spend entries converted into the budget's asset at spend-time oracle rates. */
+    crossAssetSpends?: CrossAssetSpendItem[];
+    /** Optional resolver for historical oracle USD prices at spend timestamps. */
+    historicalRateResolver?: HistoricalRateResolver;
 }
 
 function getProgressColor(percentage: number): string {
@@ -94,6 +104,14 @@ function getProgressColor(percentage: number): string {
     return "bg-green-500";
 }
 
+/**
+ * Picks the Tailwind text color for the budget usage percentage shown next to
+ * the progress bar. Uses the same thresholds as `getProgressColor`: red from
+ * 90%, yellow from 75%, green below that, each with a dark-mode variant.
+ *
+ * @param percentage - Share of the budget already spent, from 0 to 100.
+ * @returns The Tailwind text color classes for that usage level.
+ */
 function getProgressTextColor(percentage: number): string {
     if (percentage >= 90) {
         return "text-red-600 dark:text-red-400";
@@ -103,7 +121,40 @@ function getProgressTextColor(percentage: number): string {
     return "text-green-600 dark:text-green-400";
 }
 
-export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing = false, mode, spent = 0 }: BudgetFormProps) {
+/**
+ * Form for creating a budget, editing one, or proposing a change to a shared
+ * budget. Validates the input with `budgetSchema` (name, amount, category,
+ * asset, period, date range and, for shared budgets, co-owners and approval
+ * threshold). When editing a budget with a limit it also shows how much of it
+ * has been spent.
+ *
+ * Editing a shared budget always switches to propose mode, because a change
+ * then needs the approval threshold of its members before it takes effect.
+ *
+ * @prop onSubmit - Called with the validated form data on submit.
+ * @prop onCancel - Optional. When given, a Cancel button is shown that calls it.
+ * @prop initialData - Budget whose values pre-fill the form when editing or
+ *   proposing a change. Its `amount` is the limit used for the progress bar.
+ * @prop isEditing - Edit an existing budget instead of creating one: sets the
+ *   edit title and submit label and shows the spending progress. Also picks
+ *   the mode when `mode` is not given. Defaults to `false`.
+ * @prop mode - Explicit form mode: `"create"`, `"edit"` or `"propose"`.
+ *   Defaults to `"edit"` when `isEditing` is set, otherwise `"create"`.
+ * @prop budgetCount - Not used by the form.
+ * @prop spent - Amount already spent against the budget, in its asset, for the
+ *   progress bar. Defaults to `0`.
+ * @returns The budget form element.
+ */
+export default function BudgetForm({
+    onSubmit,
+    onCancel,
+    initialData,
+    isEditing = false,
+    mode,
+    spent = 0,
+    crossAssetSpends,
+    historicalRateResolver,
+}: BudgetFormProps) {
     const formMode: BudgetFormMode = mode ?? (isEditing ? 'edit' : 'create');
     const isProposeMode = formMode === 'propose' || (formMode === 'edit' && !!initialData?.isShared);
     const isSharedBudget = isProposeMode || (formMode === 'edit' && !!initialData?.isShared);
@@ -173,9 +224,19 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
         setValue('coOwners', coOwners.filter((a) => a !== address), { shouldValidate: true });
         setCoOwnerError(null);
     };
-    // Calculate budget progress percentage
+    // Calculate budget progress percentage (including cross-asset spends converted at spend-time rates)
+    const selectedAsset: SupportedAsset =
+        (watch('asset') as SupportedAsset) || initialData?.asset || 'XLM';
+    const budgetAsset: SupportedAsset = initialData?.asset || selectedAsset;
+    const crossAssetTotal =
+        crossAssetSpends && crossAssetSpends.length > 0
+            ? calculateCrossAssetBudgetSpend(budgetAsset, crossAssetSpends, {
+                  historicalRateResolver,
+              })
+            : 0;
+    const effectiveSpent = Number((spent + crossAssetTotal).toFixed(2));
     const budgetLimit = initialData?.amount || 0;
-    const spentPercentage = Number(budgetLimit > 0 ? Math.min(100, (spent / budgetLimit) * 100) : 0);
+    const spentPercentage = Number(budgetLimit > 0 ? Math.min(100, (effectiveSpent / budgetLimit) * 100) : 0);
     const progressColor = getProgressColor(spentPercentage);
     const progressTextColor = getProgressTextColor(spentPercentage);
 
@@ -215,8 +276,8 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                         />
                     </div>
                     <div className="flex justify-between items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        <span>Spent: {spent.toFixed(2)} {initialData?.asset || 'XLM'}</span>
-                        <span>Limit: {budgetLimit.toFixed(2)} {initialData?.asset || 'XLM'}</span>
+                        <span data-testid="budget-spent-summary">Spent: {effectiveSpent.toFixed(2)} {budgetAsset}</span>
+                        <span>Limit: {budgetLimit.toFixed(2)} {budgetAsset}</span>
                     </div>
                     {spentPercentage >= 90 && (
                         <p className="mt-2 text-xs text-red-600 dark:text-red-400 font-medium">
@@ -253,7 +314,7 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
 
                 <div className="space-y-1">
                     <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Amount (XLM) <span className="text-red-500" aria-label="required">*</span>
+                        Amount ({selectedAsset}) <span className="text-red-500" aria-label="required">*</span>
                     </label>
                     <input
                         id="amount"

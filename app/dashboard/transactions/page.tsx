@@ -1,6 +1,16 @@
-import TransactionsClient from "./TransactionsClient";
+"use client";
 
-export const metadata = { title: 'Transactions | StellarSpend' };
+import { useState } from "react";
+import { AnimatePresence } from "framer-motion";
+import { RefreshCw, Search, Filter } from "lucide-react";
+import useWallet from "@/hooks/useWallet";
+import { FilterParams, Transaction } from "@/lib/api/client";
+import { setCategory } from "@/lib/stellar/categoriesContract";
+import { triggerNotification } from "@/lib/stellar/budgetContract";
+import CustomSelect from "@/components/ui/CustomSelect";
+import TransactionList from "@/components/transactions/TransactionList";
+import TransactionDrawer from "@/components/transactions/TransactionDrawer";
+import SendPaymentModal from "@/components/transactions/SendPaymentModal";
 
 export default function TransactionsPage() {
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
@@ -161,6 +171,7 @@ export default function TransactionsPage() {
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
+              aria-label={showFilters ? "Hide filters" : "Show filters"}
               className={`flex items-center gap-2 px-6 py-3.5 rounded-2xl font-bold transition-all uppercase tracking-widest text-[10px] ${
                 showFilters
                   ? "bg-[#e8b84b]/10 border border-[#e8b84b]/30 text-[#e8b84b]"
