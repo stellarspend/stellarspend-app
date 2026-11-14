@@ -47,6 +47,18 @@ interface LocalWallet {
   publicKey?: string;
 }
 
+/**
+ * Resolves the Stellar public key of the wallet the user currently has
+ * selected in the app.
+ *
+ * The value is read from `localStorage` (`stellarspend_selected_wallet` and
+ * `stellarspend_wallets`), which the wallet context keeps in sync. Callers
+ * use it to scope on-chain reads and writes to the active account.
+ *
+ * @returns The Stellar public key (e.g. `GABC...`) of the selected wallet, or
+ * `null` when running on the server, when no wallet is selected, or when the
+ * stored wallet list cannot be parsed.
+ */
 export function getConnectedPublicKey(): string | null {
   if (typeof window === 'undefined') return null;
   const selectedWalletId = localStorage.getItem('stellarspend_selected_wallet');
@@ -66,6 +78,14 @@ export function getConnectedPublicKey(): string | null {
 }
 
 
+/**
+ * A single asset holding within a wallet balance snapshot.
+ *
+ * @property asset - Asset code the holding is denominated in (`XLM`, `USDC`, or `EURC`).
+ * @property balance - Amount held, as a decimal string (e.g. `"4210.50"`).
+ * @property usdValue - Approximate value of the holding in USD.
+ * @property change24h - Percentage change in the asset's price over the last 24 hours.
+ */
 export interface AssetBalance {
   asset: "XLM" | "USDC" | "EURC";
   balance: string;
@@ -73,12 +93,37 @@ export interface AssetBalance {
   change24h: number; // percent
 }
 
+/**
+ * Aggregated balance snapshot for a connected Stellar wallet.
+ *
+ * @property balances - Per-asset balance entries (XLM, USDC, EURC) with USD valuations.
+ * @property totalUsd - Combined portfolio value across all assets, in USD.
+ * @property updatedAt - ISO-8601 timestamp of when the snapshot was last refreshed.
+ */
 export interface WalletBalances {
   balances: AssetBalance[];
   totalUsd: number;
   updatedAt: string;
 }
 
+/**
+ * A Stellar blockchain transaction with its embedded operations, as returned
+ * by the Horizon-based API.
+ *
+ * @property id - Unique transaction identifier assigned by Stellar Horizon.
+ * @property hash - Transaction hash on the Stellar ledger.
+ * @property created_at - ISO-8601 timestamp of when the transaction was submitted.
+ * @property memo - Attachment memo attached to the transaction.
+ * @property memo_type - Optional memo format (e.g. `text`, `id`, `hash`).
+ * @property successful - `true` when the transaction applied successfully on-chain.
+ * @property status - Optional local lifecycle state: `pending`, `confirmed`, or `failed`.
+ * @property fee_charged - Fee actually charged for the transaction, in stroops.
+ * @property max_fee - Maximum fee the source account was willing to pay, in stroops.
+ * @property operation_count - Number of operations contained in the transaction.
+ * @property source_account - Stellar address of the account that submitted the transaction.
+ * @property ledger - Ledger sequence number in which the transaction was applied.
+ * @property operations - Ordered list of operations in the transaction (payment details included).
+ */
 export interface Transaction {
   id: string;
   hash: string;
@@ -102,6 +147,24 @@ export interface Transaction {
   }[];
 }
 
+/**
+ * Represents a spending budget defined by a user or shared across multiple
+ * wallet owners on the StellarSpend platform.
+ *
+ * @property id - Unique identifier for the budget record.
+ * @property name - Human-readable label for the budget (e.g. "Groceries").
+ * @property amount - Maximum spend allowed, expressed in the budget's asset units.
+ * @property category - Spending category the budget applies to (e.g. "Food", "Travel").
+ * @property asset - The Stellar asset the budget is denominated in (`XLM`, `USDC`, or `EURC`).
+ * @property startDate - ISO-8601 date string marking the beginning of the budget period.
+ * @property endDate - ISO-8601 date string marking the end of the budget period.
+ * @property createdAt - ISO-8601 timestamp of when the budget was first created.
+ * @property updatedAt - ISO-8601 timestamp of the most recent modification.
+ * @property ownerAddress - Stellar address of the wallet that created the budget (shared budgets only).
+ * @property coOwners - Additional Stellar addresses that share ownership, excluding the owner (shared budgets only).
+ * @property approvalThreshold - Number of co-owner approvals required before a change is applied (shared budgets only).
+ * @property isShared - `true` when the budget requires co-owner approval for changes.
+ */
 export interface Budget {
   id: string;
   name: string;
@@ -121,6 +184,18 @@ export interface Budget {
   /** True when the budget requires co-owner approval for changes. */
   isShared?: boolean;
 }
+/**
+ * Query parameters used to filter a list of transactions returned by the API.
+ *
+ * All fields are optional — omitting a field means no filtering is applied for
+ * that dimension.
+ *
+ * @property dateFrom - ISO-8601 date string; only transactions on or after this date are returned.
+ * @property dateTo - ISO-8601 date string; only transactions on or before this date are returned.
+ * @property asset - Stellar asset code to filter by (e.g. `"XLM"`, `"USDC"`, `"EURC"`).
+ * @property type - Direction of the transaction: `"in"` for received, `"out"` for sent, `"all"` for both.
+ * @property search - Free-text search string matched against transaction memos or counterparty addresses.
+ */
 export interface FilterParams {
   dateFrom?: string;
   dateTo?: string;
@@ -129,6 +204,18 @@ export interface FilterParams {
   search?: string;
 }
 
+/**
+ * A generic wrapper returned by paginated API endpoints, carrying one page of
+ * results together with the metadata needed to fetch further pages.
+ *
+ * @typeParam T - The type of each item in the result set (e.g. {@link Transaction}).
+ *
+ * @property data - The array of items for the current page.
+ * @property total - Total number of items across all pages.
+ * @property page - The 1-based index of the current page.
+ * @property limit - Maximum number of items that can appear in a single page.
+ * @property hasMore - `true` when at least one additional page of results exists beyond the current page.
+ */
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
@@ -636,6 +723,14 @@ export async function deleteBudget(id: string): Promise<void> {
 
 // ── Send path (still mock — out of scope for issue #97) ───────────────────
 
+/**
+ * Returns a promise that resolves after a specified number of milliseconds,
+ * providing a lightweight async sleep for simulating network latency in mock
+ * API functions.
+ *
+ * @param ms - Duration to wait, in milliseconds.
+ * @returns A promise that resolves with `undefined` once the timeout elapses.
+ */
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**

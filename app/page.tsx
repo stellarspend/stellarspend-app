@@ -1,3 +1,4 @@
+
 import type { Metadata } from "next";
 import Hero from "@/components/hero/Hero";
 import FeaturesSection from "@/components/features/FeaturesSection";
@@ -6,25 +7,40 @@ import Carousel from "@/components/carousel/Carousel";
 import PricingCards from "@/components/pricing/PricingCards";
 import type { CarouselSlide } from "@/components/carousel/Carousel";
 
+const HOME_TITLE = "StellarSpend — Track your Stellar transactions";
+
 const HOME_DESCRIPTION =
   "StellarSpend is a financial management platform for the unbanked and underbanked, built on the Stellar blockchain. Track spending, set budgets, and reach your savings goals.";
 
-// Branch sync note: no functional changes were made here intentionally.
+const HOME_URL = "https://stellarspend.app";
 
 export const metadata: Metadata = {
-  title: "StellarSpend — Track your Stellar transactions",
+  title: HOME_TITLE,
   description: HOME_DESCRIPTION,
+
+  metadataBase: new URL(HOME_URL),
+
+  alternates: {
+    canonical: "/",
+  },
+
   openGraph: {
-    title: "StellarSpend",
+    title: HOME_TITLE,
     description: HOME_DESCRIPTION,
-    url: "https://stellarspend.app",
+    url: HOME_URL,
     siteName: "StellarSpend",
     type: "website",
   },
+
   twitter: {
     card: "summary_large_image",
-    title: "StellarSpend — Track your Stellar transactions",
+    title: HOME_TITLE,
     description: HOME_DESCRIPTION,
+  },
+
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
@@ -33,6 +49,7 @@ const FEATURE_SLIDES: CarouselSlide[] = [
     id: "tracking",
     icon: (
       <svg
+        aria-hidden="true"
         width="24"
         height="24"
         viewBox="0 0 24 24"
@@ -56,6 +73,7 @@ const FEATURE_SLIDES: CarouselSlide[] = [
     id: "budgets",
     icon: (
       <svg
+        aria-hidden="true"
         width="24"
         height="24"
         viewBox="0 0 24 24"
@@ -80,6 +98,7 @@ const FEATURE_SLIDES: CarouselSlide[] = [
     id: "savings",
     icon: (
       <svg
+        aria-hidden="true"
         width="24"
         height="24"
         viewBox="0 0 24 24"
@@ -102,29 +121,52 @@ const FEATURE_SLIDES: CarouselSlide[] = [
 
 export default function HomePage() {
   return (
-    <main>
+    <main aria-labelledby="home-page-title">
+      {/* Hero */}
       <Hero />
 
+      {/* Feature highlights */}
       <section
         id="features"
-        aria-label="Feature highlights"
-        className="py-16 px-4 sm:px-6 lg:px-8"
+        aria-labelledby="features-heading"
+        className="px-4 py-16 sm:px-6 lg:px-8"
       >
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-4 text-white">
-            Everything you need
-          </h2>
-          <p className="text-center text-slate-400 mb-10 text-sm max-w-md mx-auto">
-            Built on Stellar so fees stay near zero and settlements finish in
-            seconds.
-          </p>
-          <Carousel slides={FEATURE_SLIDES} autoAdvanceMs={4500} />
+        <div className="mx-auto max-w-7xl">
+          <header className="mb-10 text-center">
+            <h2
+              id="features-heading"
+              className="mb-4 text-3xl font-bold text-white"
+            >
+              Everything you need
+            </h2>
+
+            <p className="mx-auto max-w-md text-sm text-slate-400">
+              Built on Stellar so fees stay near zero and settlements finish
+              in seconds.
+            </p>
+          </header>
+
+          <Carousel
+            slides={FEATURE_SLIDES}
+            autoAdvanceMs={4500}
+          />
         </div>
       </section>
 
-      <FeaturesSection />
-      <PricingCards />
-      <TestimonialsSection />
+      {/* Product features */}
+      <section aria-label="StellarSpend features">
+        <FeaturesSection />
+      </section>
+
+      {/* Pricing */}
+      <section aria-label="StellarSpend pricing">
+        <PricingCards />
+      </section>
+
+      {/* Customer testimonials */}
+      <section aria-label="Customer testimonials">
+        <TestimonialsSection />
+      </section>
     </main>
   );
 }

@@ -61,6 +61,19 @@ export interface ConflictDetectionResult {
 /** How the user decided to settle a conflict. */
 export type ConflictStrategy = "keep_mine" | "keep_theirs" | "choose_fields";
 
+/**
+ * The user's decision for settling a detected field conflict.
+ *
+ * Collected by the conflict-resolution dialog for a {@link ConflictPrompt}
+ * and handed to {@link resolveConflicts} / {@link applyConflictResolution}.
+ *
+ * @property strategy - Keep this device's values (`"keep_mine"`), the other
+ *   device's values (`"keep_theirs"`), or decide per field
+ *   (`"choose_fields"`).
+ * @property choices - Per-field overrides mapping each field to `"mine"` or
+ *   `"theirs"`; required when `strategy` is `"choose_fields"` and ignored
+ *   otherwise.
+ */
 export interface ConflictResolution {
   strategy: ConflictStrategy;
   /** Per-field choices, required when `strategy` is `"choose_fields"`. */
@@ -88,16 +101,34 @@ export function valuesEqual(a: unknown, b: unknown): boolean {
   return false;
 }
 
+/**
+ * Reads one field off a record without casting the whole record at every
+ * call site.
+ *
+ * @param record - The record to read from.
+ * @param field - Name of the property to fetch.
+ * @returns The field's value, or `undefined` when the record lacks it.
+ */
 function readField(record: VersionedRecord, field: string): unknown {
   return (record as unknown as Record<string, unknown>)[field];
 }
 
+/**
+ * Returns a copy of `record` with a single field replaced; the input is
+ * never mutated, so callers can keep the original snapshot around for the
+ * three-way comparison.
+ *
+ * @param record - The record to copy.
+ * @param field - Name of the property to set.
+ * @param value - The new value for `field`.
+ * @returns A new record with every original field plus the updated `field`.
+ */
 function writeField(
   record: VersionedRecord,
   field: string,
   value: unknown,
 ): VersionedRecord {
-  return { ...(record as unknown as Record<string, unknown>), [field]: value } as VersionedRecord;
+  return { ...(record as unknown as Record<string, unknown>), [field]: value } as unknown as VersionedRecord;
 }
 
 /**
@@ -144,6 +175,13 @@ export function parseQueuedUpdate(data: unknown): QueuedUpdate | null {
   };
 }
 
+/**
+ * Lists the fields of a queued update that take part in conflict detection:
+ * its change set minus the metadata keys (`id`, `updatedAt`, `createdAt`).
+ *
+ * @param update - The normalised queued update.
+ * @returns The conflict-relevant field names.
+ */
 function updateFields(update: QueuedUpdate): string[] {
   return Object.keys(update.changes).filter((field) => !IGNORED_FIELDS.has(field));
 }
@@ -264,6 +302,8 @@ export function resolveConflicts(
   let record = detection.record;
   let shouldWrite = detection.autoMergedFields.length > 0;
 
+  const conflictFields = new Set(detection.conflicts.map((conflict) => conflict.field));
+
   for (const conflict of detection.conflicts) {
     const choice =
       resolution.strategy === "keep_mine"
@@ -277,6 +317,16 @@ export function resolveConflicts(
       shouldWrite = true;
     } else {
       record = writeField(record, conflict.field, conflict.theirs);
+    }
+  }
+
+  // Per-field decisions also cover fields only this device touched (auto-merged):
+  // choosing "theirs" there restores the value already persisted by the other device.
+  if (resolution.strategy === "choose_fields" && resolution.choices) {
+    for (const [field, choice] of Object.entries(resolution.choices)) {
+      if (conflictFields.has(field) || choice !== "theirs") continue;
+      record = writeField(record, field, readField(detection.current, field));
+      shouldWrite = true;
     }
   }
 
@@ -300,8 +350,25 @@ export const VERSIONED_UPDATE_TYPES = [
   "UPDATE_SPLIT_BILL",
 ] as const;
 
+/**
+ * Union of the action types whose payloads update an existing, versioned
+ * record and therefore take part in three-way conflict detection.
+ *
+ * Derived from {@link VERSIONED_UPDATE_TYPES} so the runtime list and the
+ * compile-time type can never drift apart.
+ */
 export type VersionedUpdateType = (typeof VERSIONED_UPDATE_TYPES)[number];
 
+/**
+ * Narrows an arbitrary action type string to a {@link VersionedUpdateType}.
+ *
+ * Used by the replay loop to decide whether an action should go through
+ * versioned conflict detection or be skipped.
+ *
+ * @param type - The action type string to test.
+ * @returns `true` (and narrows the type) when `type` is a versioned update
+ *   action, `false` otherwise.
+ */
 export function isVersionedUpdateType(type: string): type is VersionedUpdateType {
   return (VERSIONED_UPDATE_TYPES as readonly string[]).includes(type);
 }

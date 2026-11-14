@@ -46,4 +46,19 @@ describe("PassphraseSetup", () => {
     fireEvent.click(screen.getByRole("button", { name: "Hide passphrase" }));
     expect(passphraseInput).toHaveAttribute("type", "password");
   });
+
+  it("shows a validation error when the form is submitted empty", () => {
+    render(<PassphraseSetup />);
+
+    // No validation message before the user submits.
+    expect(
+      screen.queryByText("Passphrase must be at least 6 characters"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Set Passphrase" }));
+
+    expect(
+      screen.getByText("Passphrase must be at least 6 characters"),
+    ).toBeInTheDocument();
+  });
 });

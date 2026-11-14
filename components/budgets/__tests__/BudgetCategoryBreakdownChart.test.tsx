@@ -70,6 +70,14 @@ describe("BudgetCategoryBreakdownChart", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders empty state message when chart data is empty", () => {
+    render(<BudgetCategoryBreakdownChart budgets={[]} />);
+    expect(screen.getByText(/Category Spending Breakdown/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Create budgets to see your spending allocation by category/i)
+    ).toBeInTheDocument();
+  });
+
   it("renders chart correctly and aggregates categories for selected asset", () => {
     render(<BudgetCategoryBreakdownChart budgets={mockBudgets} />);
     expect(screen.getByTestId("budget-category-breakdown-chart")).toBeInTheDocument();

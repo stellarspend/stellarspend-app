@@ -23,9 +23,13 @@ export const metadata: Metadata = {
     "unbanked",
   ],
   openGraph: {
-    title: "StellarSpend — Financial Freedom on the Blockchain",
+    title: "StellarSpend",
     description: "Smart spending for the Stellar ecosystem",
     type: "website",
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
   twitter: {
     card: "summary_large_image",

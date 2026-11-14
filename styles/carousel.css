@@ -1,96 +1,106 @@
 /* ── Carousel ─────────────────────────────────────────────── */
+/* Outer wrapper: centers the carousel and caps its width on large screens */
 .carousel {
-  position: relative;
+  position: relative; /* anchor for the absolutely positioned controls and hint */
   width: 100%;
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 0 0 3rem;
-  user-select: none;
+  max-width: 680px; /* keeps slides readable on wide screens */
+  margin: 0 auto; /* horizontally center */
+  padding: 0 0 3rem; /* bottom space reserved for the controls row */
+  user-select: none; /* stops text highlighting while dragging/swiping */
 }
 
 /* Track */
+/* Viewport that holds the slides; clips anything outside its rounded box */
 .carousel__track {
   position: relative;
   width: 100%;
-  min-height: 260px;
-  outline: none;
+  min-height: 260px; /* slides are absolute, so the track needs its own height */
+  outline: none; /* default outline removed; keyboard focus style is defined below */
   border-radius: 16px;
-  overflow: hidden;
-  cursor: grab;
+  overflow: hidden; /* hides slides while they slide in/out */
+  cursor: grab; /* hints that the track can be dragged */
 }
 
+/* Visible focus ring for keyboard users only (not on mouse click) */
 .carousel__track:focus-visible {
   outline: 2px solid #e8b84b;
   outline-offset: 4px;
 }
 
+/* Cursor changes to a closed hand while dragging */
 .carousel__track:active {
   cursor: grabbing;
 }
 
 /* Slides */
+/* Default (inactive) slide: stacked on top of each other, hidden, nudged to the right */
 .carousel__slide {
   position: absolute;
-  inset: 0;
+  inset: 0; /* shorthand for top/right/bottom/left: 0, fills the track */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   padding: 2.5rem 2rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.03); /* subtle glass-like card */
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 16px;
-  opacity: 0;
-  transform: translateX(40px);
+  opacity: 0; /* invisible until active */
+  transform: translateX(40px); /* starts slightly right so it slides in */
   transition:
     opacity 0.4s ease,
     transform 0.4s ease;
-  pointer-events: none;
+  pointer-events: none; /* hidden slides can't be clicked */
 }
 
+/* Active slide: visible, in place, and clickable */
 .carousel__slide--active {
   opacity: 1;
   transform: translateX(0);
   pointer-events: auto;
-  position: relative;
+  position: relative; /* takes up normal space so the track grows to fit its content */
 }
 
 /* Icon */
+/* Rounded square badge that holds the slide icon */
 .carousel__slide-icon {
   width: 56px;
   height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(232, 184, 75, 0.1);
+  background: rgba(232, 184, 75, 0.1); /* faint gold tint */
   border: 1px solid rgba(232, 184, 75, 0.2);
   border-radius: 14px;
   margin-bottom: 1.25rem;
-  color: #e8b84b;
-  font-size: 1.5rem;
+  color: #e8b84b; /* gold accent used across the carousel */
+  font-size: 1.5rem; /* sizes emoji/icon fonts */
 }
 
+/* Slide heading */
 .carousel__slide-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: #f1f5f9; /* near-white for contrast on dark background */
   margin: 0 0 0.75rem;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.02em; /* slightly tighter for headings */
 }
 
+/* Slide description text */
 .carousel__slide-desc {
   font-size: 0.9rem;
-  color: #94a3b8;
-  line-height: 1.6;
+  color: #94a3b8; /* muted gray-blue */
+  line-height: 1.6; /* comfortable reading spacing */
   margin: 0 0 1.25rem;
-  max-width: 420px;
+  max-width: 420px; /* prevents long lines of text */
 }
 
 /* Stat badge */
+/* Small pill showing a highlighted number and its label */
 .carousel__slide-stat {
   display: inline-flex;
-  flex-direction: column;
+  flex-direction: column; /* value on top, label underneath */
   align-items: center;
   background: rgba(232, 184, 75, 0.08);
   border: 1px solid rgba(232, 184, 75, 0.15);
@@ -99,22 +109,25 @@
   gap: 0.1rem;
 }
 
+/* Big number inside the stat badge */
 .carousel__stat-value {
   font-size: 1.4rem;
   font-weight: 800;
   color: #e8b84b;
   letter-spacing: -0.03em;
-  line-height: 1;
+  line-height: 1; /* removes extra vertical space around the number */
 }
 
+/* Small caption under the number */
 .carousel__stat-label {
   font-size: 0.7rem;
   color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.08em; /* spaced out caps are easier to read */
 }
 
 /* Controls row */
+/* Bar pinned to the bottom of the carousel holding the buttons and dots */
 .carousel__controls {
   position: absolute;
   bottom: 0;
@@ -128,13 +141,14 @@
 }
 
 /* Prev / Next buttons */
+/* Round arrow buttons on either side of the dots */
 .carousel__btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 50%; /* makes the button a circle */
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.04);
   color: #94a3b8;
@@ -142,16 +156,18 @@
   transition:
     background 0.15s,
     color 0.15s,
-    border-color 0.15s;
-  flex-shrink: 0;
+    border-color 0.15s; /* smooth hover color change */
+  flex-shrink: 0; /* keeps the circle from squishing in tight layouts */
 }
 
+/* Hover state: gold highlight */
 .carousel__btn:hover {
   background: rgba(232, 184, 75, 0.12);
   border-color: rgba(232, 184, 75, 0.3);
   color: #e8b84b;
 }
 
+/* Keyboard focus ring for accessibility */
 .carousel__btn:focus-visible {
   outline: 2px solid #e8b84b;
   outline-offset: 3px;
@@ -159,63 +175,70 @@
 }
 
 /* Dots */
+/* Container for the pagination dots */
 .carousel__dots {
   display: flex;
   align-items: center;
   gap: 0.4rem;
 }
 
+/* One dot per slide (inactive state) */
 .carousel__dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  border: none;
+  border: none; /* removes default button border */
   background: rgba(255, 255, 255, 0.15);
   cursor: pointer;
-  padding: 0;
+  padding: 0; /* removes default button padding so the size stays exact */
   transition:
     background 0.2s,
     transform 0.2s,
-    width 0.2s;
+    width 0.2s; /* animates the dot stretching when it becomes active */
 }
 
+/* Active dot: stretched into a gold pill */
 .carousel__dot--active {
   background: #e8b84b;
   width: 18px;
   border-radius: 3px;
 }
 
+/* Keyboard focus ring for dots */
 .carousel__dot:focus-visible {
   outline: 2px solid #e8b84b;
   outline-offset: 3px;
 }
 
 /* Pause hint */
+/* Tiny, faint indicator in the top-right corner (e.g. shown when autoplay is paused) */
 .carousel__pause-hint {
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
   font-size: 0.55rem;
-  color: rgba(255, 255, 255, 0.15);
-  pointer-events: none;
+  color: rgba(255, 255, 255, 0.15); /* very subtle so it doesn't distract */
+  pointer-events: none; /* never blocks clicks or drags */
   line-height: 1;
 }
 
 /* Reduced motion */
+/* Respect users who set "reduce motion" in their OS: fade only, no sliding */
 @media (prefers-reduced-motion: reduce) {
   .carousel__slide {
-    transition: opacity 0.15s ease;
-    transform: none !important;
+    transition: opacity 0.15s ease; /* shorter, fade-only transition */
+    transform: none !important; /* !important overrides the translateX on inactive and active slides */
   }
 }
 
 /* Mobile */
+/* Phones and small screens (480px wide or less) */
 @media (max-width: 480px) {
   .carousel__track {
-    min-height: 300px;
+    min-height: 300px; /* extra height because text wraps onto more lines */
   }
 
   .carousel__slide {
-    padding: 2rem 1.25rem;
+    padding: 2rem 1.25rem; /* tighter padding to save horizontal space */
   }
 }

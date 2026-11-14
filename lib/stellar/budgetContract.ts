@@ -68,6 +68,7 @@ export function getMockBudgetsFallback(): Budget[] {
 /**
  * Persists mock budgets to localStorage.
  * @param budgets - The array of Budget objects to store.
+ * @returns void
  */
 export function setMockBudgetsFallback(budgets: Budget[]): void {
   if (typeof window !== 'undefined') {
@@ -75,6 +76,40 @@ export function setMockBudgetsFallback(budgets: Budget[]): void {
   }
 }
 
+/**
+ * Last-modified marker for a budget (Issue #115).
+ *
+ * The offline queue stores this alongside an edit so that, when it is replayed,
+ * the app can tell whether the budget also changed on another device.
+ * @param budget - The budget to read the marker from.
+ * @returns The budget's `updatedAt` marker.
+ */
+export function getBudgetVersion(budget: Pick<Budget, 'updatedAt'>): string {
+  return budget.updatedAt;
+}
+
+/**
+ * Snapshot of the fields a budget edit can change, used as the "base" of a
+ * three-way comparison when an offline edit is replayed.
+ * @param budget - The budget as this device last saw it.
+ * @returns A plain object of the versioned budget fields.
+ */
+export function budgetBaseSnapshot(budget: Budget): Record<string, unknown> {
+  return {
+    name: budget.name,
+    amount: budget.amount,
+    category: budget.category,
+    asset: budget.asset,
+    startDate: budget.startDate,
+    endDate: budget.endDate,
+  };
+}
+
+/**
+ * Converts a JavaScript value to its Soroban XDR representation.
+ * @param value - The value to convert; 56-character `G...` strings become addresses and numbers become u64.
+ * @returns The value encoded as a Soroban `ScVal`.
+ */
 function toScVal(value: unknown): xdr.ScVal {
   if (typeof value === 'string' && value.startsWith('G') && value.length === 56) {
     return new Address(value).toScVal();
@@ -399,6 +434,7 @@ export async function updateBudget(
  * @param publicKey - The Stellar public key of the budget owner.
  * @param id - The ID of the budget to delete.
  * @param statusCallback - Optional callback for progress updates.
+ * @returns A promise that resolves when the budget is deleted.
  */
 export async function deleteBudget(
     publicKey: string,

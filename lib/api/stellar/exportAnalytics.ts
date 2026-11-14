@@ -5,17 +5,37 @@ import {
 } from './analyticsContract';
 import { stroopsToDisplay } from './formatAmount';
 
+/**
+ * Data payload used to export analytics as a CSV file.
+ *
+ * @property trend - Spending trend points, one per time bucket.
+ * @property categoryBreakdown - Spending totals grouped by category.
+ * @property budgetVsActual - Optional budget versus actual spending entries. Not currently included in the CSV output.
+ */
 export interface AnalyticsExportData {
   trend: SpendingTrendPoint[];
   categoryBreakdown: CategoryBreakdownEntry[];
   budgetVsActual?: BudgetVsActualEntry[];
 }
 
+/**
+ * Formats a Unix timestamp as an ISO 8601 calendar date (YYYY-MM-DD) in UTC.
+ *
+ * @param unixSeconds - Unix timestamp in seconds since the epoch.
+ * @returns The UTC date portion of the timestamp, formatted as `YYYY-MM-DD`.
+ */
 function formatDate(unixSeconds: number): string {
   const date = new Date(unixSeconds * 1000);
   return date.toISOString().split('T')[0];
 }
 
+/**
+ * Builds a CSV file from analytics data and triggers a browser download.
+ *
+ * @param data - The analytics trend and category breakdown data to export.
+ * @param filename - The name of the file offered to the user for download.
+ * @returns void
+ */
 export function exportToCsv(data: AnalyticsExportData, filename: string): void {
   const rows: string[] = [];
 

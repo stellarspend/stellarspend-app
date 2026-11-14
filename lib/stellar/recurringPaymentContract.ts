@@ -18,12 +18,16 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+/** How often a recurring payment schedule executes. */
 export type Frequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
+/** Lifecycle state of a recurring payment schedule. */
 export type ScheduleStatus = 'active' | 'paused' | 'cancelled' | 'completed';
 
+/** Outcome of a single recurring payment execution attempt. */
 export type ExecutionResult = 'success' | 'skipped' | 'failed';
 
+/** A recurring payment schedule owned by a Stellar account. */
 export interface RecurringPayment {
   id: string;
   owner: string;
@@ -40,6 +44,7 @@ export interface RecurringPayment {
   createdAt: number;
 }
 
+/** A record of a single recurring payment execution attempt. */
 export interface ExecutionRecord {
   scheduleId: string;
   result: ExecutionResult;
@@ -59,6 +64,10 @@ const LOCAL_EXECUTIONS_KEY = 'stellarspend_recurring_executions';
 
 // ── Mock / fallback storage ───────────────────────────────────────────────────
 
+/**
+ * Reads recurring payment schedules cached in localStorage for the offline/mock fallback.
+ * @returns The cached schedules, or an empty array when none are stored.
+ */
 function getMockSchedules(): RecurringPayment[] {
   if (typeof window === 'undefined') return [];
   const stored = localStorage.getItem(LOCAL_SCHEDULES_KEY);
@@ -72,12 +81,24 @@ function getMockSchedules(): RecurringPayment[] {
   return [];
 }
 
+/**
+ * Persists recurring payment schedules to localStorage for offline/mock mode.
+ *
+ * @param schedules - The recurring payment schedules to store.
+ * @returns Nothing.
+ */
 function setMockSchedules(schedules: RecurringPayment[]) {
   if (typeof window !== 'undefined') {
     localStorage.setItem(LOCAL_SCHEDULES_KEY, JSON.stringify(schedules));
   }
 }
 
+/**
+ * Retrieves locally cached recurring payment execution records for offline/mock mode.
+ *
+ * @returns The stored execution records, or an empty array if running
+ *   outside the browser, no records are stored, or the stored JSON is invalid.
+ */
 function getMockExecutions(): ExecutionRecord[] {
   if (typeof window === 'undefined') return [];
   const stored = localStorage.getItem(LOCAL_EXECUTIONS_KEY);
@@ -91,12 +112,22 @@ function getMockExecutions(): ExecutionRecord[] {
   return [];
 }
 
+/**
+ * Persists execution records to localStorage for the offline/mock fallback.
+ * @param executions - The execution records to store.
+ */
 function setMockExecutions(executions: ExecutionRecord[]) {
   if (typeof window !== 'undefined') {
     localStorage.setItem(LOCAL_EXECUTIONS_KEY, JSON.stringify(executions));
   }
 }
 
+/**
+ * Adds a number of days to a date string.
+ * @param dateStr - The starting date (YYYY-MM-DD).
+ * @param days - The number of days to add.
+ * @returns The resulting date (YYYY-MM-DD).
+ */
 function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr);
   d.setDate(d.getDate() + days);
@@ -465,6 +496,12 @@ export async function fetchExecutionHistory(
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 
+/**
+ * Computes the next due date by adding the interval for `frequency` to `currentDue`.
+ * @param currentDue - The current due date (YYYY-MM-DD).
+ * @param frequency - How often the schedule repeats.
+ * @returns The next due date (YYYY-MM-DD).
+ */
 function computeNextDueDate(currentDue: string, frequency: Frequency): string {
   switch (frequency) {
     case 'daily':

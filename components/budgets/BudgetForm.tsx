@@ -94,6 +94,14 @@ function getProgressColor(percentage: number): string {
     return "bg-green-500";
 }
 
+/**
+ * Picks the Tailwind text color for the budget usage percentage shown next to
+ * the progress bar. Uses the same thresholds as `getProgressColor`: red from
+ * 90%, yellow from 75%, green below that, each with a dark-mode variant.
+ *
+ * @param percentage - Share of the budget already spent, from 0 to 100.
+ * @returns The Tailwind text color classes for that usage level.
+ */
 function getProgressTextColor(percentage: number): string {
     if (percentage >= 90) {
         return "text-red-600 dark:text-red-400";
@@ -103,6 +111,30 @@ function getProgressTextColor(percentage: number): string {
     return "text-green-600 dark:text-green-400";
 }
 
+/**
+ * Form for creating a budget, editing one, or proposing a change to a shared
+ * budget. Validates the input with `budgetSchema` (name, amount, category,
+ * asset, period, date range and, for shared budgets, co-owners and approval
+ * threshold). When editing a budget with a limit it also shows how much of it
+ * has been spent.
+ *
+ * Editing a shared budget always switches to propose mode, because a change
+ * then needs the approval threshold of its members before it takes effect.
+ *
+ * @prop onSubmit - Called with the validated form data on submit.
+ * @prop onCancel - Optional. When given, a Cancel button is shown that calls it.
+ * @prop initialData - Budget whose values pre-fill the form when editing or
+ *   proposing a change. Its `amount` is the limit used for the progress bar.
+ * @prop isEditing - Edit an existing budget instead of creating one: sets the
+ *   edit title and submit label and shows the spending progress. Also picks
+ *   the mode when `mode` is not given. Defaults to `false`.
+ * @prop mode - Explicit form mode: `"create"`, `"edit"` or `"propose"`.
+ *   Defaults to `"edit"` when `isEditing` is set, otherwise `"create"`.
+ * @prop budgetCount - Not used by the form.
+ * @prop spent - Amount already spent against the budget, in its asset, for the
+ *   progress bar. Defaults to `0`.
+ * @returns The budget form element.
+ */
 export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing = false, mode, spent = 0 }: BudgetFormProps) {
     const formMode: BudgetFormMode = mode ?? (isEditing ? 'edit' : 'create');
     const isProposeMode = formMode === 'propose' || (formMode === 'edit' && !!initialData?.isShared);
