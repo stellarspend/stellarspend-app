@@ -11,6 +11,17 @@ interface DashboardCardProps {
   trend?: 'up' | 'down' | 'neutral';
 }
 
+/**
+ * Renders the content of a dashboard metric card, including its value,
+ * change indicator, and optional icon.
+ *
+ * @param title - Label describing the metric.
+ * @param value - Formatted metric value to display.
+ * @param change - Text describing the metric's change.
+ * @param iconSrc - Optional source URL for the metric icon.
+ * @param trend - Direction used to style the change indicator.
+ * @returns The dashboard metric card content.
+ */
 function DashboardCardContent({
   title,
   value,

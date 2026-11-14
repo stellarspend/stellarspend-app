@@ -38,6 +38,17 @@ const kindLabels: Record<WalletProviderMeta["kind"], string> = {
   web: "Web Wallet",
 };
 
+/**
+ * Modal that lists available wallet providers with availability and kind
+ * badges, and runs the connection flow for the selected provider.
+ *
+ * @param props - Component props.
+ * @param props.open - Whether the picker is visible.
+ * @param props.onClose - Called when the picker should be dismissed.
+ * @param props.onConnected - Called with the public key and provider id after a successful connection.
+ * @param props.connectedProviderId - The currently connected provider, if any.
+ * @returns The rendered provider picker.
+ */
 export default function WalletProviderPicker({
   open,
   onClose,

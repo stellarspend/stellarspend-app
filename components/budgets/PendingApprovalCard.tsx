@@ -25,12 +25,24 @@ const FIELD_LABELS: Record<string, string> = {
   endDate: "End date",
 };
 
+/**
+ * Abbreviates a wallet address for compact display while preserving its ends.
+ *
+ * @param address - Full wallet address to abbreviate.
+ * @returns The shortened address, or the original when already short.
+ */
 function shortAddress(address: string): string {
   return address.length > 12
     ? `${address.slice(0, 6)}…${address.slice(-4)}`
     : address;
 }
 
+/**
+ * Formats an ISO date string as a localized date and time for display.
+ *
+ * @param iso - Date and time string to format.
+ * @returns The localized date and time, or the original string if formatting fails.
+ */
 function formatTime(iso: string): string {
   try {
     return new Date(iso).toLocaleString(undefined, {

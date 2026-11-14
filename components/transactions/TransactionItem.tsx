@@ -15,6 +15,17 @@ interface TransactionItemProps {
   category?: string;
 }
 
+/**
+ * Renders a single transaction row with status, memo/category, amount, and timestamp.
+ * Displays direction/icons based on the first operation and user account, and surfaces
+ * pending/verified/reverted states. Opens the transaction drawer when clicked.
+ *
+ * @param props - Component props
+ * @param props.transaction - The transaction record including operations, status, hash, memo, and created_at
+ * @param props.onOpenDrawer - Callback invoked with the transaction when the row is clicked
+ * @param props.category - Optional category label to display as a badge
+ * @returns A table row element representing the transaction
+ */
 export default function TransactionItem({
   transaction,
   onOpenDrawer,

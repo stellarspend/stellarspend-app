@@ -3,6 +3,12 @@
  * Uses PBKDF2 for key derivation and AES-GCM for encryption
  */
 
+/**
+ * Configuration options for local encryption operations.
+ *
+ * @property passphrase - The secret passphrase used for key derivation.
+ * @property [salt] - Optional hex-encoded salt string. If omitted, a stored or default salt is used.
+ */
 export interface EncryptionConfig {
   passphrase: string;
   salt?: string;

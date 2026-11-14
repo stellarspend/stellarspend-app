@@ -53,6 +53,12 @@ function getCategoryColor(category: string, index: number): string {
   return CATEGORY_COLORS[normalized] || DEFAULT_PALETTE[index % DEFAULT_PALETTE.length];
 }
 
+/**
+ * Formats a raw budget category string into a human-readable label.
+ * Splits on hyphens, underscores, and whitespace, then title-cases each word.
+ * @param category - The raw category string to format.
+ * @returns The formatted, title-cased label, or "Uncategorized" if empty.
+ */
 function formatCategoryLabel(category: string): string {
   if (!category) return "Uncategorized";
   return category
@@ -61,6 +67,13 @@ function formatCategoryLabel(category: string): string {
     .join(" ");
 }
 
+/**
+ * Displays a breakdown of budgeted amounts by category for a selected asset,
+ * rendered as either a pie or bar chart with a toggle and asset selector.
+ * @param props - The component props.
+ * @param props.budgets - The list of budgets to aggregate and visualize.
+ * @returns The rendered category breakdown chart, or an empty state when no budgets exist.
+ */
 export default function BudgetCategoryBreakdownChart({ budgets }: BudgetCategoryBreakdownChartProps) {
   const [chartType, setChartType] = useState<"pie" | "bar">("pie");
   const availableAssets = Array.from(new Set(budgets.map((b) => b.asset || "XLM")));

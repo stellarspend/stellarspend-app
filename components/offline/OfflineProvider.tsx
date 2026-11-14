@@ -172,6 +172,9 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   // Reconnect flow: replay whatever was queued while the device was offline.
   useEffect(() => {
     if (!isOnline || !hasLoaded) return;
+    // Replaying the queue is inherently a side effect that updates state once the
+    // async sync resolves; that is the purpose of this effect, not a cascading render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void syncQueue();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOnline, hasLoaded]);

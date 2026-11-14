@@ -62,12 +62,27 @@ interface BudgetFormData {
  */
 const SPENT_BY_BUDGET: Record<string, number> = {};
 
+/**
+ * Shortens a Stellar address for display by keeping the first six and last
+ * four characters, separated by an ellipsis. Addresses of 12 characters or
+ * fewer are returned unchanged.
+ *
+ * @param address - The full Stellar public key or co-owner address.
+ * @returns The abbreviated address, or the original if it is short enough.
+ */
 function shortAddress(address: string): string {
   return address.length > 12
     ? `${address.slice(0, 6)}…${address.slice(-4)}`
     : address;
 }
 
+/**
+ * Formats a numeric amount for display, showing whole numbers without
+ * decimals and fractional values with two decimal places.
+ *
+ * @param val - The numeric amount to format.
+ * @returns The amount as a display-ready string.
+ */
 function formatAmount(val: number): string {
   return val % 1 === 0 ? val.toString() : val.toFixed(2);
 }
@@ -364,12 +379,6 @@ export default function BudgetsPageClient() {
       setError('Failed to reject change');
       console.error('Error rejecting change:', err);
     }
-  };
-
-  const handleEditBudget = (budget: Budget) => {
-    setEditingBudget(budget);
-    setFormMode('edit');
-    setShowForm(true);
   };
 
   const handleProposeBudget = (budget: Budget) => {
