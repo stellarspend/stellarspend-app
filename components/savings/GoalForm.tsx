@@ -8,46 +8,35 @@ import useWallet from "@/hooks/useWallet";
 import { createGoal, Goal } from "@/lib/stellar/savingsGoalContract";
 import { useToast } from "@/components/ui/use-toast";
 
-const goalSchema = z.object({
-  title: z
-    .string()
-    .min(1, "Goal title is required")
-    .max(100, "Title is too long"),
-  targetAmount: z.coerce
-    .number()
-    .positive("Target amount must be positive")
-    .min(1, "Minimum target is 1 XLM"),
-  deadline: z.string().refine(
-    (val) => {
-      const date = new Date(val);
-      return !isNaN(date.getTime()) && date > new Date();
-    },
-    {
-      message: "Deadline must be a future date",
-    },
-  ),
-  recurrence: z.enum(["once", "monthly", "yearly"]),
-});
-    title: z.string().min(1, 'Goal title is required').max(100, 'Title is too long'),
+const goalSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, "Goal title is required")
+      .max(100, "Title is too long"),
     targetAmount: z.coerce
-        .number()
-        .positive('Target amount must be positive')
-        .min(1, 'Minimum target is 1 XLM'),
-    deadline: z.string().refine((val) => {
+      .number()
+      .positive("Target amount must be positive")
+      .min(1, "Minimum target is 1 XLM"),
+    deadline: z.string().refine(
+      (val) => {
         const date = new Date(val);
         return !isNaN(date.getTime()) && date > new Date();
-    }, {
-        message: 'Deadline must be a future date',
-    }),
-    recurrence: z.enum(['once', 'monthly', 'yearly']),
+      },
+      {
+        message: "Deadline must be a future date",
+      },
+    ),
+    recurrence: z.enum(["once", "monthly", "yearly"]),
     scheduleAmount: z.coerce.number().optional(),
-}).refine(
-    (data) => data.recurrence === 'once' || (data.scheduleAmount ?? 0) > 0,
+  })
+  .refine(
+    (data) => data.recurrence === "once" || (data.scheduleAmount ?? 0) > 0,
     {
-        message: 'Enter how much to contribute each period',
-        path: ['scheduleAmount'],
+      message: "Enter how much to contribute each period",
+      path: ["scheduleAmount"],
     },
-);
+  );
 
 type GoalFormData = z.infer<typeof goalSchema>;
 
@@ -71,6 +60,7 @@ export default function GoalForm({
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isValid, isSubmitting },
     reset,
   } = useForm<GoalFormData>({
@@ -80,9 +70,12 @@ export default function GoalForm({
       targetAmount: 0,
       deadline: "",
       recurrence: "once",
+      scheduleAmount: undefined,
     },
     mode: "onChange",
   });
+
+  const recurrence = watch("recurrence");
 
   const onSubmit = async (data: GoalFormData) => {
     if (!isOnline) {
@@ -96,38 +89,6 @@ export default function GoalForm({
       onOpenChange(false);
       return;
     }
-    const {
-        register,
-        handleSubmit,
-        watch,
-        formState: { errors, isValid, isSubmitting },
-        reset,
-    } = useForm<GoalFormData>({
-        schema: goalSchema,
-        defaultValues: {
-            title: '',
-            targetAmount: 0,
-            deadline: '',
-            recurrence: 'once',
-            scheduleAmount: undefined,
-        },
-        mode: 'onChange',
-    });
-
-    const recurrence = watch('recurrence');
-
-    const onSubmit = async (data: GoalFormData) => {
-        if (!isOnline) {
-            queueAction('CREATE_GOAL', `Create goal: ${data.title}`, data);
-            toast({
-                title: "Goal Queued",
-                description: "Offline: Your goal has been queued and will be saved when you reconnect.",
-            });
-            reset();
-            onOpenChange(false);
-            return;
-        }
-
     if (!publicKey) {
       toast({
         title: "Wallet Not Connected",
@@ -306,6 +267,35 @@ export default function GoalForm({
             )}
           </div>
 
+          {recurrence !== "once" && (
+            <div className="space-y-1">
+              <label
+                htmlFor="scheduleAmount"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Amount per {recurrence === "monthly" ? "month" : "year"} (XLM)
+              </label>
+              <input
+                id="scheduleAmount"
+                type="number"
+                inputMode="decimal"
+                aria-required="true"
+                {...register("scheduleAmount")}
+                className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-500 outline-none transition-all ${
+                  errors.scheduleAmount
+                    ? "border-red-500 bg-red-50"
+                    : "border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                }`}
+                placeholder="50"
+              />
+              {errors.scheduleAmount && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.scheduleAmount.message}
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-4">
             {txStatus && (
               <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1.5 mr-auto">
@@ -352,55 +342,4 @@ export default function GoalForm({
       </div>
     </div>
   );
-                    {recurrence !== 'once' && (
-                        <div className="space-y-1">
-                            <label htmlFor="scheduleAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Amount per {recurrence === 'monthly' ? 'month' : 'year'} (XLM)
-                            </label>
-                            <input
-                                id="scheduleAmount"
-                                type="number"
-                                aria-required="true"
-                                {...register('scheduleAmount')}
-                                className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-green-500 outline-none transition-all ${errors.scheduleAmount ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'
-                                    }`}
-                                placeholder="50"
-                            />
-                            {errors.scheduleAmount && (
-                                <p className="text-xs text-red-500 mt-1">{errors.scheduleAmount.message}</p>
-                            )}
-                        </div>
-                    )}
-
-                    <div className="flex justify-end gap-2 pt-4">
-                        {txStatus && (
-                            <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1.5 mr-auto">
-                                <svg className="animate-spin h-3.5 w-3.5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                </svg>
-                                <span className="font-medium">{txStatus}</span>
-                            </div>
-                        )}
-                        <button
-                            type="button"
-                            onClick={() => onOpenChange(false)}
-                            disabled={!!txStatus}
-                            className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md disabled:opacity-50"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            aria-label="Create savings goal"
-                            disabled={!isValid || isSubmitting || !!txStatus}
-                            className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold rounded-lg shadow-md transition-colors duration-200"
-                        >
-                            {txStatus ? 'Processing...' : 'Create Goal'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
 }

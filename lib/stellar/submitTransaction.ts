@@ -61,13 +61,29 @@ export interface SubmittedPayment extends PendingPayment {
   ledger: number;
 }
 
-function createHorizonServer(url = HORIZON_URL) {
+/**
+ * Creates a Stellar Horizon server client for the specified endpoint.
+ *
+ * @param url - The Horizon server URL to connect to. Defaults to the configured
+ *   Horizon URL when omitted.
+ * @returns A Horizon server instance for querying and submitting transactions.
+ */
+function createHorizonServer(url = HORIZON_URL): Horizon.Server {
   return new Horizon.Server(url);
 }
 
+/**
+ * Converts a submitted or pending payment into the transaction record format
+ * used by the application, including its payment operation details.
+ *
+ * @param payment - The payment details to convert.
+ * @param status - The transaction status to record. Defaults to `"confirmed"`.
+ * @returns A transaction record containing payment metadata, status, and
+ *   operation details.
+ */
 export function toTransactionRecord(
   payment: SubmittedPayment | PendingPayment,
-  status: "pending" | "confirmed" = "confirmed",
+  status: "pending" | "confirmed" = "confirmed"
 ) {
   return {
     id: payment.hash,
@@ -104,6 +120,15 @@ function isCreditBalance(balance: Horizon.HorizonApi.BalanceLine) {
   return "asset_code" in balance && "asset_issuer" in balance;
 }
 
+/**
+ * Checks whether a Stellar account has a trustline for the specified
+ * credit asset and its issuer.
+ *
+ * @param account - Account whose balances are checked.
+ * @param assetCode - Code of the credit asset to look for.
+ * @param issuer - Stellar public key of the asset issuer.
+ * @returns `true` if the account has a matching trustline; otherwise, `false`.
+ */
 function hasTrustline(
   account: { balances: Horizon.HorizonApi.BalanceLine[] },
   assetCode: PaymentAsset,
@@ -116,7 +141,14 @@ function hasTrustline(
       balance.asset_issuer === issuer,
   );
 }
-
+/**
+ * Converts Stellar transaction failures and other thrown values into
+ * user-friendly errors with actionable payment failure messages.
+ *
+ * @param error - Error or unknown value caught during payment processing.
+ * @returns An `Error` containing the original error or a user-friendly
+ * message describing the failure.
+ */
 function mapStellarError(error: unknown): Error {
   if (error instanceof Error) {
     if (error instanceof TransactionFailedError) {
@@ -148,6 +180,18 @@ function mapStellarError(error: unknown): Error {
   return new Error("The payment could not be completed. Please try again.");
 }
 
+/**
+ * Validates the source and destination Stellar accounts, checks asset
+ * trustlines and available balances, and retrieves the network transaction fee.
+ *
+ * @param server - Horizon server used to load accounts and fetch the base fee.
+ * @param options - Payment details and optional asset issuer configuration.
+ * @param networkPassphrase - Passphrase identifying the Stellar network.
+ * @returns The loaded source account, the fee to use for the transaction,
+ * and the network passphrase.
+ * @throws Error if either public key is invalid, an account cannot be found,
+ * the destination lacks the required trustline, or the source balance is insufficient.
+ */
 async function validatePayment(
   server: Horizon.Server,
   options: SubmitPaymentOptions,

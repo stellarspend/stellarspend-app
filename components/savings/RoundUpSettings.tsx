@@ -99,6 +99,7 @@ export function RoundUpSettings({ goal, onUpdateRule }: RoundUpSettingsProps) {
                     key={unit}
                     variant={selectedUnit === unit ? 'default' : 'outline'}
                     size="sm"
+                    aria-label={`Round up to nearest ${unit} XLM`}
                     onClick={() => setSelectedUnit(unit)}
                   >
                     {unit} XLM
@@ -118,6 +119,7 @@ export function RoundUpSettings({ goal, onUpdateRule }: RoundUpSettingsProps) {
               <button
                 onClick={handlePauseToggle}
                 disabled={!enabled}
+                aria-disabled={!enabled}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                   paused
                     ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-200'

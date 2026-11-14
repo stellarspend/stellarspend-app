@@ -16,6 +16,16 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
 };
 
+/**
+ * Full-viewport marketing hero section for the landing page.
+ *
+ * Composes the starfield background, animated headline and subtext, the
+ * primary/secondary CTAs, a simulated-error notification trigger, the
+ * platform stats strip and the floating notification centre
+ * ({@link NotificationsCenter}).
+ *
+ * @returns The hero `<section>` element rendered at the top of the home page.
+ */
 export default function Hero() {
   const { addNotification } = useNotifications();
   return (

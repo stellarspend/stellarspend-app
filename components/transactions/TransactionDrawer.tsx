@@ -58,6 +58,20 @@ interface TransactionDrawerProps {
   onCategoryLoaded?: (transactionId: string, category: string | null) => void;
 }
 
+/**
+ * Side drawer that displays full transaction details, operations, and category management.
+ * Handles focus management, escape key close, backdrop click, and loads the current category
+ * for the opened transaction. Provides copy, export JSON, and Horizon explorer actions.
+ *
+ * @param props - Component props
+ * @param props.isOpen - Whether the drawer is visible
+ * @param props.onClose - Callback to close the drawer
+ * @param props.transaction - Transaction details including operations, memo, fees, and ledger info
+ * @param props.category - Currently assigned category for the transaction
+ * @param props.onCategoryChange - Callback invoked when category is changed
+ * @param props.onCategoryLoaded - Callback invoked when category is fetched
+ * @returns Animated drawer element or null if no transaction
+ */
 export default function TransactionDrawer({
   isOpen,
   onClose,

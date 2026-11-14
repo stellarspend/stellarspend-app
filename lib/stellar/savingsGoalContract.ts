@@ -26,6 +26,13 @@ import { createSchedule, addContribution } from '@/lib/savings/scheduler';
 const SAVINGS_CONTRACT_ID = process.env.NEXT_PUBLIC_SAVINGS_CONTRACT_ID ?? '';
 const LOCAL_GOALS_KEY = 'stellarspend_local_goals';
 
+/**
+ * Calls a method on the savings-goal Soroban contract and returns its decoded result.
+ * @param method - The contract method name to invoke.
+ * @param args - Arguments to pass to the contract method.
+ * @param sourcePublicKey - The account to use as the simulation source.
+ * @returns The decoded contract return value of type `T`.
+ */
 async function callSavingsContract<T>(
   method: string,
   args: unknown[],
@@ -71,6 +78,11 @@ async function callSavingsContract<T>(
   return scValToNative(sim.result.retval) as T;
 }
 
+/**
+ * Converts a JavaScript value to its Soroban XDR representation.
+ * @param value - The value to convert; 56-character `G...` strings become addresses and numbers become u64.
+ * @returns The value encoded as a Soroban `ScVal`.
+ */
 function toScVal(value: unknown) {
   if (
     typeof value === 'string' &&

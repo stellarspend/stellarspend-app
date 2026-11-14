@@ -11,6 +11,12 @@ import { createBudget, isBudgetContractConfigured } from "@/lib/stellar/budgetCo
 import type { Budget } from "@/lib/api/client";
 
 // ─── Mini Receive Modal ──────────────────────────────────────────────────────
+/**
+ * Displays the wallet receive dialog with the account address and copy action.
+ *
+ * @param onClose - Callback that closes the receive dialog.
+ * @returns The receive-assets modal.
+ */
 function ReceiveModal({ onClose }: { onClose: () => void }) {
   const address = "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";
   const [copied, setCopied] = useState(false);
@@ -74,6 +80,12 @@ function ReceiveModal({ onClose }: { onClose: () => void }) {
 }
 
 // ─── Budget / Goal Modals ────────────────────────────────────────────────────
+/**
+ * Displays the form for creating a monthly spending budget.
+ *
+ * @param onClose - Callback that closes the budget dialog.
+ * @returns The new-budget modal.
+ */
 function BudgetModal({ onClose }: { onClose: () => void }) {
   const { freighter } = useWallet();
   const publicKey = freighter.publicKey;
@@ -254,6 +266,12 @@ function BudgetModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+/**
+ * Displays the placeholder new-goal dialog with savings target inputs.
+ *
+ * @param onClose - Callback that closes the goal dialog.
+ * @returns The new-goal modal.
+ */
 function GoalModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -362,6 +380,15 @@ interface QuickActionsProps {
   onSplitBill?: () => void;
 }
 
+/**
+ * Renders the dashboard quick-actions grid (Send, Receive, New Budget, New
+ * Goal, Split Bill) and manages which modal is currently open.
+ *
+ * @param props - Component props; see {@link QuickActionsProps}.
+ * @param props.onSplitBill - Optional callback that opens the parent-owned
+ * split-bill flow instead of a local modal.
+ * @returns The quick-actions card with its animated modal overlays.
+ */
 export default function QuickActions({ onSplitBill }: QuickActionsProps) {
   const [openModal, setOpenModal] = useState<ModalId>(null);
 

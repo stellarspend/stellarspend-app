@@ -1,100 +1,110 @@
 /* ── Pricing / How it works ───────────────────────────────── */
+/* Outer section: vertical padding plus a faint gold glow that fades in the middle */
 .pricing-section {
   padding: 5rem 1.5rem;
   background: linear-gradient(
     180deg,
-    transparent 0%,
-    rgba(232, 184, 75, 0.03) 50%,
-    transparent 100%
+    transparent 0%, /* fully clear at the top */
+    rgba(232, 184, 75, 0.03) 50%, /* barely-there gold tint in the middle */
+    transparent 100% /* fully clear at the bottom */
   );
 }
 
+/* Centered content wrapper: stacks "How it works" and the tier cards vertically */
 .pricing-inner {
-  max-width: 1100px;
-  margin: 0 auto;
+  max-width: 1100px; /* caps width on large screens */
+  margin: 0 auto; /* horizontally center */
   display: flex;
   flex-direction: column;
-  gap: 5rem;
+  gap: 5rem; /* big space between the steps block and the tiers block */
 }
 
 /* Headings */
+/* Main section title */
 .pricing-heading {
-  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-size: clamp(1.75rem, 4vw, 2.25rem); /* scales with screen width, min 1.75rem, max 2.25rem */
   font-weight: 800;
-  color: #f1f5f9;
+  color: #f1f5f9; /* near-white for contrast on dark background */
   text-align: center;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.03em; /* slightly tighter for large text */
   margin: 0 0 0.5rem;
 }
 
+/* Smaller line of text under the heading */
 .pricing-subheading {
   text-align: center;
-  color: #64748b;
+  color: #64748b; /* muted gray-blue */
   font-size: 0.9rem;
-  margin: 0 0 3rem;
+  margin: 0 0 3rem; /* space before the content below */
 }
 
 /* ── Steps ─────────────────────────────────────────────────── */
+/* "How it works" list: three equal columns, one per step */
 .pricing-steps {
-  list-style: none;
+  list-style: none; /* removes default bullets/numbers */
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0;
+  grid-template-columns: repeat(3, 1fr); /* three equal-width columns */
+  gap: 0; /* no gap, so the connector lines can run edge to edge */
   position: relative;
 }
 
+/* Single step: icon, number, title and description stacked and centered */
 .pricing-step {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   padding: 0 1.5rem;
-  position: relative;
+  position: relative; /* anchor for the connector line */
 }
 
 /* Connector line between steps */
+/* Thin gold line drawn from this step toward the next one */
 .pricing-step__connector {
   position: absolute;
-  top: 28px;
-  right: calc(-50% + 28px);
-  width: calc(100% - 56px);
+  top: 28px; /* half of the 56px icon height, so the line runs through the icon's middle */
+  right: calc(-50% + 28px); /* starts at the icon's edge and extends into the neighboring column */
+  width: calc(100% - 56px); /* stops short of both icons so it doesn't overlap them */
   height: 1px;
   background: linear-gradient(
     90deg,
-    rgba(232, 184, 75, 0.3),
-    rgba(232, 184, 75, 0.1)
+    rgba(232, 184, 75, 0.3), /* brighter at the start */
+    rgba(232, 184, 75, 0.1) /* fades out toward the next step */
   );
-  pointer-events: none;
+  pointer-events: none; /* decorative only, never blocks clicks */
 }
 
+/* Rounded square holding each step's icon */
 .pricing-step__icon {
   width: 56px;
   height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(232, 184, 75, 0.08);
+  background: rgba(232, 184, 75, 0.08); /* faint gold tint */
   border: 1px solid rgba(232, 184, 75, 0.2);
   border-radius: 14px;
-  color: #e8b84b;
+  color: #e8b84b; /* gold accent used across the section */
   margin-bottom: 0.75rem;
-  flex-shrink: 0;
+  flex-shrink: 0; /* keeps the icon from shrinking in tight layouts */
   position: relative;
-  z-index: 1;
+  z-index: 1; /* sits above the connector line */
 }
 
+/* Small "STEP 1" style label above the title */
 .pricing-step__number {
   font-size: 0.65rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.12em; /* spaced-out caps are easier to read */
   color: #e8b84b;
-  opacity: 0.6;
+  opacity: 0.6; /* softened so the title stands out more */
   margin-bottom: 0.4rem;
   text-transform: uppercase;
 }
 
+/* Step title */
 .pricing-step__title {
   font-size: 0.95rem;
   font-weight: 700;
@@ -103,24 +113,27 @@
   letter-spacing: -0.01em;
 }
 
+/* Step description */
 .pricing-step__desc {
   font-size: 0.8rem;
   color: #64748b;
-  line-height: 1.55;
+  line-height: 1.55; /* comfortable reading spacing */
   margin: 0;
 }
 
 /* ── Tier cards ─────────────────────────────────────────────── */
+/* Grid holding the three pricing cards side by side */
 .pricing-tiers {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, 1fr); /* three equal columns */
   gap: 1.25rem;
-  align-items: start;
+  align-items: start; /* cards keep their own height instead of stretching to match */
 }
 
+/* Base card style shared by all tiers */
 .pricing-card {
-  position: relative;
-  background: rgba(255, 255, 255, 0.03);
+  position: relative; /* anchor for the absolutely positioned badge */
+  background: rgba(255, 255, 255, 0.03); /* subtle glass-like card */
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 16px;
   padding: 1.75rem 1.5rem;
@@ -129,49 +142,55 @@
   gap: 1.25rem;
   transition:
     border-color 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s ease; /* smooth hover animation */
 }
 
+/* Hover: brighter border and a small lift */
 .pricing-card:hover {
   border-color: rgba(255, 255, 255, 0.12);
   transform: translateY(-2px);
 }
 
+/* Featured tier (e.g. "Most popular"): gold tint and raised higher than the others */
 .pricing-card--highlight {
   background: rgba(232, 184, 75, 0.05);
   border-color: rgba(232, 184, 75, 0.25);
-  transform: translateY(-4px);
+  transform: translateY(-4px); /* sits slightly above its neighbors */
 }
 
+/* Highlighted card on hover: stronger gold border and a bigger lift */
 .pricing-card--highlight:hover {
   border-color: rgba(232, 184, 75, 0.4);
   transform: translateY(-6px);
 }
 
 /* Badge */
+/* Small gold pill straddling the top edge of the featured card */
 .pricing-card__badge {
   position: absolute;
-  top: -11px;
+  top: -11px; /* pulls it up so it overlaps the card's top border */
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%); /* with left: 50%, centers the badge horizontally */
   background: #e8b84b;
-  color: #1a0f00;
+  color: #1a0f00; /* dark brown text for contrast on gold */
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 0.2rem 0.75rem;
-  border-radius: 20px;
-  white-space: nowrap;
+  border-radius: 20px; /* pill shape */
+  white-space: nowrap; /* keeps the label on one line */
 }
 
 /* Header */
+/* Top part of the card: plan name, price and short description */
 .pricing-card__header {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
+/* Plan name, e.g. "FREE" or "PRO" */
 .pricing-card__name {
   font-size: 0.8rem;
   font-weight: 700;
@@ -181,25 +200,29 @@
   margin: 0;
 }
 
+/* Row holding the price amount and its note */
 .pricing-card__price {
   display: flex;
-  align-items: baseline;
+  align-items: baseline; /* lines up the small note with the big number's baseline */
   gap: 0.3rem;
 }
 
+/* Big price number */
 .pricing-card__amount {
   font-size: 2rem;
   font-weight: 800;
   color: #f1f5f9;
   letter-spacing: -0.04em;
-  line-height: 1;
+  line-height: 1; /* removes extra vertical space around the number */
 }
 
+/* Small text next to the price, e.g. "/ month" */
 .pricing-card__note {
   font-size: 0.78rem;
   color: #475569;
 }
 
+/* Short plan description */
 .pricing-card__desc {
   font-size: 0.8rem;
   color: #64748b;
@@ -208,16 +231,18 @@
 }
 
 /* Features */
+/* List of included features */
 .pricing-card__features {
-  list-style: none;
+  list-style: none; /* removes default bullets, icons are used instead */
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
-  flex: 1;
+  flex: 1; /* takes up the remaining space so the CTA button sits at the bottom */
 }
 
+/* One feature row: icon plus text */
 .pricing-card__feature {
   display: flex;
   align-items: center;
@@ -227,46 +252,52 @@
   line-height: 1.4;
 }
 
+/* Checkmark icon in front of each feature */
 .pricing-card__feature svg {
   color: #e8b84b;
-  flex-shrink: 0;
+  flex-shrink: 0; /* keeps the icon from squishing when text wraps */
 }
 
 /* CTA */
+/* Default call-to-action button (outlined/ghost style) */
 .pricing-card__cta {
-  display: block;
+  display: block; /* full width of the card */
   text-align: center;
   padding: 0.65rem 1rem;
   border-radius: 10px;
   font-size: 0.85rem;
   font-weight: 700;
-  text-decoration: none;
+  text-decoration: none; /* removes the link underline */
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #94a3b8;
   background: rgba(255, 255, 255, 0.04);
   transition:
     background 0.15s,
     color 0.15s,
-    border-color 0.15s;
+    border-color 0.15s; /* smooth hover color change */
 }
 
+/* Hover: slightly brighter */
 .pricing-card__cta:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #f1f5f9;
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+/* Keyboard focus ring for accessibility (only shows for keyboard users) */
 .pricing-card__cta:focus-visible {
   outline: 2px solid #e8b84b;
   outline-offset: 3px;
 }
 
+/* Primary variant: solid gold button, used on the featured tier */
 .pricing-card__cta--primary {
   background: #e8b84b;
   color: #1a0f00;
   border-color: #e8b84b;
 }
 
+/* Primary hover: lighter gold */
 .pricing-card__cta--primary:hover {
   background: #f0c75a;
   color: #1a0f00;
@@ -274,34 +305,36 @@
 }
 
 /* ── Responsive ─────────────────────────────────────────────── */
+/* Tablets and below (900px or less): cards stack in one column */
 @media (max-width: 900px) {
   .pricing-tiers {
-    grid-template-columns: 1fr;
-    max-width: 420px;
+    grid-template-columns: 1fr; /* one card per row */
+    max-width: 420px; /* keeps stacked cards from stretching too wide */
     margin: 0 auto;
   }
 
   .pricing-card--highlight {
-    transform: none;
-    order: -1;
+    transform: none; /* the raised effect isn't needed when cards are stacked */
+    order: -1; /* moves the featured card to the top of the stack */
   }
 
   .pricing-card--highlight:hover {
-    transform: translateY(-2px);
+    transform: translateY(-2px); /* same small lift as normal cards */
   }
 }
 
+/* Phones (640px or less): steps stack vertically */
 @media (max-width: 640px) {
   .pricing-steps {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* one step per row */
     gap: 2rem;
   }
 
   .pricing-step__connector {
-    display: none;
+    display: none; /* the horizontal connector makes no sense in a vertical layout */
   }
 
   .pricing-step {
-    padding: 0;
+    padding: 0; /* no side padding needed once steps use the full width */
   }
 }

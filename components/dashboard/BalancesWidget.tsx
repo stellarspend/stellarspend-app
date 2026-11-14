@@ -42,6 +42,13 @@ const ASSET_CONFIG: Record<
 
 // ─── Single asset card ────────────────────────────────────────────────────
 
+/**
+ * Renders an animated balance card for a single wallet asset.
+ *
+ * @param asset The asset balance and its 24-hour change and USD value.
+ * @param index The card's position, used to stagger its entrance animation.
+ * @returns The animated asset balance card.
+ */
 function AssetCard({ asset, index }: { asset: AssetBalance; index: number }) {
   const cfg = ASSET_CONFIG[asset.asset] ?? ASSET_CONFIG.XLM;
   const isUp = asset.change24h >= 0;
@@ -69,6 +76,7 @@ function AssetCard({ asset, index }: { asset: AssetBalance; index: number }) {
           {cfg.symbol}
         </div>
         <span
+          aria-label={`24h change: ${isUp ? "+" : ""}${asset.change24h.toFixed(2)}%`}
           className={`flex items-center gap-1 text-xs font-bold ${isUp ? "text-[#4ade80]" : "text-red-400"}`}
         >
           {isUp ? (
@@ -100,10 +108,16 @@ function AssetCard({ asset, index }: { asset: AssetBalance; index: number }) {
 
 // ─── Skeleton loader ──────────────────────────────────────────────────────
 
+/**
+ * Renders a pulsing placeholder while an asset balance is loading.
+ *
+ * @returns The loading skeleton for an asset balance card.
+ */
 function SkeletonCard() {
   return (
     <div
       data-testid="balance-skeleton"
+      aria-hidden="true"
       className="flex flex-col gap-4 p-5 rounded-2xl border border-white/10 bg-white/[0.025] animate-pulse"
     >
       {/* Header row - matches AssetCard header */}
@@ -124,6 +138,14 @@ function SkeletonCard() {
 
 // ─── Balances Widget ──────────────────────────────────────────────────────
 
+/**
+ * Displays the wallet's total portfolio value and individual asset balances.
+ *
+ * Fetches balances on mount, supports manual refresh, and refreshes in response
+ * to account-stream activity while showing loading placeholders and live status.
+ *
+ * @returns The wallet balances dashboard widget.
+ */
 export default function BalancesWidget() {
   const [data, setData] = useState<WalletBalances | null>(null);
   const [loading, setLoading] = useState(true);

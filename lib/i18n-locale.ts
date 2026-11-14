@@ -14,6 +14,10 @@ import type { Locale as DateFnsLocale } from "date-fns";
 // pulled from the sw translation strings elsewhere in the app, this
 // only governs numeric layout/ordering).
 export const SUPPORTED_LANGUAGES = ["en", "es", "fr", "sw", "pt", "ar"] as const;
+/**
+ * Union type of all supported language codes for the application.
+ * Derived from {@link SUPPORTED_LANGUAGES}.
+ */
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const RTL_LANGUAGES: SupportedLanguage[] = ["ar"];

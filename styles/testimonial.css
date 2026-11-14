@@ -1,59 +1,67 @@
 /* Testimonial Component Styles */
 
 /* Smooth carousel transitions */
+/* Wrapper for the testimonial slider */
 .testimonial-carousel {
-  position: relative;
-  overflow: hidden;
+  position: relative; /* anchor for any absolutely positioned children (arrows, dots) */
+  overflow: hidden; /* clips slides that are outside the visible area */
 }
 
 /* Ensure consistent card heights in grid */
+/* Grid layout used when testimonials are shown as cards instead of a slider */
 .testimonial-grid {
   display: grid;
-  grid-auto-rows: 1fr;
+  grid-auto-rows: 1fr; /* every row gets equal height, so cards line up even with different text lengths */
 }
 
 /* Enhanced focus states for carousel controls */
+/* Visible ring for keyboard users on the prev/next buttons (hidden for mouse clicks) */
 .testimonial-nav-button:focus-visible {
-  outline: 2px solid #e8b84b;
-  outline-offset: 4px;
+  outline: 2px solid #e8b84b; /* gold accent used across the site */
+  outline-offset: 4px; /* gap between the button and the ring so it stays easy to see */
 }
 
 /* Dot indicator animations */
+/* Pagination dots: smoothly animate every property that changes (color, size, etc.) */
 .testimonial-dot {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* ease-in-out style curve */
 }
 
+/* Active dot grows slightly so the current slide is easy to spot */
 .testimonial-dot.active {
-  transform: scale(1.1);
+  transform: scale(1.1); /* 10% larger */
 }
 
 /* Reduced motion support */
+/* Respect users who enable "reduce motion" in their OS settings */
 @media (prefers-reduced-motion: reduce) {
   .testimonial-carousel * {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important; /* effectively instant; !important beats other animation rules */
+    transition-duration: 0.01ms !important; /* near-zero instead of 0 so transition events still fire */
   }
 }
 
 /* High contrast mode support */
+/* Applies when the user's system requests higher contrast */
 @media (prefers-contrast: high) {
   .testimonial-card {
-    border-width: 2px;
+    border-width: 2px; /* thicker border so card edges stand out more */
   }
   
   .testimonial-tag {
-    border-width: 2px;
+    border-width: 2px; /* same for tags/labels inside the cards */
   }
 }
 
 /* Print styles */
+/* Only applies when the page is printed or saved as PDF */
 @media print {
   .testimonial-nav-button,
   .testimonial-dot {
-    display: none;
+    display: none; /* interactive controls are useless on paper */
   }
   
   .testimonial-carousel {
-    display: block;
+    display: block; /* lays slides out normally instead of as a slider */
   }
 }

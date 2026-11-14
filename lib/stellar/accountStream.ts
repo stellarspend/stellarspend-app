@@ -33,6 +33,14 @@ const RECONNECT_MAX_EXPONENT = 6;
 
 // ── Public types ────────────────────────────────────────────────────────────
 
+/**
+ * The current lifecycle status of the account stream.
+ * - `idle`: No stream is active or the stream has been stopped.
+ * - `connecting`: Actively establishing connection to Horizon SSE endpoints.
+ * - `connected`: Successfully connected and receiving live events.
+ * - `reconnecting`: Connection lost and attempting to reconnect with backoff.
+ * - `disconnected`: Connection terminated unexpectedly (e.g., network error).
+ */
 export type AccountStreamStatus =
   | "idle"
   | "connecting"
@@ -64,6 +72,13 @@ export interface StreamedOperation {
   };
 }
 
+/**
+ * Event emitted when a new operation is received from the Horizon operations stream.
+ * @property kind - Event discriminator, always `"operation"`.
+ * @property account - The Stellar public key of the account this operation relates to.
+ * @property operation - The streamed Horizon operation record with minimal fields.
+ * @property receivedAt - Timestamp (ms since epoch) when the event was received by the client.
+ */
 export interface AccountStreamOperationEvent {
   kind: "operation";
   account: string;
@@ -71,23 +86,42 @@ export interface AccountStreamOperationEvent {
   receivedAt: number;
 }
 
+/** Emitted when a payment operation is received for a watched account. */
 export interface AccountStreamPaymentEvent {
   kind: "payment";
+  /** The Stellar account address that received the payment. */
   account: string;
+  /** The streamed payment operation details. */
   payment: StreamedOperation;
+  /** Unix timestamp (ms) when the event was received. */
   receivedAt: number;
 }
 
+/** Union of all events that can be emitted by the account stream. */
 export type AccountStreamEvent =
   | AccountStreamOperationEvent
   | AccountStreamPaymentEvent;
 
+/**
+ * Snapshot of the Horizon account stream connection state.
+ * @property status - Current lifecycle status of the stream (`"idle"`, `"connecting"`, `"connected"`, `"reconnecting"`, `"disconnected"`, or `"error"`).
+ * @property account - Stellar public key currently being watched, or `null` when no stream is active.
+ */
 export interface AccountStreamState {
   status: AccountStreamStatus;
   account: string | null;
 }
 
+/**
+ * Callback invoked whenever the account stream emits an operation or payment event.
+ * @param event - The streamed operation or payment event payload.
+ */
 export type AccountStreamListener = (event: AccountStreamEvent) => void;
+/**
+ * Callback invoked with the latest stream state whenever the account stream
+ * status changes (e.g. connecting, connected, reconnecting, disconnected).
+ * @param state - The current stream status and active account.
+ */
 export type AccountStreamStatusListener = (state: AccountStreamState) => void;
 
 // ── Manager ─────────────────────────────────────────────────────────────────
@@ -103,16 +137,30 @@ class AccountStreamManager {
   private stopPayments: (() => void) | null = null;
   private readonly listeners = new Set<AccountStreamListener>();
   private readonly statusListeners = new Set<AccountStreamStatusListener>();
+  /**
+   * Returns the current stream status and the account it is bound to.
+   * @returns The current `AccountStreamState` (`status` and `account`).
+   */
 
   getState(): AccountStreamState {
     return { status: this.status, account: this.activeAccount };
   }
 
+  /**
+   * Registers a listener for streamed account events.
+   * @param listener - Callback invoked for each account stream event.
+   * @returns A function that removes the listener.
+   */
   subscribe(listener: AccountStreamListener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
 
+  /**
+   * Registers a listener for stream lifecycle status changes.
+   * @param listener - Callback invoked whenever the stream status changes.
+   * @returns A function that removes the listener.
+   */
   subscribeStatus(listener: AccountStreamStatusListener): () => void {
     this.statusListeners.add(listener);
     return () => this.statusListeners.delete(listener);
@@ -292,6 +340,10 @@ class AccountStreamManager {
 
 let manager: AccountStreamManager | null = null;
 
+/**
+ * Returns the shared account stream manager, creating it on first use.
+ * @returns The singleton `AccountStreamManager` instance.
+ */
 function getManager(): AccountStreamManager {
   if (!manager) manager = new AccountStreamManager();
   return manager;
